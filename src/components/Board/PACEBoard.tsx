@@ -6,6 +6,7 @@ import { ArrowRight, ShieldCheck, Zap, Radio, Phone, Satellite, AlertCircle } fr
 interface PACEBoardProps {
   player: Player;
   isCurrentPlayer: boolean;
+  highlight?: boolean;
 }
 
 const SLOT_DEFINITIONS: {
@@ -26,7 +27,7 @@ const SLOT_DEFINITIONS: {
     borderColor: 'border-cyan-500/40',
     bgGlow: 'bg-cyan-950/20',
     icon: <Satellite className="w-4 h-4 text-cyan-400" />,
-    desc: '標準作業首選，提供超大頻寬與即時影像'
+    desc: '日常作業首選，提供超大頻寬與即時影像'
   },
   {
     slot: 'A',
@@ -60,88 +61,92 @@ const SLOT_DEFINITIONS: {
   },
 ];
 
-export const PACEBoard: React.FC<PACEBoardProps> = ({ player }) => {
+export const PACEBoard: React.FC<PACEBoardProps> = ({ player, highlight = false }) => {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 shadow-xl backdrop-blur-md">
+    <div
+      className={`rounded-2xl border bg-slate-950/80 p-4 shadow-xl backdrop-blur-md transition-all ${
+        highlight ? 'tutorial-spotlight ring-2 ring-cyan-400' : 'border-slate-800'
+      }`}
+    >
       {/* Board Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pb-3 mb-4 border-b border-slate-800">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 pb-3 mb-4 border-b border-slate-800">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl shadow-inner">
+          <div className="w-11 h-11 rounded-xl bg-slate-900 border border-slate-700 flex items-center justify-center text-2xl shadow-inner shrink-0">
             {player.avatar}
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold text-slate-100">{player.name} 的 PACE 通訊作戰儀表板</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base sm:text-lg font-bold text-slate-100">{player.name} 的 PACE 作戰儀表板</h2>
               {player.isAI && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/30">
+                <span className="text-xs font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/30">
                   AI: {player.aiPersonality}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-400 font-mono">
+            <p className="text-xs sm:text-sm text-slate-400 font-mono mt-0.5">
               四重通訊防線：[P] 主要 ➔ [A] 備用 ➔ [C] 應急 ➔ [E] 緊急
             </p>
           </div>
         </div>
 
         {/* Status Indicators */}
-        <div className="flex items-center gap-3 text-xs font-mono">
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-amber-950/40 border border-amber-500/30 text-amber-300">
+        <div className="flex items-center gap-2.5 text-xs sm:text-sm font-mono flex-wrap">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300">
             <span>物資資金:</span>
-            <span className="font-bold text-sm">{player.credits} 💰</span>
+            <span className="font-bold">{player.credits} 💰</span>
           </div>
-          <div className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300">
-            <Zap className="w-3.5 h-3.5 text-cyan-400" />
+          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/40 border border-cyan-500/30 text-cyan-300">
+            <Zap className="w-4 h-4 text-cyan-400" />
             <span>電力蓄能:</span>
-            <span className="font-bold text-sm">{player.energy}/{player.maxEnergy} ⚡</span>
+            <span className="font-bold">{player.energy}/{player.maxEnergy} ⚡</span>
           </div>
         </div>
       </div>
 
       {/* 4 PACE Slots Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 relative">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3.5 relative">
         {SLOT_DEFINITIONS.map((slotDef, index) => {
           const card = player.paceBoard[slotDef.slot];
 
           return (
             <div key={slotDef.slot} className="relative flex flex-col">
               {/* Slot Indicator Header */}
-              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-t-xl bg-slate-900/90 border-t border-x border-slate-800 text-xs font-mono">
+              <div className="flex items-center justify-between px-3 py-2 rounded-t-xl bg-slate-900/90 border-t border-x border-slate-800 text-xs sm:text-sm font-mono">
                 <div className="flex items-center gap-1.5">
                   {slotDef.icon}
                   <span className={`font-bold ${slotDef.color}`}>{slotDef.title}</span>
                 </div>
                 {index < 3 && (
-                  <div className="hidden lg:flex items-center text-slate-600 text-[10px]" title="當前通道受阻時自動遞補">
-                    <span>Fallback</span>
-                    <ArrowRight className="w-3 h-3 text-slate-500" />
+                  <div className="hidden lg:flex items-center text-slate-500 text-xs gap-0.5" title="當前通道受阻時自動遞補">
+                    <span>備援</span>
+                    <ArrowRight className="w-3.5 h-3.5 text-slate-500" />
                   </div>
                 )}
               </div>
 
               {/* Slot Body */}
               <div
-                className={`flex-1 rounded-b-xl border border-dashed transition-all p-2 ${
+                className={`flex-1 rounded-b-xl border border-dashed transition-all p-2.5 ${
                   card
                     ? 'border-solid border-slate-700 bg-slate-900/40'
-                    : `${slotDef.borderColor} ${slotDef.bgGlow} flex flex-col items-center justify-center min-h-[180px] text-center`
+                    : `${slotDef.borderColor} ${slotDef.bgGlow} flex flex-col items-center justify-center min-h-[190px] text-center`
                 }`}
               >
                 {card ? (
                   <EquipmentCardView card={card} isEquipped={true} compact={true} />
                 ) : (
-                  <div className="p-4 flex flex-col items-center justify-center text-center">
+                  <div className="p-3 flex flex-col items-center justify-center text-center">
                     <div className="p-3 rounded-full bg-black/40 mb-2 text-slate-500 border border-white/5">
                       <AlertCircle className="w-6 h-6" />
                     </div>
-                    <span className={`text-xs font-bold font-mono mb-1 ${slotDef.color}`}>
+                    <span className={`text-xs sm:text-sm font-bold font-mono mb-1 ${slotDef.color}`}>
                       未裝備 [{slotDef.slot}] 通訊手段
                     </span>
-                    <p className="text-[11px] text-slate-400 leading-tight">
+                    <p className="text-xs text-slate-400 leading-normal">
                       {slotDef.desc}
                     </p>
-                    <span className="mt-2 text-[10px] text-slate-500 font-mono">
-                      請至右側裝備庫採購
+                    <span className="mt-2 text-xs text-cyan-400/80 font-mono">
+                      可由補給庫採購安裝
                     </span>
                   </div>
                 )}

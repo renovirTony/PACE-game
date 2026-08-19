@@ -156,3 +156,15 @@ export interface TransmissionResult {
     blockedReason?: string;
   }[];
 }
+
+export type FontSizeMode = 'normal' | 'large' | 'xlarge';
+
+export interface TutorialStepInfo {
+  step: number;
+  title: string;
+  targetElementId?: string;
+  highlightSelector?: string;
+  instruction: string;
+  detail: string;
+  actionHint?: string;
+}

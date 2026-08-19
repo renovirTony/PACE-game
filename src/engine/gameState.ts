@@ -44,7 +44,17 @@ export interface UseGameStateReturn {
   lastTransmission: { result: TransmissionResult; mission: CrisisMission; playerName: string } | null;
   isAITurn: boolean;
   gameMode: 'SinglePlayer' | 'PassAndPlay';
+  botCount: number;
   
+  // Interactive Tutorial
+  isTutorialMode: boolean;
+  tutorialStep: number;
+  setTutorialStep: (step: number) => void;
+  nextTutorialStep: () => void;
+  prevTutorialStep: () => void;
+  startTutorial: () => void;
+  finishTutorial: () => void;
+
   // Actions
   startGame: (mode: 'SinglePlayer' | 'PassAndPlay', botCount?: number) => void;
   buyEquipment: (card: CommsCard, targetSlot?: PACESlot) => boolean;
@@ -55,6 +65,7 @@ export interface UseGameStateReturn {
   endTurn: () => void;
   clearLastTransmission: () => void;
   restartGame: () => void;
+  returnToMenu: () => void;
 }
 
 export function useGameState(): UseGameStateReturn {
@@ -63,6 +74,11 @@ export function useGameState(): UseGameStateReturn {
   const [targetScore] = useState(18);
   const [phase, setPhase] = useState<GamePhase>('SETUP');
   const [gameMode, setGameMode] = useState<'SinglePlayer' | 'PassAndPlay'>('SinglePlayer');
+  const [botCount, setBotCount] = useState<number>(2);
+
+  // Tutorial state
+  const [isTutorialMode, setIsTutorialMode] = useState(false);
+  const [tutorialStep, setTutorialStep] = useState(1);
 
   const [players, setPlayers] = useState<Player[]>([]);
   const [activePlayerIndex, setActivePlayerIndex] = useState(0);
@@ -100,8 +116,10 @@ export function useGameState(): UseGameStateReturn {
   }, [round]);
 
   // 初始化並開始遊戲
-  const startGame = useCallback((mode: 'SinglePlayer' | 'PassAndPlay', botCount: number = 2) => {
+  const startGame = useCallback((mode: 'SinglePlayer' | 'PassAndPlay', bots: number = 2) => {
     setGameMode(mode);
+    setBotCount(bots);
+    setIsTutorialMode(false);
 
     // 準備卡牌庫
     const shuffledEquip = shuffleArray(EQUIPMENT_CARDS);
@@ -162,7 +180,7 @@ export function useGameState(): UseGameStateReturn {
         { name: 'AI 應急指揮-伽瑪', avatar: '📡', color: '#10B981', personality: 'Balanced' as const }
       ];
 
-      for (let i = 0; i < botCount; i++) {
+      for (let i = 0; i < bots; i++) {
         const cfg = botConfigs[i % botConfigs.length];
         const botStarter = STARTER_PRIMARY_CARDS[(i + 1) % STARTER_PRIMARY_CARDS.length];
         newPlayers.push({
@@ -251,8 +269,129 @@ export function useGameState(): UseGameStateReturn {
     audioManager.playAlertSound();
   }, [addLog]);
 
+  // 啟動實戰新手教學模式
+  const startTutorial = useCallback(() => {
+    setIsTutorialMode(true);
+    setTutorialStep(1);
+    setGameMode('SinglePlayer');
+    setBotCount(1);
+
+    // 準備固定且具教學意義的卡牌組合
+    const starterP = STARTER_PRIMARY_CARDS[0]; // 5G Mesh Cell
+    const vhfCard = EQUIPMENT_CARDS.find(c => c.id === 'a_vhf_sincgars') || EQUIPMENT_CARDS[4];
+    const wireCard = EQUIPMENT_CARDS.find(c => c.id === 'c_field_wire_ta312') || EQUIPMENT_CARDS[8];
+    const aldisCard = EQUIPMENT_CARDS.find(c => c.id === 'e_aldis_lamp') || EQUIPMENT_CARDS[12];
+    const otherEquips = EQUIPMENT_CARDS.filter(c => c.id !== vhfCard.id && c.id !== wireCard.id && c.id !== aldisCard.id);
+
+    const tutorialMarket = [vhfCard, wireCard, aldisCard, otherEquips[0]];
+    const restEquip = otherEquips.slice(1);
+
+    const genTactic = TACTIC_CARDS.find(t => t.id === 'tac_power_generator') || TACTIC_CARDS[0];
+    const airTactic = TACTIC_CARDS.find(t => t.id === 'tac_supply_airdrop') || TACTIC_CARDS[1];
+    const restTactics = TACTIC_CARDS.filter(t => t.id !== genTactic.id && t.id !== airTactic.id);
+
+    const mission1 = CRISIS_MISSIONS.find(m => m.id === 'mis_mountain_avalanche') || CRISIS_MISSIONS[1];
+    const mission2 = CRISIS_MISSIONS.find(m => m.id === 'mis_hostile_jamming_breakthrough') || CRISIS_MISSIONS[6];
+    const mission3 = CRISIS_MISSIONS.find(m => m.id === 'mis_high_res_recon') || CRISIS_MISSIONS[0];
+    const restMissions = CRISIS_MISSIONS.filter(m => m.id !== mission1.id && m.id !== mission2.id && m.id !== mission3.id);
+
+    const clearEvent = GLOBAL_EVENTS.find(e => e.id === 'evt_clear_skies') || GLOBAL_EVENTS[5];
+
+    const tutorialPlayer: Player = {
+      id: 'player_1',
+      name: '新晉指揮官 (學員)',
+      isAI: false,
+      avatar: '🛡️',
+      color: '#06B6D4',
+      score: 0,
+      credits: 6,
+      actionPoints: 3,
+      maxActionPoints: 3,
+      energy: 2, // 刻意設低，讓玩家體驗使用戰術發電機
+      maxEnergy: 6,
+      paceBoard: {
+        P: starterP,
+        A: null,
+        C: null,
+        E: null
+      },
+      handTactics: [genTactic],
+      completedMissions: [],
+      stats: {
+        transmissions: 0,
+        fallbacksTriggered: 0,
+        pSuccesses: 0,
+        aSuccesses: 0,
+        cSuccesses: 0,
+        eSuccesses: 0
+      }
+    };
+
+    const dummyBot: Player = {
+      id: 'bot_instructor',
+      name: '作戰教官-席格諾',
+      isAI: true,
+      aiPersonality: 'Balanced',
+      avatar: '👨‍🏫',
+      color: '#3B82F6',
+      score: 0,
+      credits: 4,
+      actionPoints: 3,
+      maxActionPoints: 3,
+      energy: 4,
+      maxEnergy: 6,
+      paceBoard: {
+        P: starterP,
+        A: null,
+        C: null,
+        E: null
+      },
+      handTactics: [airTactic],
+      completedMissions: [],
+      stats: {
+        transmissions: 0,
+        fallbacksTriggered: 0,
+        pSuccesses: 0,
+        aSuccesses: 0,
+        cSuccesses: 0,
+        eSuccesses: 0
+      }
+    };
+
+    setPlayers([tutorialPlayer, dummyBot]);
+    setActivePlayerIndex(0);
+    setMarket(tutorialMarket);
+    setEquipmentDeck(restEquip);
+    setTacticMarket([airTactic]);
+    setTacticDeck(restTactics);
+    setActiveMissions([mission1, mission2, mission3]);
+    setMissionDeck(restMissions);
+    setActiveEvent(clearEvent);
+    setRound(1);
+    setWinner(null);
+    setLastTransmission(null);
+    setPhase('PLAYER_ACTION');
+
+    addLog('info', '🎓 歡迎進入 PACE 通訊先鋒實戰新手引導！請跟隨畫面指示完成各項操作。');
+    audioManager.playAlertSound();
+  }, [addLog]);
+
+  const nextTutorialStep = useCallback(() => {
+    setTutorialStep(prev => prev + 1);
+  }, []);
+
+  const prevTutorialStep = useCallback(() => {
+    setTutorialStep(prev => Math.max(1, prev - 1));
+  }, []);
+
+  const finishTutorial = useCallback(() => {
+    setIsTutorialMode(false);
+    setPhase('SETUP');
+    addLog('success', '🎉 恭喜完成新手實戰教學！您已具備成為頂尖應急指揮官的所有基本觀念！');
+  }, [addLog]);
+
   const activePlayer = players[activePlayerIndex] || players[0];
-  const isAITurn = Boolean(activePlayer && activePlayer.isAI && phase === 'PLAYER_ACTION');
+  const isAITurn = Boolean(activePlayer && activePlayer.isAI && phase === 'PLAYER_ACTION' && !isTutorialMode);
 
   // 購買設備
   const buyEquipment = useCallback((card: CommsCard, targetSlot?: PACESlot): boolean => {
@@ -299,8 +438,14 @@ export function useGameState(): UseGameStateReturn {
       activePlayer.id,
       activePlayer.name
     );
+
+    // 教學步驟推進
+    if (isTutorialMode && tutorialStep === 2) {
+      setTutorialStep(3);
+    }
+
     return true;
-  }, [activePlayer, activePlayerIndex, equipmentDeck, addLog]);
+  }, [activePlayer, activePlayerIndex, equipmentDeck, isTutorialMode, tutorialStep, addLog]);
 
   // 購買戰術卡
   const buyTactic = useCallback((card: TacticCard): boolean => {
@@ -380,8 +525,13 @@ export function useGameState(): UseGameStateReturn {
 
     audioManager.playClick();
     addLog('action', successMessage, activePlayer.id, activePlayer.name);
+
+    if (isTutorialMode && tutorialStep === 3) {
+      setTutorialStep(4);
+    }
+
     return true;
-  }, [activePlayer, activePlayerIndex, addLog]);
+  }, [activePlayer, activePlayerIndex, isTutorialMode, tutorialStep, addLog]);
 
   // 手動手搖充電/充能
   const rechargeEnergy = useCallback((): boolean => {
@@ -402,8 +552,13 @@ export function useGameState(): UseGameStateReturn {
 
     audioManager.playClick();
     addLog('action', '進行野戰充能，電量 +2 ⚡', activePlayer.id, activePlayer.name);
+
+    if (isTutorialMode && tutorialStep === 4) {
+      setTutorialStep(5);
+    }
+
     return true;
-  }, [activePlayer, activePlayerIndex, addLog]);
+  }, [activePlayer, activePlayerIndex, isTutorialMode, tutorialStep, addLog]);
 
   // 執行危機任務廣播 (Transmission)
   const transmitMission = useCallback((mission: CrisisMission): TransmissionResult => {
@@ -471,8 +626,12 @@ export function useGameState(): UseGameStateReturn {
         activePlayer.name
       );
 
-      // 檢查是否達成獲勝分數
-      if (activePlayer.score + earnedVP >= targetScore) {
+      if (isTutorialMode && tutorialStep === 5) {
+        setTutorialStep(6);
+      }
+
+      // 檢查是否達成獲勝分數 (非教學模式)
+      if (!isTutorialMode && activePlayer.score + earnedVP >= targetScore) {
         audioManager.playVictoryFanfare();
         setPhase('GAME_OVER');
         setWinner(activePlayer);
@@ -484,11 +643,20 @@ export function useGameState(): UseGameStateReturn {
     }
 
     return result;
-  }, [activePlayer, activePlayerIndex, activeEvent, targetScore, addLog]);
+  }, [activePlayer, activePlayerIndex, activeEvent, targetScore, isTutorialMode, tutorialStep, addLog]);
 
   // 回合輪替與結算
   const endTurn = useCallback(() => {
     if (phase === 'GAME_OVER') return;
+
+    if (isTutorialMode) {
+      if (tutorialStep === 6) {
+        setTutorialStep(7);
+        audioManager.playVictoryFanfare();
+        addLog('success', '🎉 恭喜完成新手實戰教學！已掌握所有關鍵操作與 PACE 原理！');
+        return;
+      }
+    }
 
     const nextIndex = (activePlayerIndex + 1) % players.length;
 
@@ -550,15 +718,14 @@ export function useGameState(): UseGameStateReturn {
     }
 
     setActivePlayerIndex(nextIndex);
-  }, [activePlayerIndex, players, round, maxRounds, phase, eventDeck, activeEvent, missionDeck, addLog]);
+  }, [activePlayerIndex, players, round, maxRounds, phase, eventDeck, activeEvent, missionDeck, isTutorialMode, tutorialStep, addLog]);
 
-  // AI 自動決策執行循環
+  // AI 自動決策執行循環 (非教學模式)
   useEffect(() => {
-    if (phase !== 'PLAYER_ACTION' || !activePlayer || !activePlayer.isAI) {
+    if (phase !== 'PLAYER_ACTION' || !activePlayer || !activePlayer.isAI || isTutorialMode) {
       return;
     }
 
-    // 模擬 AI 思考與操作間隔
     aiTimerRef.current = setTimeout(() => {
       const decision = computeAIDecision(activePlayer, market, tacticMarket, activeMissions, activeEvent);
 
@@ -596,15 +763,20 @@ export function useGameState(): UseGameStateReturn {
     return () => {
       if (aiTimerRef.current) clearTimeout(aiTimerRef.current);
     };
-  }, [activePlayer, phase, market, tacticMarket, activeMissions, activeEvent, buyEquipment, buyTactic, playTactic, rechargeEnergy, transmitMission, endTurn]);
+  }, [activePlayer, phase, market, tacticMarket, activeMissions, activeEvent, isTutorialMode, buyEquipment, buyTactic, playTactic, rechargeEnergy, transmitMission, endTurn]);
 
   const clearLastTransmission = useCallback(() => {
     setLastTransmission(null);
   }, []);
 
   const restartGame = useCallback(() => {
-    startGame(gameMode);
-  }, [startGame, gameMode]);
+    startGame(gameMode, botCount);
+  }, [startGame, gameMode, botCount]);
+
+  const returnToMenu = useCallback(() => {
+    setIsTutorialMode(false);
+    setPhase('SETUP');
+  }, []);
 
   return {
     round,
@@ -623,6 +795,14 @@ export function useGameState(): UseGameStateReturn {
     lastTransmission,
     isAITurn,
     gameMode,
+    botCount,
+    isTutorialMode,
+    tutorialStep,
+    setTutorialStep,
+    nextTutorialStep,
+    prevTutorialStep,
+    startTutorial,
+    finishTutorial,
     startGame,
     buyEquipment,
     buyTactic,
@@ -631,6 +811,7 @@ export function useGameState(): UseGameStateReturn {
     transmitMission,
     endTurn,
     clearLastTransmission,
-    restartGame
+    restartGame,
+    returnToMenu
   };
 }
