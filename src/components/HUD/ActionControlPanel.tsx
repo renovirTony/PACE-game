@@ -27,7 +27,8 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
   tutorialHighlightEndTurn = false,
 }) => {
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 shadow-xl backdrop-blur-md flex flex-col gap-3.5">
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:p-5 shadow-xl backdrop-blur-md flex flex-col gap-4">
+      {/* Top Action Points & Quick Controls */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 border-b border-slate-800">
         {/* Action Points Gauge */}
         <div className="flex items-center gap-2.5">
@@ -36,7 +37,7 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
             {Array.from({ length: player.maxActionPoints }).map((_, i) => (
               <div
                 key={i}
-                className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-bold font-mono border transition-all ${
+                className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold font-mono border transition-all ${
                   i < player.actionPoints
                     ? 'bg-cyan-500 border-cyan-400 text-slate-950 shadow-md shadow-cyan-500/30'
                     : 'bg-slate-900 border-slate-800 text-slate-600'
@@ -49,16 +50,16 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-2.5 w-full sm:w-auto">
+        <div className="flex items-center gap-2.5 w-full sm:w-auto flex-wrap">
           {/* Recharge Button */}
           <button
             onClick={onRecharge}
             disabled={!isCurrentPlayer || isAI || player.actionPoints <= 0 || player.energy >= player.maxEnergy}
-            className={`flex-1 sm:flex-initial py-2 px-3.5 rounded-xl text-xs sm:text-sm font-bold font-mono flex items-center justify-center gap-2 border transition-all ${
+            className={`flex-1 sm:flex-initial py-2 px-4 rounded-xl text-xs sm:text-sm font-bold font-mono flex items-center justify-center gap-2 border transition-all ${
               tutorialHighlightRecharge ? 'tutorial-spotlight ring-2 ring-amber-400' : ''
             } ${
               isCurrentPlayer && !isAI && player.actionPoints > 0 && player.energy < player.maxEnergy
-                ? 'bg-amber-950/60 border-amber-500/40 text-amber-300 hover:bg-amber-900/60 active:scale-95'
+                ? 'bg-amber-950/70 border-amber-500/50 text-amber-300 hover:bg-amber-900/70 active:scale-95 shadow-sm'
                 : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
             }`}
           >
@@ -74,7 +75,7 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
               tutorialHighlightEndTurn ? 'tutorial-spotlight ring-2 ring-red-400' : ''
             } ${
               isCurrentPlayer && !isAI
-                ? 'bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white shadow-amber-500/20 active:scale-95'
+                ? 'bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white shadow-amber-500/25 active:scale-95 font-black'
                 : 'bg-slate-900 border border-slate-800 text-slate-600 cursor-not-allowed'
             }`}
           >
@@ -86,15 +87,15 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
 
       {/* Hand Tactics */}
       <div>
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs sm:text-sm font-mono font-bold text-purple-300 flex items-center gap-1.5">
+        <div className="flex items-center justify-between mb-2.5">
+          <span className="text-xs sm:text-sm font-mono font-bold text-purple-300 flex items-center gap-2">
             <span>戰術手牌 ({player.handTactics.length}/4)</span>
           </span>
-          <span className="text-xs text-slate-400 font-mono">點擊卡牌啟動戰術效果 (消耗 1 AP)</span>
+          <span className="text-xs text-slate-400 font-mono">點擊啟動效果 (消耗 1 AP)</span>
         </div>
 
         {player.handTactics.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {player.handTactics.map(tactic => (
               <TacticCardView
                 key={tactic.id}
@@ -108,7 +109,7 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
           </div>
         ) : (
           <div className="py-4 px-4 rounded-xl border border-dashed border-slate-800 text-center text-slate-500 text-xs sm:text-sm font-mono">
-            手牌為空，可至下方商場採購戰術卡
+            目前無戰術手牌，可至左側商場採購
           </div>
         )}
       </div>

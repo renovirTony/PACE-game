@@ -21,7 +21,7 @@ export function App() {
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [selectedBotCount, setSelectedBotCount] = useState<number>(2);
-  const [fontSize, setFontSize] = useState<FontSizeMode>('large'); // 預設使用較舒適的大字體
+  const [fontSize, setFontSize] = useState<FontSizeMode>('large');
 
   const fontScaleClass = 
     fontSize === 'normal' 
@@ -80,13 +80,13 @@ export function App() {
               </button>
             </div>
 
-            {/* Interactive Tutorial Button */}
+            {/* Interactive Tutorial Button (Dedicated Entrance on Home) */}
             <button
               onClick={gameState.startTutorial}
-              className="w-full p-3.5 rounded-2xl bg-purple-950/60 hover:bg-purple-900/60 border border-purple-500/40 text-purple-200 font-bold font-mono text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
+              className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold font-mono text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
             >
               <GraduationCap className="w-5 h-5 text-purple-400" />
-              <span>🎓 進入實戰新手教學 (逐步手把手引導)</span>
+              <span>🎓 進入實戰新手教學 (手把手 7 步操作引導)</span>
             </button>
 
             {/* AI Bot Count Setting */}
@@ -134,41 +134,48 @@ export function App() {
     );
   }
 
-  // Active Game Arena
+  // Active Game Arena - Redesigned spacious layout
   return (
-    <div className={`min-h-screen p-3 sm:p-5 flex flex-col gap-4 max-w-[1600px] mx-auto text-slate-100 ${fontScaleClass}`}>
-      {/* Turn Header */}
+    <div className={`min-h-screen p-3 sm:p-5 flex flex-col gap-4 max-w-[1700px] mx-auto text-slate-100 ${fontScaleClass}`}>
+      {/* 1. Turn Header */}
       <TurnHeader
         round={gameState.round}
         maxRounds={gameState.maxRounds}
         targetScore={gameState.targetScore}
         activePlayer={gameState.activePlayer}
         isAI={gameState.activePlayer.isAI}
+        isTutorialMode={gameState.isTutorialMode}
         fontSize={fontSize}
         onChangeFontSize={setFontSize}
         onOpenTutorial={() => setIsTutorialModalOpen(true)}
         onOpenGuide={() => setIsGuideOpen(true)}
-        onStartInteractiveTutorial={gameState.startTutorial}
         onReturnToMenu={gameState.returnToMenu}
       />
 
-      {/* Global Environmental Hazard Banner */}
+      {/* 2. Global Environmental Hazard Banner */}
       <EventBanner event={gameState.activeEvent} />
 
-      {/* Main Tactical Grid */}
+      {/* 3. Commander PACE Board - Dedicated Full Width Row */}
+      <PACEBoard
+        player={gameState.activePlayer}
+        isCurrentPlayer={!gameState.activePlayer.isAI}
+        highlight={gameState.isTutorialMode && gameState.tutorialStep === 1}
+      />
+
+      {/* 4. Main Two-Column Operational Area */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        {/* Left Column: Active Missions & Market (7 cols on xl) */}
+        {/* Left Section: Active Crisis Missions (3 cols) + Equipment/Tactic Supply Market (4 cols) */}
         <div className="xl:col-span-7 flex flex-col gap-4">
-          {/* Crisis Missions Section */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 shadow-xl backdrop-blur-md">
+          {/* Crisis Missions */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:p-5 shadow-xl backdrop-blur-md">
             <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <Radio className="w-4 h-4 text-cyan-400" />
-                <h2 className="text-xs sm:text-sm font-mono font-bold text-slate-200">
+                <h2 className="text-xs sm:text-base font-mono font-bold text-slate-200">
                   當前突發危機任務 (Active Crisis Missions)
                 </h2>
               </div>
-              <span className="text-xs font-mono text-slate-400">
+              <span className="text-xs font-mono text-slate-400 hidden sm:inline-block">
                 點擊「發起廣播」驗證並獲取積分
               </span>
             </div>
@@ -191,7 +198,7 @@ export function App() {
             </div>
           </div>
 
-          {/* Market & Equipment Deck Area */}
+          {/* Market Area */}
           <MarketArea
             player={gameState.activePlayer}
             market={gameState.market}
@@ -203,15 +210,8 @@ export function App() {
           />
         </div>
 
-        {/* Right Column: Player PACE Board & Action Controls (5 cols on xl) */}
+        {/* Right Section: Action Controls (with Hand Tactics) + Combat Log */}
         <div className="xl:col-span-5 flex flex-col gap-4">
-          {/* PACE Board */}
-          <PACEBoard
-            player={gameState.activePlayer}
-            isCurrentPlayer={!gameState.activePlayer.isAI}
-            highlight={gameState.isTutorialMode && gameState.tutorialStep === 1}
-          />
-
           {/* Action Control Panel */}
           <ActionControlPanel
             player={gameState.activePlayer}
@@ -225,12 +225,12 @@ export function App() {
             tutorialHighlightEndTurn={gameState.isTutorialMode && gameState.tutorialStep === 6}
           />
 
-          {/* Log Viewer */}
+          {/* Real-time Combat & Comms Log */}
           <LogViewer logs={gameState.logs} />
         </div>
       </div>
 
-      {/* Bottom ScoreBoard */}
+      {/* 5. Bottom Leaderboard */}
       <ScoreBoard
         players={gameState.players}
         activePlayerId={gameState.activePlayer.id}
