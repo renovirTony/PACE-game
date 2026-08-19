@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from './engine/gameState';
 import { FontSizeMode } from './types/game';
 import { TurnHeader } from './components/HUD/TurnHeader';
@@ -21,19 +21,34 @@ export function App() {
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [selectedBotCount, setSelectedBotCount] = useState<number>(2);
-  const [fontSize, setFontSize] = useState<FontSizeMode>('large');
+  
+  // Font Size state with localStorage persistence
+  const [fontSize, setFontSize] = useState<FontSizeMode>(() => {
+    const saved = localStorage.getItem('pace_font_size');
+    return (saved === 'normal' || saved === 'large' || saved === 'xlarge') ? saved : 'large';
+  });
 
-  const fontScaleClass = 
-    fontSize === 'normal' 
-      ? 'font-scale-normal' 
-      : fontSize === 'large' 
-      ? 'font-scale-large' 
-      : 'font-scale-xlarge';
+  // Apply root font-size dynamically to document element
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('font-scale-normal', 'font-scale-large', 'font-scale-xlarge');
+    root.classList.add(`font-scale-${fontSize}`);
+    
+    if (fontSize === 'normal') {
+      root.style.fontSize = '14px';
+    } else if (fontSize === 'large') {
+      root.style.fontSize = '17px';
+    } else {
+      root.style.fontSize = '20px';
+    }
+
+    localStorage.setItem('pace_font_size', fontSize);
+  }, [fontSize]);
 
   // Setup / Welcome Screen
   if (gameState.phase === 'SETUP') {
     return (
-      <div className={`min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-[#070A13] text-slate-100 relative overflow-hidden ${fontScaleClass}`}>
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-[#070A13] text-slate-100 relative overflow-hidden">
         {/* Background decorative radars */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-cyan-500/10 pointer-events-none animate-pulse-slow" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-blue-500/10 pointer-events-none" />
@@ -136,7 +151,7 @@ export function App() {
 
   // Active Game Arena - Redesigned spacious layout
   return (
-    <div className={`min-h-screen p-3 sm:p-5 flex flex-col gap-4 max-w-[1700px] mx-auto text-slate-100 ${fontScaleClass}`}>
+    <div className="min-h-screen p-3 sm:p-5 flex flex-col gap-4 max-w-[1700px] mx-auto text-slate-100">
       {/* 1. Turn Header */}
       <TurnHeader
         round={gameState.round}
