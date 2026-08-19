@@ -5,7 +5,14 @@
 
 ---
 
-## 🎮 遊戲核心概念 (Game Concept)
+## 🎮 線上直接遊玩 (Live Demo)
+
+👉 **點擊立即開始作戰：[https://renovirTony.github.io/PACE-game/](https://renovirTony.github.io/PACE-game/)**  
+*(支援電腦、平板與手機瀏覽器，免安裝即開即玩)*
+
+---
+
+## 🕹️ 遊戲核心概念 (Game Concept)
 
 **PACE 原則** 是美軍與各國災害防救組織的核心準則：
 *   **[P] Primary (主要通訊)**：日常最高頻寬、最便捷之主要通訊管道（例如：5G 行動專網、低軌衛星 Starlink、微波中繼塔）。
@@ -15,7 +22,7 @@
 
 ---
 
-## 🕹️ 遊戲玩法特色 (Key Features)
+## 🌟 遊戲玩法特色 (Key Features)
 
 1.  **智慧 Fallback 備援連通演算法**：
     *   發起危機任務通訊時，系統會智慧依序檢驗 `[P] ➔ [A] ➔ [C] ➔ [E]` 槽位。
@@ -36,7 +43,7 @@
 
 ---
 
-## 🚀 快速開始 (Quick Start)
+## 🚀 本地開發與啟動 (Local Development)
 
 ### 1. 安裝相依套件
 ```bash
@@ -66,5 +73,6 @@ npm run build
 
 ---
 
-## 📜 專案授權
-MIT License
+## 📜 專案授權 (License)
+
+本專案採用 [MIT License](LICENSE) 授權開源。
