@@ -13,13 +13,15 @@ import { TutorialModal } from './components/Modals/TutorialModal';
 import { PACEGuideModal } from './components/Modals/PACEGuideModal';
 import { TransmissionResultModal } from './components/Modals/TransmissionResultModal';
 import { GameOverModal } from './components/Modals/GameOverModal';
+import { CardCompendiumModal } from './components/Modals/CardCompendiumModal';
 import { InteractiveTutorial } from './components/Tutorial/InteractiveTutorial';
-import { Radio, Users, Bot, Shield, GraduationCap, BookOpen } from 'lucide-react';
+import { Radio, Users, Bot, Shield, GraduationCap, BookOpen, Layers } from 'lucide-react';
 
 export function App() {
   const gameState = useGameState();
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isCompendiumOpen, setIsCompendiumOpen] = useState(false);
   const [selectedBotCount, setSelectedBotCount] = useState<number>(2);
   
   // Font Size state with localStorage persistence
@@ -101,7 +103,7 @@ export function App() {
               className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold font-mono text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
             >
               <GraduationCap className="w-5 h-5 text-purple-400" />
-              <span>🎓 進入實戰新手教學 (手把手 7 步操作引導)</span>
+              <span>🎓 進入實戰新手教學 (雙回合 10 步手把手引導)</span>
             </button>
 
             {/* AI Bot Count Setting */}
@@ -123,8 +125,16 @@ export function App() {
             </div>
           </div>
 
-          {/* Quick Guide Actions */}
-          <div className="flex items-center justify-center gap-4 pt-4 border-t border-slate-850 text-xs sm:text-sm font-mono">
+          {/* Quick Guide Actions & Compendium */}
+          <div className="flex items-center justify-center gap-3 sm:gap-4 pt-4 border-t border-slate-850 text-xs sm:text-sm font-mono flex-wrap">
+            <button
+              onClick={() => setIsCompendiumOpen(true)}
+              className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold transition-all"
+            >
+              <Layers className="w-4 h-4 text-purple-400" />
+              <span>🎴 卡片全圖鑑</span>
+            </button>
+            <span className="text-slate-700">|</span>
             <button
               onClick={() => setIsTutorialModalOpen(true)}
               className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-300 transition-all"
@@ -145,6 +155,7 @@ export function App() {
 
         <TutorialModal isOpen={isTutorialModalOpen} onClose={() => setIsTutorialModalOpen(false)} />
         <PACEGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+        <CardCompendiumModal isOpen={isCompendiumOpen} onClose={() => setIsCompendiumOpen(false)} />
       </div>
     );
   }
@@ -164,6 +175,7 @@ export function App() {
         onChangeFontSize={setFontSize}
         onOpenTutorial={() => setIsTutorialModalOpen(true)}
         onOpenGuide={() => setIsGuideOpen(true)}
+        onOpenCompendium={() => setIsCompendiumOpen(true)}
         onReturnToMenu={gameState.returnToMenu}
       />
 
@@ -197,7 +209,10 @@ export function App() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
               {gameState.activeMissions.map(mission => {
-                const isTutorialTarget = gameState.isTutorialMode && gameState.tutorialStep === 5 && mission.id === 'mis_mountain_avalanche';
+                const isTutorialTarget = gameState.isTutorialMode && (
+                  (gameState.tutorialStep === 4 && mission.id === 'mis_mountain_avalanche') ||
+                  (gameState.tutorialStep === 8 && mission.id === 'mis_deep_bunker_evac')
+                );
                 return (
                   <MissionCardView
                     key={mission.id}
@@ -221,7 +236,15 @@ export function App() {
             onBuyEquipment={gameState.buyEquipment}
             onBuyTactic={gameState.buyTactic}
             disabled={gameState.activePlayer.isAI}
-            tutorialHighlightSlot={gameState.isTutorialMode && gameState.tutorialStep === 2 ? 'A' : undefined}
+            tutorialHighlightSlot={
+              gameState.isTutorialMode
+                ? gameState.tutorialStep === 2
+                  ? 'A'
+                  : gameState.tutorialStep === 7
+                  ? 'C'
+                  : undefined
+                : undefined
+            }
           />
         </div>
 
@@ -236,8 +259,8 @@ export function App() {
             onRecharge={gameState.rechargeEnergy}
             onEndTurn={gameState.endTurn}
             tutorialHighlightTactic={gameState.isTutorialMode && gameState.tutorialStep === 3}
-            tutorialHighlightRecharge={gameState.isTutorialMode && gameState.tutorialStep === 4}
-            tutorialHighlightEndTurn={gameState.isTutorialMode && gameState.tutorialStep === 6}
+            tutorialHighlightEndTurn={gameState.isTutorialMode && (gameState.tutorialStep === 5 || gameState.tutorialStep === 9)}
+            tutorialHighlightRecharge={gameState.isTutorialMode && gameState.tutorialStep === 6}
           />
 
           {/* Real-time Combat & Comms Log */}
@@ -265,6 +288,7 @@ export function App() {
       {/* Modals */}
       <TutorialModal isOpen={isTutorialModalOpen} onClose={() => setIsTutorialModalOpen(false)} />
       <PACEGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
+      <CardCompendiumModal isOpen={isCompendiumOpen} onClose={() => setIsCompendiumOpen(false)} />
       <TransmissionResultModal
         data={gameState.lastTransmission}
         onClose={gameState.clearLastTransmission}

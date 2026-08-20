@@ -30,6 +30,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
   if (!winner) return null;
 
   const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  const currentWinner = players.find(p => p.id === winner.id) || winner || sortedPlayers[0];
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
@@ -46,7 +47,7 @@ export const GameOverModal: React.FC<GameOverModalProps> = ({
           作戰任務圓滿達成！
         </h2>
         <p className="text-xs sm:text-sm text-amber-400 font-mono mb-4">
-          冠軍指揮官：【{winner.name}】以 {winner.score} VP 奪得全場最高榮譽！
+          冠軍指揮官：【{currentWinner.name}】以 {currentWinner.score} VP 奪得全場最高榮譽！
         </p>
 
         {/* Leaderboard Table */}

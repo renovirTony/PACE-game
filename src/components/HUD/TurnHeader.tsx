@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Player, FontSizeMode } from '../../types/game';
-import { Radio, Volume2, VolumeX, BookOpen, Shield, Home, Type, GraduationCap } from 'lucide-react';
+import { Radio, Volume2, VolumeX, BookOpen, Shield, Home, Type, GraduationCap, Layers } from 'lucide-react';
 import { audioManager } from '../../engine/audio';
 
 interface TurnHeaderProps {
@@ -14,6 +14,7 @@ interface TurnHeaderProps {
   onChangeFontSize: (size: FontSizeMode) => void;
   onOpenTutorial: () => void;
   onOpenGuide: () => void;
+  onOpenCompendium: () => void;
   onReturnToMenu: () => void;
 }
 
@@ -28,6 +29,7 @@ export const TurnHeader: React.FC<TurnHeaderProps> = ({
   onChangeFontSize,
   onOpenTutorial,
   onOpenGuide,
+  onOpenCompendium,
   onReturnToMenu,
 }) => {
   const [isMuted, setIsMuted] = useState(audioManager.getMuted());
@@ -128,6 +130,15 @@ export const TurnHeader: React.FC<TurnHeaderProps> = ({
           }`}
         >
           {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </button>
+
+        {/* Card Compendium Modal */}
+        <button
+          onClick={onOpenCompendium}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-purple-950/40 hover:bg-purple-900/60 border border-purple-500/40 text-purple-300 text-xs sm:text-sm font-mono font-semibold transition-all"
+        >
+          <Layers className="w-4 h-4 text-purple-400" />
+          <span>卡片圖鑑</span>
         </button>
 
         {/* Rulebook Modal */}

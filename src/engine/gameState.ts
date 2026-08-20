@@ -291,7 +291,7 @@ export function useGameState(): UseGameStateReturn {
     const restTactics = TACTIC_CARDS.filter(t => t.id !== genTactic.id && t.id !== airTactic.id);
 
     const mission1 = CRISIS_MISSIONS.find(m => m.id === 'mis_mountain_avalanche') || CRISIS_MISSIONS[1];
-    const mission2 = CRISIS_MISSIONS.find(m => m.id === 'mis_hostile_jamming_breakthrough') || CRISIS_MISSIONS[6];
+    const mission2 = CRISIS_MISSIONS.find(m => m.id === 'mis_deep_bunker_evac') || CRISIS_MISSIONS[3];
     const mission3 = CRISIS_MISSIONS.find(m => m.id === 'mis_high_res_recon') || CRISIS_MISSIONS[0];
     const restMissions = CRISIS_MISSIONS.filter(m => m.id !== mission1.id && m.id !== mission2.id && m.id !== mission3.id);
 
@@ -440,8 +440,12 @@ export function useGameState(): UseGameStateReturn {
     );
 
     // 教學步驟推進
-    if (isTutorialMode && tutorialStep === 2) {
-      setTutorialStep(3);
+    if (isTutorialMode) {
+      if (tutorialStep === 2) {
+        setTutorialStep(3);
+      } else if (tutorialStep === 7) {
+        setTutorialStep(8);
+      }
     }
 
     return true;
@@ -553,8 +557,8 @@ export function useGameState(): UseGameStateReturn {
     audioManager.playClick();
     addLog('action', '進行野戰充能，電量 +2 ⚡', activePlayer.id, activePlayer.name);
 
-    if (isTutorialMode && tutorialStep === 4) {
-      setTutorialStep(5);
+    if (isTutorialMode && tutorialStep === 6) {
+      setTutorialStep(7);
     }
 
     return true;
@@ -626,15 +630,37 @@ export function useGameState(): UseGameStateReturn {
         activePlayer.name
       );
 
-      if (isTutorialMode && tutorialStep === 5) {
-        setTutorialStep(6);
+      if (isTutorialMode) {
+        if (tutorialStep === 4) {
+          setTutorialStep(5);
+        } else if (tutorialStep === 8) {
+          setTutorialStep(9);
+        }
       }
 
       // 檢查是否達成獲勝分數 (非教學模式)
       if (!isTutorialMode && activePlayer.score + earnedVP >= targetScore) {
         audioManager.playVictoryFanfare();
         setPhase('GAME_OVER');
-        setWinner(activePlayer);
+        const isFallback = result.fallbackDepth > 0;
+        const updatedWinner: Player = {
+          ...activePlayer,
+          score: activePlayer.score + earnedVP,
+          credits: activePlayer.credits + earnedCredits,
+          energy: Math.max(0, activePlayer.energy - consumedEnergy),
+          actionPoints: activePlayer.actionPoints - 1,
+          completedMissions: [...activePlayer.completedMissions, mission.id],
+          stats: {
+            ...activePlayer.stats,
+            transmissions: activePlayer.stats.transmissions + 1,
+            fallbacksTriggered: activePlayer.stats.fallbacksTriggered + (isFallback ? 1 : 0),
+            pSuccesses: activePlayer.stats.pSuccesses + (result.successfulSlot === 'P' ? 1 : 0),
+            aSuccesses: activePlayer.stats.aSuccesses + (result.successfulSlot === 'A' ? 1 : 0),
+            cSuccesses: activePlayer.stats.cSuccesses + (result.successfulSlot === 'C' ? 1 : 0),
+            eSuccesses: activePlayer.stats.eSuccesses + (result.successfulSlot === 'E' ? 1 : 0),
+          }
+        };
+        setWinner(updatedWinner);
         addLog('success', `🏆 玩家【${activePlayer.name}】率先達到 ${targetScore} VP 獲勝！`, activePlayer.id, activePlayer.name);
       }
     } else {
@@ -650,10 +676,24 @@ export function useGameState(): UseGameStateReturn {
     if (phase === 'GAME_OVER') return;
 
     if (isTutorialMode) {
-      if (tutorialStep === 6) {
-        setTutorialStep(7);
+      if (tutorialStep === 5) {
+        // 第一回合結束，推進至第二回合
+        setRound(2);
+        setPlayers(prev => prev.map(p => ({
+          ...p,
+          actionPoints: p.maxActionPoints,
+          energy: Math.min(p.maxEnergy - 2, p.energy), // 確保電量有空間進行野戰充能 (+2⚡)
+          credits: p.credits + 1
+        })));
+        setTutorialStep(6);
+        audioManager.playAlertSound();
+        addLog('info', '👨‍🏫 教官席格諾：「第一回合防線演練出色！進入第 2 回合，AP 已重置為 3 點，現在讓我們學習野戰手搖充能與深入備援！」');
+        return;
+      }
+      if (tutorialStep === 9) {
+        setTutorialStep(10);
         audioManager.playVictoryFanfare();
-        addLog('success', '🎉 恭喜完成新手實戰教學！已掌握所有關鍵操作與 PACE 原理！');
+        addLog('success', '🎉 恭喜完成兩回合完整實戰新手教學！已掌握所有關鍵操作與 PACE 原理！');
         return;
       }
     }
