@@ -15,7 +15,7 @@ import { TransmissionResultModal } from './components/Modals/TransmissionResultM
 import { GameOverModal } from './components/Modals/GameOverModal';
 import { CardCompendiumModal } from './components/Modals/CardCompendiumModal';
 import { InteractiveTutorial } from './components/Tutorial/InteractiveTutorial';
-import { Radio, Users, Bot, Shield, GraduationCap, BookOpen, Layers } from 'lucide-react';
+import { Radio, Users, Bot, Shield, GraduationCap, BookOpen, Layers, Sparkles, X } from 'lucide-react';
 
 export function App() {
   const gameState = useGameState();
@@ -23,6 +23,7 @@ export function App() {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isCompendiumOpen, setIsCompendiumOpen] = useState(false);
   const [selectedBotCount, setSelectedBotCount] = useState<number>(2);
+  const [hasNewVersion, setHasNewVersion] = useState(false);
   
   // Font Size state with localStorage persistence
   const [fontSize, setFontSize] = useState<FontSizeMode>(() => {
@@ -46,6 +47,38 @@ export function App() {
 
     localStorage.setItem('pace_font_size', fontSize);
   }, [fontSize]);
+
+  // Periodic and on-focus version check to detect new deployments automatically
+  useEffect(() => {
+    const checkVersion = async () => {
+      try {
+        const res = await fetch(`./version.json?_t=${Date.now()}`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.buildTime && typeof __APP_BUILD_TIME__ !== 'undefined' && data.buildTime !== __APP_BUILD_TIME__) {
+            setHasNewVersion(true);
+          }
+        }
+      } catch {
+        // ignore offline / network errors
+      }
+    };
+
+    const timer = setTimeout(checkVersion, 3000);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkVersion();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    const interval = setInterval(checkVersion, 2 * 60 * 1000);
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
 
   // Setup / Welcome Screen
   if (gameState.phase === 'SETUP') {
@@ -153,6 +186,29 @@ export function App() {
           </div>
         </div>
 
+        {/* New Version Alert Banner */}
+        {hasNewVersion && (
+          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 border border-cyan-300 text-slate-950 shadow-2xl backdrop-blur-md font-mono text-xs sm:text-sm font-black">
+              <Sparkles className="w-4 h-4 text-slate-950 animate-spin" />
+              <span>PACE 通訊先鋒發布了最新版本！</span>
+              <button
+                onClick={() => window.location.reload()}
+                className="px-3 py-1 rounded-xl bg-slate-950 hover:bg-slate-900 text-cyan-300 border border-cyan-400/50 text-xs font-bold transition-all active:scale-95"
+              >
+                立即載入
+              </button>
+              <button
+                onClick={() => setHasNewVersion(false)}
+                className="p-1 text-slate-950 hover:text-white"
+                title="關閉提示"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        )}
+
         <TutorialModal isOpen={isTutorialModalOpen} onClose={() => setIsTutorialModalOpen(false)} />
         <PACEGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
         <CardCompendiumModal isOpen={isCompendiumOpen} onClose={() => setIsCompendiumOpen(false)} />
@@ -162,7 +218,29 @@ export function App() {
 
   // Active Game Arena - Redesigned spacious layout
   return (
-    <div className="min-h-screen p-3 sm:p-5 flex flex-col gap-4 max-w-[1700px] mx-auto text-slate-100">
+    <div className="min-h-screen p-3 sm:p-5 flex flex-col gap-4 max-w-[1700px] mx-auto text-slate-100 relative">
+      {/* New Version Alert Banner */}
+      {hasNewVersion && (
+        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce">
+          <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 border border-cyan-300 text-slate-950 shadow-2xl backdrop-blur-md font-mono text-xs sm:text-sm font-black">
+            <Sparkles className="w-4 h-4 text-slate-950 animate-spin" />
+            <span>PACE 通訊先鋒發布了最新版本！</span>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-3 py-1 rounded-xl bg-slate-950 hover:bg-slate-900 text-cyan-300 border border-cyan-400/50 text-xs font-bold transition-all active:scale-95"
+            >
+              立即載入
+            </button>
+            <button
+              onClick={() => setHasNewVersion(false)}
+              className="p-1 text-slate-950 hover:text-white"
+              title="關閉提示"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        </div>
+      )}
       {/* 1. Turn Header */}
       <TurnHeader
         round={gameState.round}
