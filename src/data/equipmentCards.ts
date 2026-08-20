@@ -213,12 +213,12 @@ export const EQUIPMENT_CARDS: CommsCard[] = [
     resilience: {
       empShield: true,
       weatherResistant: true,
-      subterranean: true
+      subterranean: false
     },
-    effectDesc: '手搖發電、零電池依賴！完全免疫 EMP 與電磁干擾，可深入坑道地下。',
+    effectDesc: '手搖發電、零電池依賴！完全免疫 EMP 與電磁干擾，是核突擊與電子戰下的終極有線防線。',
     iconName: 'PhoneCall',
     flavorText: '銅線鋪到哪裡，聲音就能傳到哪裡。最原始卻最牢不可破的防線。',
-    tags: ['手搖發電', '完全抗EMP', '地下坑道']
+    tags: ['手搖發電', '完全抗EMP', '實體雙絞線']
   },
   {
     id: 'c_drone_packet_courier',

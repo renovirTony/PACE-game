@@ -43,10 +43,10 @@ export const CRISIS_MISSIONS: CrisisMission[] = [
   {
     id: 'mis_deep_bunker_evac',
     title: '地下指揮坑道崩塌救援',
-    description: '地下三層防空掩體入口被瓦礫封死，常規無線電無法穿透數公尺厚的鋼筋混凝土，需要穿透型或有線通訊！',
+    description: '地下三層防空掩體入口被瓦礫封死，常規無線電無法穿透數公尺厚的鋼筋混凝土，外部線路全斷，需要穿透型地底震波通訊！',
     vp: 4,
     creditReward: 2,
-    requiredRange: ['Local', 'Penetrating'],
+    requiredRange: ['Penetrating'],
     requiresSubterranean: true,
     urgency: 'High',
     iconName: 'Layers',

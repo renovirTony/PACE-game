@@ -289,7 +289,7 @@ export function App() {
               {gameState.activeMissions.map(mission => {
                 const isTutorialTarget = gameState.isTutorialMode && (
                   (gameState.tutorialStep === 4 && mission.id === 'mis_mountain_avalanche') ||
-                  (gameState.tutorialStep === 8 && mission.id === 'mis_deep_bunker_evac')
+                  (gameState.tutorialStep === 8 && mission.id === 'mis_cyber_emp_strike')
                 );
                 return (
                   <MissionCardView

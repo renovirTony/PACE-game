@@ -291,7 +291,7 @@ export function useGameState(): UseGameStateReturn {
     const restTactics = TACTIC_CARDS.filter(t => t.id !== genTactic.id && t.id !== airTactic.id);
 
     const mission1 = CRISIS_MISSIONS.find(m => m.id === 'mis_mountain_avalanche') || CRISIS_MISSIONS[1];
-    const mission2 = CRISIS_MISSIONS.find(m => m.id === 'mis_deep_bunker_evac') || CRISIS_MISSIONS[3];
+    const mission2 = CRISIS_MISSIONS.find(m => m.id === 'mis_cyber_emp_strike') || CRISIS_MISSIONS[2];
     const mission3 = CRISIS_MISSIONS.find(m => m.id === 'mis_high_res_recon') || CRISIS_MISSIONS[0];
     const restMissions = CRISIS_MISSIONS.filter(m => m.id !== mission1.id && m.id !== mission2.id && m.id !== mission3.id);
 
