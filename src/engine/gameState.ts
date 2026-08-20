@@ -120,6 +120,7 @@ export function useGameState(): UseGameStateReturn {
     setGameMode(mode);
     setBotCount(bots);
     setIsTutorialMode(false);
+    setLogs([]); // 清空前幾局遊戲與新手教學之作戰日誌
 
     // 準備卡牌庫
     const shuffledEquip = shuffleArray(EQUIPMENT_CARDS);
@@ -138,11 +139,14 @@ export function useGameState(): UseGameStateReturn {
     const initialEvent = shuffledEvents[0];
     const restEvents = shuffledEvents.slice(1);
 
+    // 隨機洗牌初始主要裝備 [P] 卡片，確保每局每位玩家獲得隨機初始裝備
+    const shuffledStarters = shuffleArray(STARTER_PRIMARY_CARDS);
+
     // 玩家配置
     const newPlayers: Player[] = [];
     
     // 主玩家
-    const starterCard1 = STARTER_PRIMARY_CARDS[0];
+    const starterCard1 = shuffledStarters[0];
     newPlayers.push({
       id: 'player_1',
       name: '指揮官 (Player 1)',
@@ -182,7 +186,7 @@ export function useGameState(): UseGameStateReturn {
 
       for (let i = 0; i < bots; i++) {
         const cfg = botConfigs[i % botConfigs.length];
-        const botStarter = STARTER_PRIMARY_CARDS[(i + 1) % STARTER_PRIMARY_CARDS.length];
+        const botStarter = shuffledStarters[(i + 1) % shuffledStarters.length];
         newPlayers.push({
           id: `bot_${i + 1}`,
           name: cfg.name,
@@ -217,7 +221,7 @@ export function useGameState(): UseGameStateReturn {
     } else {
       // 本地 Pass & Play
       for (let i = 2; i <= 2; i++) {
-        const pStarter = STARTER_PRIMARY_CARDS[(i - 1) % STARTER_PRIMARY_CARDS.length];
+        const pStarter = shuffledStarters[(i - 1) % shuffledStarters.length];
         newPlayers.push({
           id: `player_${i}`,
           name: `指揮官 (Player ${i})`,
@@ -275,6 +279,7 @@ export function useGameState(): UseGameStateReturn {
     setTutorialStep(1);
     setGameMode('SinglePlayer');
     setBotCount(1);
+    setLogs([]); // 清空前局作戰日誌
 
     // 準備固定且具教學意義的卡牌組合
     const starterP = STARTER_PRIMARY_CARDS[0]; // 5G Mesh Cell
@@ -843,6 +848,7 @@ export function useGameState(): UseGameStateReturn {
 
   const returnToMenu = useCallback(() => {
     setIsTutorialMode(false);
+    setLogs([]);
     setPhase('SETUP');
   }, []);
 
