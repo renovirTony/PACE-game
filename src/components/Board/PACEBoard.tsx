@@ -128,12 +128,12 @@ export const PACEBoard: React.FC<PACEBoardProps> = ({ player, highlight = false 
           return (
             <div key={slotDef.slot} className="relative flex flex-col h-full">
               {/* Slot Indicator Header */}
-              <div className="flex items-center justify-between px-3.5 py-2 rounded-t-xl bg-slate-900/90 border-t border-x border-slate-800 text-xs sm:text-sm font-mono">
+              <div className="flex items-center justify-between px-3.5 py-2.5 rounded-t-2xl bg-slate-900/90 border-t border-x border-slate-800 text-xs sm:text-sm font-mono">
                 <div className="flex items-center gap-1.5">
                   {slotDef.icon}
-                  <span className={`font-bold ${slotDef.color}`}>{slotDef.title}</span>
+                  <span className={`font-black ${slotDef.color}`}>{slotDef.title}</span>
                   {hasFaradayBuff && (
-                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-900/80 text-purple-200 border border-purple-400/40">
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-lg bg-purple-900/80 text-purple-200 border border-purple-400/40">
                       🛡️ 抗EMP
                     </span>
                   )}
@@ -148,27 +148,27 @@ export const PACEBoard: React.FC<PACEBoardProps> = ({ player, highlight = false 
 
               {/* Slot Body */}
               <div
-                className={`flex-1 rounded-b-xl border border-dashed transition-all p-3 flex flex-col justify-between ${
+                className={`flex-1 rounded-b-2xl border border-dashed transition-all p-3 flex flex-col justify-between ${
                   card
                     ? 'border-solid border-slate-700 bg-slate-900/40'
-                    : `${slotDef.borderColor} ${slotDef.bgGlow} flex flex-col items-center justify-center min-h-[220px] text-center`
+                    : `${slotDef.borderColor} ${slotDef.bgGlow} flex flex-col items-center justify-center min-h-[230px] text-center`
                 }`}
               >
                 {card ? (
                   <EquipmentCardView card={card} isEquipped={true} compact={false} />
                 ) : (
                   <div className="p-4 flex flex-col items-center justify-center text-center my-auto">
-                    <div className="p-3.5 rounded-full bg-black/40 mb-2.5 text-slate-500 border border-white/5">
+                    <div className="p-3.5 rounded-2xl bg-black/40 mb-2.5 text-slate-500 border border-white/5 shadow-inner">
                       <AlertCircle className="w-7 h-7" />
                     </div>
                     <span className={`text-sm font-bold font-mono mb-1.5 ${slotDef.color}`}>
-                      未裝備 [{slotDef.slot}] 通訊手段
+                      未裝備 [{slotDef.slot}] 通訊防線
                     </span>
                     <p className="text-xs text-slate-400 leading-relaxed max-w-xs">
                       {slotDef.desc}
                     </p>
-                    <span className="mt-3 text-xs text-cyan-400/90 font-mono bg-cyan-950/40 px-2.5 py-1 rounded-lg border border-cyan-500/20">
-                      可由下方補給庫採購安裝
+                    <span className="mt-3 text-xs text-cyan-400/90 font-mono bg-cyan-950/60 px-3 py-1 rounded-xl border border-cyan-500/30">
+                      可由補給庫採購安裝
                     </span>
                   </div>
                 )}

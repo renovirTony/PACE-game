@@ -15,7 +15,10 @@ export function checkCardEligibility(
   // 1. 檢查電量
   const effectivePowerCost = card.powerCost + (event?.powerDrainBonus || 0);
   if (player.energy < effectivePowerCost) {
-    return { eligible: false, blockedReason: `電量不足 (需 ${effectivePowerCost}⚡，目前 ${player.energy}⚡)` };
+    return { 
+      eligible: false, 
+      blockedReason: `⚡ 電量不足 (需 ${effectivePowerCost}⚡，目前 ${player.energy}⚡，請進行野戰充能或使用發電機)` 
+    };
   }
 
   // 計算有效 EMP 抗性 (含法拉第抗干擾遮蔽戰術卡 Buff)
@@ -31,29 +34,44 @@ export function checkCardEligibility(
       if (event.id === 'evt_emp_strike' && hasEmpShield) {
         // EMP 防護生效，維持通訊！
       } else {
-        return { eligible: false, blockedReason: `環境事件 [${event.title}] 封鎖了 ${slot} 槽位` };
+        return { 
+          eligible: false, 
+          blockedReason: `🌪️ 環境事件【${event.title}】癱瘓了 [${slot}] 槽位` 
+        };
       }
     }
     if (event.blockedCategories && event.blockedCategories.includes(card.category)) {
-      return { eligible: false, blockedReason: `環境事件封鎖了 ${card.category} 類別設備` };
+      return { 
+        eligible: false, 
+        blockedReason: `🚫 環境災害阻斷了【${card.category}】類別設備的訊號傳輸` 
+      };
     }
   }
 
   // 3. 檢查任務特定限制
   if (mission.restrictedSlots && mission.restrictedSlots.includes(slot)) {
-    return { eligible: false, blockedReason: `任務限制：無法使用 ${slot} 槽位` };
+    return { 
+      eligible: false, 
+      blockedReason: `⚠️ 任務限制：敵情或地形阻絕，無法使用 [${slot}] 槽位` 
+    };
   }
 
   if (mission.minSlotRequirement) {
     const minIndex = PACE_ORDER.indexOf(mission.minSlotRequirement);
     const currentIndex = PACE_ORDER.indexOf(slot);
     if (currentIndex < minIndex) {
-      return { eligible: false, blockedReason: `任務指定最低必須使用 [${mission.minSlotRequirement}] 級別或更強韌之應急手段` };
+      return { 
+        eligible: false, 
+        blockedReason: `🛡️ 任務指定需使用 [${mission.minSlotRequirement}] 級以上之強韌應急手段` 
+      };
     }
   }
 
   if (mission.requiredCategory && !mission.requiredCategory.includes(card.category)) {
-    return { eligible: false, blockedReason: `任務指定設備類型不符 (需: ${mission.requiredCategory.join('/')})` };
+    return { 
+      eligible: false, 
+      blockedReason: `📻 設備類型不符 (需: ${mission.requiredCategory.join('/')}，當前為: ${card.category})` 
+    };
   }
 
   // 4. 檢查覆蓋範圍 (Range，支援高功率射頻超頻 Overclock Buff)
@@ -74,29 +92,47 @@ export function checkCardEligibility(
 
     const rangeMatch = mission.requiredRange.some(req => effectiveRanges.includes(req));
     if (!rangeMatch) {
-      return { eligible: false, blockedReason: `通訊距離不足 (需 ${mission.requiredRange.join('或')})` };
+      return { 
+        eligible: false, 
+        blockedReason: `📡 通訊距離不足 (需 ${mission.requiredRange.join('/')}，當前為 ${card.range}${player.activeBuffs?.overclockRange && isWireless ? '，已超頻' : ''})` 
+      };
     }
   }
 
   // 5. 檢查頻寬需求 (Bandwidth)
   if (mission.requiredBandwidth) {
     if (mission.requiredBandwidth === 'High' && card.bandwidth !== 'High') {
-      return { eligible: false, blockedReason: `頻寬不足 (需 High 高頻寬)` };
+      return { 
+        eligible: false, 
+        blockedReason: `📊 頻寬不足 (任務需 High 高畫質傳輸，當前為 ${card.bandwidth})` 
+      };
     }
     if (mission.requiredBandwidth === 'Medium' && card.bandwidth === 'Low') {
-      return { eligible: false, blockedReason: `頻寬不足 (需 Medium 以上)` };
+      return { 
+        eligible: false, 
+        blockedReason: `📊 頻寬不足 (任務需 Medium 以上頻寬，當前為 Low)` 
+      };
     }
   }
 
   // 6. 檢查抗性要求 (EMP / 天候 / 地底)
   if (mission.requiresEmpShield && !hasEmpShield) {
-    return { eligible: false, blockedReason: `缺乏 EMP / 抗電磁脈衝防護` };
+    return { 
+      eligible: false, 
+      blockedReason: `⚡ 缺乏 EMP 抗脈衝防護 (可使用法拉第遮蔽卡或軍規抗 EMP 設備)` 
+    };
   }
   if (mission.requiresWeatherResist && !card.resilience.weatherResistant) {
-    return { eligible: false, blockedReason: `缺乏惡劣天候耐受力 (風暴/極溫)` };
+    return { 
+      eligible: false, 
+      blockedReason: `🌧️ 缺乏惡劣天候耐受力 (遭暴風雨雪阻斷，需具備全天候防護設備)` 
+    };
   }
   if (mission.requiresSubterranean && !card.resilience.subterranean) {
-    return { eligible: false, blockedReason: `缺乏地底/穿透掩體能力` };
+    return { 
+      eligible: false, 
+      blockedReason: `🕳️ 無法穿透地底掩體 (需具備地底震波或特種穿透設備)` 
+    };
   }
 
   return { eligible: true };

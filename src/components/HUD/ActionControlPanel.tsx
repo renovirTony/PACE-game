@@ -26,6 +26,8 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
   tutorialHighlightTactic = false,
   tutorialHighlightEndTurn = false,
 }) => {
+  const isEnergyFull = player.energy >= player.maxEnergy;
+
   return (
     <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:p-5 shadow-xl backdrop-blur-md flex flex-col gap-4">
       {/* Top Action Points & Quick Controls */}
@@ -37,9 +39,9 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
             {Array.from({ length: player.maxActionPoints }).map((_, i) => (
               <div
                 key={i}
-                className={`w-7 h-7 rounded-lg flex items-center justify-center text-xs sm:text-sm font-bold font-mono border transition-all ${
+                className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs sm:text-sm font-black font-mono border transition-all ${
                   i < player.actionPoints
-                    ? 'bg-cyan-500 border-cyan-400 text-slate-950 shadow-md shadow-cyan-500/30'
+                    ? 'bg-cyan-500 border-cyan-300 text-slate-950 shadow-md shadow-cyan-500/40 animate-pulse'
                     : 'bg-slate-900 border-slate-800 text-slate-600'
                 }`}
               >
@@ -54,17 +56,18 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
           {/* Recharge Button */}
           <button
             onClick={onRecharge}
-            disabled={!isCurrentPlayer || isAI || player.actionPoints <= 0 || player.energy >= player.maxEnergy}
-            className={`flex-1 sm:flex-initial py-2 px-4 rounded-xl text-xs sm:text-sm font-bold font-mono flex items-center justify-center gap-2 border transition-all ${
+            disabled={!isCurrentPlayer || isAI || player.actionPoints <= 0 || isEnergyFull}
+            title={isEnergyFull ? '蓄電池已滿，無需充能' : '消耗 1 AP 進行野戰手搖充能 +2 ⚡'}
+            className={`flex-1 sm:flex-initial py-2 px-3.5 rounded-xl text-xs sm:text-sm font-bold font-mono flex items-center justify-center gap-2 border transition-all ${
               tutorialHighlightRecharge ? 'tutorial-spotlight ring-2 ring-amber-400' : ''
             } ${
-              isCurrentPlayer && !isAI && player.actionPoints > 0 && player.energy < player.maxEnergy
+              isCurrentPlayer && !isAI && player.actionPoints > 0 && !isEnergyFull
                 ? 'bg-amber-950/70 border-amber-500/50 text-amber-300 hover:bg-amber-900/70 active:scale-95 shadow-sm'
                 : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
             }`}
           >
             <BatteryCharging className="w-4 h-4 text-amber-400" />
-            <span>野戰充能 (+2⚡) [1 AP]</span>
+            <span>{isEnergyFull ? '電量已充飽 (滿格)' : '野戰充能 (+2⚡) [1 AP]'}</span>
           </button>
 
           {/* End Turn Button */}
@@ -91,7 +94,7 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
           <span className="text-xs sm:text-sm font-mono font-bold text-purple-300 flex items-center gap-2">
             <span>戰術手牌 ({player.handTactics.length}/4)</span>
           </span>
-          <span className="text-xs text-slate-400 font-mono">點擊啟動效果 (消耗 1 AP)</span>
+          <span className="text-xs text-slate-400 font-mono">點擊手牌立即發動效果 (消耗 1 AP)</span>
         </div>
 
         {player.handTactics.length > 0 ? (
@@ -108,8 +111,8 @@ export const ActionControlPanel: React.FC<ActionControlPanelProps> = ({
             ))}
           </div>
         ) : (
-          <div className="py-4 px-4 rounded-xl border border-dashed border-slate-800 text-center text-slate-500 text-xs sm:text-sm font-mono">
-            目前無戰術手牌，可至左側商場採購
+          <div className="py-4 px-4 rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 text-center text-slate-500 text-xs sm:text-sm font-mono">
+            目前無戰術手牌，可於左側補給庫採購
           </div>
         )}
       </div>

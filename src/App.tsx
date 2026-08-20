@@ -80,109 +80,142 @@ export function App() {
     };
   }, []);
 
-  // Setup / Welcome Screen
+  // Setup / Welcome Screen (Redesigned with M.A.P.S)
   if (gameState.phase === 'SETUP') {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-[#070A13] text-slate-100 relative overflow-hidden">
+      <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#060913] text-slate-100 relative overflow-hidden">
         {/* Background decorative radars */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full border border-cyan-500/10 pointer-events-none animate-pulse-slow" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] rounded-full border border-blue-500/10 pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-cyan-500/10 pointer-events-none animate-pulse-slow" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full border border-blue-500/10 pointer-events-none" />
 
-        <div className="relative z-10 max-w-2xl w-full rounded-3xl border border-cyan-500/30 bg-slate-950/90 p-6 sm:p-8 shadow-2xl backdrop-blur-xl text-center">
-          {/* Logo */}
-          <div className="inline-flex p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-4 shadow-inner">
-            <Radio className="w-12 h-12 animate-pulse" />
-          </div>
+        <div className="relative z-10 max-w-5xl w-full rounded-3xl border border-cyan-500/30 bg-slate-950/90 p-6 sm:p-10 shadow-2xl backdrop-blur-2xl">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            {/* Left Column: Brand & PACE Philosophy Live Preview */}
+            <div className="lg:col-span-6 flex flex-col items-start text-left">
+              {/* Logo */}
+              <div className="inline-flex p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-4 shadow-inner">
+                <Radio className="w-10 h-10 animate-pulse" />
+              </div>
 
-          <h1 className="text-2xl sm:text-4xl font-black font-orbitron tracking-wider text-slate-100 mb-2">
-            PACE <span className="text-cyan-400">通訊先鋒</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-cyan-300/80 font-mono mb-6 tracking-widest uppercase">
-            Comms Protocol · 戰術應急通訊網頁桌遊
-          </p>
+              <div className="flex items-center gap-2 mb-2 flex-wrap">
+                <span className="text-xs font-black font-mono px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 tracking-wider uppercase">
+                  Tactical Board Game
+                </span>
+                <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-purple-950 text-purple-300 border border-purple-500/40">
+                  M.A.P.S 認知架構
+                </span>
+              </div>
 
-          <p className="text-xs sm:text-sm text-slate-200 leading-relaxed mb-6 bg-slate-900/60 p-4 rounded-xl border border-slate-800 text-left">
-            在充滿突發危機、電磁脈衝 (EMP)、雪崩與全頻干擾的極端戰場中，組建屬於你的{' '}
-            <strong className="text-cyan-400">[P] 主要</strong>、
-            <strong className="text-blue-400">[A] 備用</strong>、
-            <strong className="text-amber-400">[C] 應急</strong>、
-            <strong className="text-red-400">[E] 緊急</strong> 四重通訊防線，
-            即時連通搜救與戰術任務，奪得全場最高榮譽！
-          </p>
+              <h1 className="text-3xl sm:text-5xl font-black font-orbitron tracking-wider text-slate-100 mb-3">
+                PACE <span className="text-cyan-400">通訊先鋒</span>
+              </h1>
 
-          {/* Mode Selection */}
-          <div className="space-y-3 mb-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <button
-                onClick={() => gameState.startGame('SinglePlayer', selectedBotCount)}
-                className="flex-1 p-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-black font-mono text-sm tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.98]"
-              >
-                <Bot className="w-5 h-5" />
-                <span>單人對戰 vs AI</span>
-              </button>
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5">
+                在充斥強烈電磁脈衝 (EMP)、雪崩與全頻干擾的極端戰場中，組建四重應急通訊防線，即時連通搜救任務奪得勝利！
+              </p>
 
-              <button
-                onClick={() => gameState.startGame('PassAndPlay')}
-                className="flex-1 p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold font-mono text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
-              >
-                <Users className="w-5 h-5" />
-                <span>同機雙人 (Pass & Play)</span>
-              </button>
+              {/* Live PACE Mini Preview (A - Applicable & P - Patterns) */}
+              <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs mb-2">
+                <div className="p-2.5 rounded-xl bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 shadow-inner">
+                  <span className="font-black block text-[11px]">[P] Primary</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">5G專網/衛星</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-blue-950/50 border border-blue-500/40 text-blue-300 shadow-inner">
+                  <span className="font-black block text-[11px]">[A] Alternate</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">軍規跳頻電台</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-amber-950/50 border border-amber-500/40 text-amber-300 shadow-inner">
+                  <span className="font-black block text-[11px]">[C] Contingency</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">手搖有線/震波</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-red-950/50 border border-red-500/40 text-red-300 shadow-inner">
+                  <span className="font-black block text-[11px]">[E] Emergency</span>
+                  <span className="text-[10px] text-slate-400 block mt-0.5">光學信差/信鴿</span>
+                </div>
+              </div>
             </div>
 
-            {/* Interactive Tutorial Button (Dedicated Entrance on Home) */}
-            <button
-              onClick={gameState.startTutorial}
-              className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold font-mono text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
-            >
-              <GraduationCap className="w-5 h-5 text-purple-400" />
-              <span>🎓 進入實戰新手教學 (雙回合 10 步手把手引導)</span>
-            </button>
+            {/* Right Column: Game Mode Selection & Onboarding (M - Minimal & S - Step-by-Step) */}
+            <div className="lg:col-span-6 flex flex-col gap-4 bg-slate-900/60 p-6 rounded-3xl border border-slate-800">
+              <span className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
+                <Sparkles className="w-4 h-4 text-cyan-400" /> 選擇作戰演習模式 (Game Mode)
+              </span>
 
-            {/* AI Bot Count Setting */}
-            <div className="flex items-center justify-center gap-3 text-xs sm:text-sm font-mono text-slate-400 pt-2">
-              <span>AI 對手數量:</span>
-              {[1, 2, 3].map(count => (
+              {/* Mode Selection Buttons */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
-                  key={count}
-                  onClick={() => setSelectedBotCount(count)}
-                  className={`px-3.5 py-1.5 rounded-lg border text-xs sm:text-sm font-bold transition-all ${
-                    selectedBotCount === count
-                      ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-sm'
-                      : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
-                  }`}
+                  onClick={() => gameState.startGame('SinglePlayer', selectedBotCount)}
+                  className="p-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-black font-mono text-sm tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.98]"
                 >
-                  {count} 位 AI
+                  <Bot className="w-5 h-5" />
+                  <span>單人作戰 vs AI</span>
                 </button>
-              ))}
-            </div>
-          </div>
 
-          {/* Quick Guide Actions & Compendium */}
-          <div className="flex items-center justify-center gap-3 sm:gap-4 pt-4 border-t border-slate-850 text-xs sm:text-sm font-mono flex-wrap">
-            <button
-              onClick={() => setIsCompendiumOpen(true)}
-              className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold transition-all"
-            >
-              <Layers className="w-4 h-4 text-purple-400" />
-              <span>🎴 卡片全圖鑑</span>
-            </button>
-            <span className="text-slate-700">|</span>
-            <button
-              onClick={() => setIsTutorialModalOpen(true)}
-              className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-300 transition-all"
-            >
-              <BookOpen className="w-4 h-4 text-cyan-400" />
-              <span>遊戲規則手冊</span>
-            </button>
-            <span className="text-slate-700">|</span>
-            <button
-              onClick={() => setIsGuideOpen(true)}
-              className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-300 transition-all"
-            >
-              <Shield className="w-4 h-4 text-cyan-400" />
-              <span>PACE 原理科普</span>
-            </button>
+                <button
+                  onClick={() => gameState.startGame('PassAndPlay')}
+                  className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold font-mono text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
+                >
+                  <Users className="w-5 h-5" />
+                  <span>同機雙人輪流</span>
+                </button>
+              </div>
+
+              {/* AI Bot Count Setting */}
+              <div className="flex items-center justify-between gap-3 text-xs sm:text-sm font-mono text-slate-400 px-3 py-2 rounded-xl bg-black/40 border border-white/5">
+                <span>AI 對手數量:</span>
+                <div className="flex items-center gap-2">
+                  {[1, 2, 3].map(count => (
+                    <button
+                      key={count}
+                      onClick={() => setSelectedBotCount(count)}
+                      className={`px-3 py-1 rounded-lg border text-xs font-bold transition-all ${
+                        selectedBotCount === count
+                          ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-sm'
+                          : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
+                      }`}
+                    >
+                      {count} 人
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Interactive Tutorial Button (Dedicated Prominent Onboarding Card) */}
+              <button
+                onClick={gameState.startTutorial}
+                className="w-full p-4 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold font-mono text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
+              >
+                <GraduationCap className="w-5 h-5 text-purple-400 animate-bounce" />
+                <span>🎓 進入實戰新手教學 (雙回合 10 步手把手引導)</span>
+              </button>
+
+              {/* Quick Utility Tools */}
+              <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-800 text-xs font-mono flex-wrap">
+                <button
+                  onClick={() => setIsCompendiumOpen(true)}
+                  className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-purple-950/30"
+                >
+                  <Layers className="w-4 h-4 text-purple-400" />
+                  <span>卡片全圖鑑</span>
+                </button>
+                <span className="text-slate-700">|</span>
+                <button
+                  onClick={() => setIsTutorialModalOpen(true)}
+                  className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-300 transition-all px-2.5 py-1 rounded-lg hover:bg-slate-800"
+                >
+                  <BookOpen className="w-4 h-4 text-cyan-400" />
+                  <span>作戰手冊</span>
+                </button>
+                <span className="text-slate-700">|</span>
+                <button
+                  onClick={() => setIsGuideOpen(true)}
+                  className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-300 transition-all px-2.5 py-1 rounded-lg hover:bg-slate-800"
+                >
+                  <Shield className="w-4 h-4 text-cyan-400" />
+                  <span>PACE 科普</span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 

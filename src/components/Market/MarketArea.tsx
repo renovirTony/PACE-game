@@ -26,15 +26,15 @@ export const MarketArea: React.FC<MarketAreaProps> = ({
   const [activeTab, setActiveTab] = useState<'equipment' | 'tactics'>('equipment');
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 shadow-xl backdrop-blur-md">
+    <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:p-5 shadow-xl backdrop-blur-md">
       {/* Header Tabs */}
-      <div className="flex items-center justify-between gap-2 pb-3 mb-3 border-b border-slate-800">
-        <div className="flex items-center gap-2">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-3 mb-4 border-b border-slate-800">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => setActiveTab('equipment')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
               activeTab === 'equipment'
-                ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                ? 'bg-cyan-500 text-slate-950 font-black shadow-md shadow-cyan-500/30'
                 : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
@@ -44,9 +44,9 @@ export const MarketArea: React.FC<MarketAreaProps> = ({
 
           <button
             onClick={() => setActiveTab('tactics')}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
               activeTab === 'tactics'
-                ? 'bg-purple-500 text-white shadow-md shadow-purple-500/20'
+                ? 'bg-purple-500 text-slate-950 font-black shadow-md shadow-purple-500/30'
                 : 'bg-slate-900 text-slate-400 hover:text-slate-200 border border-slate-800'
             }`}
           >
@@ -55,8 +55,8 @@ export const MarketArea: React.FC<MarketAreaProps> = ({
           </button>
         </div>
 
-        <span className="text-xs font-mono text-slate-400 hidden sm:inline-block">
-          消耗 1 AP 與對應物資 💰 裝備或採購
+        <span className="text-xs font-mono text-slate-400">
+          消耗 1 AP 與對應物資 💰 採購裝備或戰術
         </span>
       </div>
 
@@ -79,8 +79,8 @@ export const MarketArea: React.FC<MarketAreaProps> = ({
             );
           })}
           {market.length === 0 && (
-            <div className="col-span-full py-8 text-center text-slate-500 font-mono text-sm">
-              裝備牌庫已耗盡
+            <div className="col-span-full py-8 rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 text-center text-slate-500 font-mono text-sm">
+              裝備補給庫已暫時耗盡
             </div>
           )}
         </div>
@@ -99,8 +99,8 @@ export const MarketArea: React.FC<MarketAreaProps> = ({
             );
           })}
           {tacticMarket.length === 0 && (
-            <div className="col-span-full py-8 text-center text-slate-500 font-mono text-sm">
-              戰術牌庫已耗盡
+            <div className="col-span-full py-8 rounded-2xl border border-dashed border-slate-800 bg-slate-900/30 text-center text-slate-500 font-mono text-sm">
+              戰術卡牌庫已暫時耗盡
             </div>
           )}
         </div>

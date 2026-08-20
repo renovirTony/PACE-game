@@ -69,7 +69,7 @@ export const TurnHeader: React.FC<TurnHeaderProps> = ({
           </div>
           <p className="text-xs sm:text-sm text-slate-400 font-mono mt-0.5">
             {isTutorialMode ? (
-              <span className="text-cyan-300 font-bold">教學模式：跟隨畫面指引完成 7 步核心操作</span>
+              <span className="text-cyan-300 font-bold">教學模式：雙回合 10 步手把手實戰引導</span>
             ) : (
               <>
                 目標積分: <span className="text-amber-400 font-bold">{targetScore} VP</span> 獲勝 · 當前第{' '}
