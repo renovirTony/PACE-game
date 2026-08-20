@@ -41,7 +41,7 @@ export const TACTIC_CARDS: TacticCard[] = [
     cost: 2,
     effectType: 'OVERCLOCK',
     value: 1,
-    description: '消耗 1 點電量，使本回合所有無線電設備覆蓋範圍提升一階。',
+    description: '發動時消耗 1 點電量，本回合所有無線電通訊設備覆蓋範圍提升一階（近距 Local 可支援 戰術 Tactical；戰術 Tactical 可支援 全球 Global）。',
     iconName: 'Flame',
     flavorText: '將發射功率推至極限紅線，突破強烈干擾霧靄！'
   },
@@ -52,7 +52,7 @@ export const TACTIC_CARDS: TacticCard[] = [
     cost: 2,
     effectType: 'SECURE_CHANNEL',
     value: 1,
-    description: '使你當前 P 或 A 槽位的設備在本輪獲得「免疫 EMP / 電子戰」效果。',
+    description: '使你當前 [P] 主要 與 [A] 備用 槽位的設備在本回合獲得「抗 EMP 防護」，免疫高空電磁脈衝爆震 (EMP) 癱瘓與相關任務限制！',
     iconName: 'Shield',
     flavorText: '多層銅箔與接地編織網，將致命電磁脈衝導向大地。'
   },

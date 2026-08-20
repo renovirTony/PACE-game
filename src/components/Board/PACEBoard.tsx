@@ -89,8 +89,24 @@ export const PACEBoard: React.FC<PACEBoardProps> = ({ player, highlight = false 
           </div>
         </div>
 
-        {/* Status Indicators */}
-        <div className="flex items-center gap-3 text-xs sm:text-sm font-mono flex-wrap">
+        {/* Status Indicators & Active Buffs */}
+        <div className="flex items-center gap-2 sm:gap-3 text-xs sm:text-sm font-mono flex-wrap">
+          {player.activeBuffs?.faradayEmpShield && (
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-purple-950/70 border border-purple-500/50 text-purple-300 font-bold shadow-lg shadow-purple-500/20 animate-pulse">
+              <ShieldCheck className="w-3.5 h-3.5 text-purple-400" />
+              <span>🛡️ 法拉第抗EMP遮蔽 (P/A)</span>
+            </div>
+          )}
+          {player.activeBuffs?.overclockRange && (
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-red-950/70 border border-red-500/50 text-red-300 font-bold shadow-lg shadow-red-500/20">
+              <span>🔥 射頻超頻 (+1 覆蓋階級)</span>
+            </div>
+          )}
+          {Boolean(player.activeBuffs?.signalBoostVP) && (
+            <div className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-cyan-950/70 border border-cyan-500/50 text-cyan-300 font-bold shadow-lg shadow-cyan-500/20">
+              <span>📡 天線增益 (+{player.activeBuffs?.signalBoostVP} VP)</span>
+            </div>
+          )}
           <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-950/40 border border-amber-500/30 text-amber-300">
             <span>物資資金:</span>
             <span className="font-bold text-sm sm:text-base">{player.credits} 💰</span>
@@ -107,6 +123,7 @@ export const PACEBoard: React.FC<PACEBoardProps> = ({ player, highlight = false 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {SLOT_DEFINITIONS.map((slotDef, index) => {
           const card = player.paceBoard[slotDef.slot];
+          const hasFaradayBuff = player.activeBuffs?.faradayEmpShield && (slotDef.slot === 'P' || slotDef.slot === 'A');
 
           return (
             <div key={slotDef.slot} className="relative flex flex-col h-full">
@@ -115,6 +132,11 @@ export const PACEBoard: React.FC<PACEBoardProps> = ({ player, highlight = false 
                 <div className="flex items-center gap-1.5">
                   {slotDef.icon}
                   <span className={`font-bold ${slotDef.color}`}>{slotDef.title}</span>
+                  {hasFaradayBuff && (
+                    <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-900/80 text-purple-200 border border-purple-400/40">
+                      🛡️ 抗EMP
+                    </span>
+                  )}
                 </div>
                 {index < 3 && (
                   <div className="hidden lg:flex items-center text-slate-500 text-xs gap-1" title="當前通道受阻時自動遞補">

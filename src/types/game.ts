@@ -92,6 +92,12 @@ export interface GlobalEvent {
   flavor: string;
 }
 
+export interface PlayerBuffs {
+  signalBoostVP?: number;     // 八木天線：本回合下次廣播成功額外獲得 VP
+  overclockRange?: boolean;   // 射頻超頻：無線電設備覆蓋範圍提升一階 (Local->Tactical, Tactical->Global)
+  faradayEmpShield?: boolean; // 法拉第遮蔽：P 與 A 槽位本回合免疫 EMP/電子戰干擾
+}
+
 export interface Player {
   id: string;
   name: string;
@@ -113,6 +119,7 @@ export interface Player {
   };
   handTactics: TacticCard[];
   completedMissions: string[];
+  activeBuffs?: PlayerBuffs;
   stats: {
     transmissions: number;
     fallbacksTriggered: number;

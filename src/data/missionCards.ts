@@ -46,7 +46,7 @@ export const CRISIS_MISSIONS: CrisisMission[] = [
     description: '地下三層防空掩體入口被瓦礫封死，常規無線電無法穿透數公尺厚的鋼筋混凝土，需要穿透型或有線通訊！',
     vp: 4,
     creditReward: 2,
-    requiredRange: ['Penetrating'],
+    requiredRange: ['Local', 'Penetrating'],
     requiresSubterranean: true,
     urgency: 'High',
     iconName: 'Layers',

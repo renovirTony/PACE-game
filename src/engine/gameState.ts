@@ -488,55 +488,6 @@ export function useGameState(): UseGameStateReturn {
     return true;
   }, [activePlayer, activePlayerIndex, tacticDeck, addLog]);
 
-  // 使用戰術卡
-  const playTactic = useCallback((card: TacticCard): boolean => {
-    if (!activePlayer || activePlayer.actionPoints <= 0) return false;
-
-    let successMessage = '';
-    setPlayers(prev => prev.map((p, idx) => {
-      if (idx !== activePlayerIndex) return p;
-
-      let energy = p.energy;
-      let credits = p.credits;
-
-      switch (card.effectType) {
-        case 'GAIN_ENERGY':
-          energy = Math.min(p.maxEnergy, energy + (card.value || 3));
-          successMessage = `啟動柴油發電機，電量補充至 ${energy}⚡！`;
-          break;
-        case 'GAIN_CREDITS':
-          credits += (card.value || 3);
-          successMessage = `收到空投補給，資金增加 ${card.value || 3} 💰！`;
-          break;
-        case 'SCOUT_AHEAD':
-          credits += 1;
-          energy = Math.min(p.maxEnergy, energy + 1);
-          successMessage = `先遣無人機偵察完成 (+1💰 / +1⚡)！`;
-          break;
-        default:
-          successMessage = `啟動戰術卡【${card.name}】：${card.description}`;
-          break;
-      }
-
-      return {
-        ...p,
-        energy,
-        credits,
-        actionPoints: p.actionPoints - 1,
-        handTactics: p.handTactics.filter(t => t.id !== card.id)
-      };
-    }));
-
-    audioManager.playClick();
-    addLog('action', successMessage, activePlayer.id, activePlayer.name);
-
-    if (isTutorialMode && tutorialStep === 3) {
-      setTutorialStep(4);
-    }
-
-    return true;
-  }, [activePlayer, activePlayerIndex, isTutorialMode, tutorialStep, addLog]);
-
   // 手動手搖充電/充能
   const rechargeEnergy = useCallback((): boolean => {
     if (!activePlayer || activePlayer.actionPoints <= 0) return false;
@@ -559,6 +510,75 @@ export function useGameState(): UseGameStateReturn {
 
     if (isTutorialMode && tutorialStep === 6) {
       setTutorialStep(7);
+    }
+
+    return true;
+  }, [activePlayer, activePlayerIndex, isTutorialMode, tutorialStep, addLog]);
+
+  // 使用戰術卡
+  const playTactic = useCallback((card: TacticCard): boolean => {
+    if (!activePlayer || activePlayer.actionPoints <= 0) return false;
+
+    if (card.effectType === 'OVERCLOCK' && activePlayer.energy < 1) {
+      addLog('alert', '電量不足，無法啟動高功率超頻 (需消耗 1 點電量 ⚡)！', activePlayer.id, activePlayer.name);
+      return false;
+    }
+
+    let successMessage = '';
+    setPlayers(prev => prev.map((p, idx) => {
+      if (idx !== activePlayerIndex) return p;
+
+      let energy = p.energy;
+      let credits = p.credits;
+      const activeBuffs = { ...(p.activeBuffs || {}) };
+
+      switch (card.effectType) {
+        case 'GAIN_ENERGY':
+          energy = Math.min(p.maxEnergy, energy + (card.value || 3));
+          successMessage = `啟動柴油發電機，電量補充至 ${energy}⚡！`;
+          break;
+        case 'GAIN_CREDITS':
+          credits += (card.value || 3);
+          successMessage = `收到後勤空投補給，資金增加 ${card.value || 3} 💰！`;
+          break;
+        case 'SCOUT_AHEAD':
+          credits += 1;
+          energy = Math.min(p.maxEnergy, energy + 1);
+          successMessage = `先遣無人機偵察完成 (+1💰 / +1⚡)！`;
+          break;
+        case 'OVERCLOCK':
+          energy = Math.max(0, energy - 1);
+          activeBuffs.overclockRange = true;
+          successMessage = `🔥 啟動【高功率射頻超頻】！消耗 1⚡，本回合所有無線電設備覆蓋範圍提升一階 (Local 升為 Tactical、Tactical 升為 Global)！`;
+          break;
+        case 'SECURE_CHANNEL':
+          activeBuffs.faradayEmpShield = true;
+          successMessage = `🛡️ 部署【法拉第抗干擾遮蔽】！本回合 [P] 主要 與 [A] 備用 槽位獲得抗 EMP 防護，免疫電磁脈衝爆震癱瘓！`;
+          break;
+        case 'SIGNAL_BOOST':
+          activeBuffs.signalBoostVP = (activeBuffs.signalBoostVP || 0) + (card.value || 1);
+          successMessage = `📡 校準【八木定向天線】！本回合下次廣播任務若成功，額外獲得 +${card.value || 1} VP 增益！`;
+          break;
+        default:
+          successMessage = `啟動戰術卡【${card.name}】：${card.description}`;
+          break;
+      }
+
+      return {
+        ...p,
+        energy,
+        credits,
+        activeBuffs,
+        actionPoints: p.actionPoints - 1,
+        handTactics: p.handTactics.filter(t => t.id !== card.id)
+      };
+    }));
+
+    audioManager.playClick();
+    addLog('action', successMessage, activePlayer.id, activePlayer.name);
+
+    if (isTutorialMode && tutorialStep === 3) {
+      setTutorialStep(4);
     }
 
     return true;
@@ -587,17 +607,23 @@ export function useGameState(): UseGameStateReturn {
       const earnedCredits = mission.creditReward;
       const consumedEnergy = result.usedCard.powerCost + (activeEvent?.powerDrainBonus || 0);
 
-      // 更新玩家狀態
+      // 更新玩家狀態 (包含消耗單次天線增益)
       setPlayers(prev => prev.map((p, idx) => {
         if (idx !== activePlayerIndex) return p;
 
         const isFallback = result.fallbackDepth > 0;
+        const updatedBuffs = { ...(p.activeBuffs || {}) };
+        if (updatedBuffs.signalBoostVP) {
+          delete updatedBuffs.signalBoostVP;
+        }
+
         return {
           ...p,
           score: p.score + earnedVP,
           credits: p.credits + earnedCredits,
           energy: Math.max(0, p.energy - consumedEnergy),
           actionPoints: p.actionPoints - 1,
+          activeBuffs: updatedBuffs,
           completedMissions: [...p.completedMissions, mission.id],
           stats: {
             ...p.stats,
@@ -683,7 +709,8 @@ export function useGameState(): UseGameStateReturn {
           ...p,
           actionPoints: p.maxActionPoints,
           energy: Math.min(p.maxEnergy - 2, p.energy), // 確保電量有空間進行野戰充能 (+2⚡)
-          credits: p.credits + 1
+          credits: p.credits + 1,
+          activeBuffs: {} // 重置回合戰術效果
         })));
         setTutorialStep(6);
         audioManager.playAlertSound();
@@ -745,12 +772,13 @@ export function useGameState(): UseGameStateReturn {
         return [...uncompleted, ...newMissions];
       });
 
-      // 重置所有玩家的 AP 與自然供電
+      // 重置所有玩家的 AP 與自然供電、重置戰術 Buff
       setPlayers(prev => prev.map(p => ({
         ...p,
         actionPoints: p.maxActionPoints,
         energy: Math.min(p.maxEnergy, p.energy + 2),
-        credits: p.credits + 1 // 每回合基本物資收入
+        credits: p.credits + 1, // 每回合基本物資收入
+        activeBuffs: {} // 重置本輪戰術增益
       })));
 
       addLog('info', `進入第 ${nextRound} 回合！大氣環境變更為：【${nextEvent?.title}】`);

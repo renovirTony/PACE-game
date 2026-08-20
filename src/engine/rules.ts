@@ -18,10 +18,21 @@ export function checkCardEligibility(
     return { eligible: false, blockedReason: `電量不足 (需 ${effectivePowerCost}⚡，目前 ${player.energy}⚡)` };
   }
 
+  // 計算有效 EMP 抗性 (含法拉第抗干擾遮蔽戰術卡 Buff)
+  const hasEmpShield = Boolean(
+    card.resilience.empShield ||
+    ((slot === 'P' || slot === 'A') && player.activeBuffs?.faradayEmpShield)
+  );
+
   // 2. 檢查全域環境事件封鎖
   if (event) {
     if (event.jammedSlots && event.jammedSlots.includes(slot)) {
-      return { eligible: false, blockedReason: `環境事件 [${event.title}] 封鎖了 ${slot} 槽位` };
+      // 若為 EMP 爆震事件，且設備或該槽位享有抗 EMP 防護（或法拉第遮蔽），則可免疫癱瘓！
+      if (event.id === 'evt_emp_strike' && hasEmpShield) {
+        // EMP 防護生效，維持通訊！
+      } else {
+        return { eligible: false, blockedReason: `環境事件 [${event.title}] 封鎖了 ${slot} 槽位` };
+      }
     }
     if (event.blockedCategories && event.blockedCategories.includes(card.category)) {
       return { eligible: false, blockedReason: `環境事件封鎖了 ${card.category} 類別設備` };
@@ -45,9 +56,23 @@ export function checkCardEligibility(
     return { eligible: false, blockedReason: `任務指定設備類型不符 (需: ${mission.requiredCategory.join('/')})` };
   }
 
-  // 4. 檢查覆蓋範圍 (Range)
+  // 4. 檢查覆蓋範圍 (Range，支援高功率射頻超頻 Overclock Buff)
   if (mission.requiredRange && mission.requiredRange.length > 0) {
-    const rangeMatch = mission.requiredRange.includes(card.range);
+    const isWireless = !['Wired/Field', 'Physical/Courier', 'Acoustic/Seismic'].includes(card.category);
+    let effectiveRanges: string[] = [card.range];
+    
+    // 若啟動高功率射頻超頻 (OVERCLOCK) 且為無線設備，覆蓋範圍提升一階
+    if (player.activeBuffs?.overclockRange && isWireless) {
+      if (card.range === 'Local') {
+        effectiveRanges = ['Local', 'Tactical'];
+      } else if (card.range === 'Tactical') {
+        effectiveRanges = ['Tactical', 'Global'];
+      } else if (card.range === 'Global') {
+        effectiveRanges = ['Global'];
+      }
+    }
+
+    const rangeMatch = mission.requiredRange.some(req => effectiveRanges.includes(req));
     if (!rangeMatch) {
       return { eligible: false, blockedReason: `通訊距離不足 (需 ${mission.requiredRange.join('或')})` };
     }
@@ -64,7 +89,7 @@ export function checkCardEligibility(
   }
 
   // 6. 檢查抗性要求 (EMP / 天候 / 地底)
-  if (mission.requiresEmpShield && !card.resilience.empShield) {
+  if (mission.requiresEmpShield && !hasEmpShield) {
     return { eligible: false, blockedReason: `缺乏 EMP / 抗電磁脈衝防護` };
   }
   if (mission.requiresWeatherResist && !card.resilience.weatherResistant) {
@@ -118,6 +143,11 @@ export function evaluatePACETransmission(
       // Fallback 應變獎勵加分 (使用 C 或 E 成功應變可獲額外防衛分)
       if (slot === 'C') bonusPoints += 1;
       if (slot === 'E') bonusPoints += 2;
+
+      // 八木天線訊號增益加分 (Signal Boost)
+      if (player.activeBuffs?.signalBoostVP) {
+        bonusPoints += player.activeBuffs.signalBoostVP;
+      }
 
       let fallbackText = '';
       if (i === 0) fallbackText = '主要通訊 [P] 順暢連通！';

@@ -15,7 +15,7 @@ export const GLOBAL_EVENTS: GlobalEvent[] = [
     title: '高空電磁脈衝爆震 (High-Altitude EMP Shock)',
     duration: 1,
     effectDescription: '致命電磁衝擊波！所有無 EMP 防護的電子設備（P/A 槽位）暫時失效，必須依靠 C 或 E 應急手段！',
-    jammedSlots: ['P'],
+    jammedSlots: ['P', 'A'],
     bandwidthPenalty: true,
     iconName: 'ZapOff',
     flavor: '天空閃過一陣白光，所有未加固的電晶體同時發出劈啪焦味。'

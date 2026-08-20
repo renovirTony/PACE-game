@@ -94,7 +94,7 @@ export const CardCompendiumModal: React.FC<CardCompendiumModalProps> = ({
   // Filtered lists
   const filteredEquipments = useMemo(() => {
     return allEquipmentCards.filter(card => {
-      if (selectedSlot !== 'ALL' && card.slot !== selectedSlot) return false;
+      if (activeTab === 'EQUIPMENT' && selectedSlot !== 'ALL' && card.slot !== selectedSlot) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -105,7 +105,7 @@ export const CardCompendiumModal: React.FC<CardCompendiumModalProps> = ({
         card.tags.some(t => t.toLowerCase().includes(q))
       );
     });
-  }, [allEquipmentCards, selectedSlot, searchQuery]);
+  }, [allEquipmentCards, activeTab, selectedSlot, searchQuery]);
 
   const filteredTactics = useMemo(() => {
     return TACTIC_CARDS.filter(card => {
@@ -122,7 +122,7 @@ export const CardCompendiumModal: React.FC<CardCompendiumModalProps> = ({
 
   const filteredMissions = useMemo(() => {
     return CRISIS_MISSIONS.filter(card => {
-      if (selectedUrgency !== 'ALL' && card.urgency !== selectedUrgency) return false;
+      if (activeTab === 'MISSION' && selectedUrgency !== 'ALL' && card.urgency !== selectedUrgency) return false;
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -131,7 +131,7 @@ export const CardCompendiumModal: React.FC<CardCompendiumModalProps> = ({
         card.flavor.toLowerCase().includes(q)
       );
     });
-  }, [selectedUrgency, searchQuery]);
+  }, [activeTab, selectedUrgency, searchQuery]);
 
   const filteredEvents = useMemo(() => {
     return GLOBAL_EVENTS.filter(card => {
@@ -277,7 +277,7 @@ export const CardCompendiumModal: React.FC<CardCompendiumModalProps> = ({
         </div>
 
         {/* 3. Sub-filter tags (When Equipment or Mission is selected) */}
-        {(activeTab === 'EQUIPMENT' || activeTab === 'ALL') && (
+        {activeTab === 'EQUIPMENT' && (
           <div className="flex items-center gap-2 pb-3 mb-3 border-b border-slate-800/40 text-xs font-mono shrink-0 flex-wrap">
             <span className="text-slate-400 flex items-center gap-1">
               <Filter className="w-3 h-3" /> PACE 槽位:
