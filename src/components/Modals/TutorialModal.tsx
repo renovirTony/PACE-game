@@ -108,7 +108,7 @@ export const TutorialModal: React.FC<TutorialModalProps> = ({ isOpen, onClose })
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3 font-mono text-xs">
                   <div className="p-3 rounded-xl bg-slate-900/80 border border-amber-500/30">
                     <span className="text-amber-400 font-bold block mb-1">🏆 積分達標獲勝</span>
-                    率先累積達到 <strong className="text-amber-300 text-base font-black">20 VP</strong>（或自訂目標）的指揮官立即奪冠！
+                    率先累積達到 <strong className="text-amber-300 text-base font-black">18 VP</strong>（獲勝門檻）的指揮官立即奪冠！
                   </div>
                   <div className="p-3 rounded-xl bg-slate-900/80 border border-cyan-500/30">
                     <span className="text-cyan-400 font-bold block mb-1">⏱️ 回合終局結算</span>

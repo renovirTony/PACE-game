@@ -99,7 +99,7 @@ const TUTORIAL_STEPS: Record<number, StepContent> = {
     badge: '回合 2 · 步驟 9 / 9 · 戰役總結',
     icon: <CheckCircle2 className="w-6 h-6 text-emerald-400" />,
     instruction: '您已經成功完成了兩個完整回合的戰略決策、能源調配、裝備建置與任務連通！請點擊【結束本回合】完成整個新手教學！',
-    tips: '💡 在正式戰局中，率先達到目標 VP (例如 18 或 20 VP) 或 8 回合結束時最高分者獲勝！',
+    tips: '💡 在正式戰局中，率先達到 18 VP 獲勝門檻或 8 回合結束時最高分者獲勝！',
     actionRequired: '👉 請點擊操作面板上的【結束本回合】'
   },
   10: {
