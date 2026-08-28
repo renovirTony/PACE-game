@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Private grant application & discussion notes
+TWNIC_*.*
+*grant*

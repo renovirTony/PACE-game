@@ -1,417 +1,46 @@
 import React, { useState, useEffect } from 'react';
-import { useGameState } from './engine/gameState';
-import { FontSizeMode } from './types/game';
-import { TurnHeader } from './components/HUD/TurnHeader';
-import { EventBanner } from './components/Cards/EventBanner';
-import { MissionCardView } from './components/Cards/MissionCardView';
-import { PACEBoard } from './components/Board/PACEBoard';
-import { MarketArea } from './components/Market/MarketArea';
-import { ActionControlPanel } from './components/HUD/ActionControlPanel';
-import { LogViewer } from './components/HUD/LogViewer';
-import { ScoreBoard } from './components/HUD/ScoreBoard';
-import { TutorialModal } from './components/Modals/TutorialModal';
-import { PACEGuideModal } from './components/Modals/PACEGuideModal';
-import { TransmissionResultModal } from './components/Modals/TransmissionResultModal';
-import { GameOverModal } from './components/Modals/GameOverModal';
-import { CardCompendiumModal } from './components/Modals/CardCompendiumModal';
-import { InteractiveTutorial } from './components/Tutorial/InteractiveTutorial';
-import { Radio, Users, Bot, Shield, GraduationCap, BookOpen, Layers, Sparkles, X } from 'lucide-react';
+import { AppV1 } from './v1/AppV1';
+import { AppV2 } from './v2/AppV2';
 
 export function App() {
-  const gameState = useGameState();
-  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
-  const [isGuideOpen, setIsGuideOpen] = useState(false);
-  const [isCompendiumOpen, setIsCompendiumOpen] = useState(false);
-  const [selectedBotCount, setSelectedBotCount] = useState<number>(2);
-  const [hasNewVersion, setHasNewVersion] = useState(false);
-  
-  // Font Size state with localStorage persistence
-  const [fontSize, setFontSize] = useState<FontSizeMode>(() => {
-    const saved = localStorage.getItem('pace_font_size');
-    return (saved === 'normal' || saved === 'large' || saved === 'xlarge') ? saved : 'large';
+  // 檢測 URL 參數 ?v=1 或 ?v=2，預設為 v2
+  const [version, setVersion] = useState<'v1' | 'v2'>(() => {
+    const params = new URLSearchParams(window.location.search);
+    const vParam = params.get('v');
+    if (vParam === '1') return 'v1';
+    if (vParam === '2') return 'v2';
+
+    const saved = localStorage.getItem('pace_active_version');
+    return saved === 'v1' ? 'v1' : 'v2';
   });
 
-  // Apply root font-size dynamically to document element
+  // 當版本變更時同步至 URL 與 localStorage
+  const handleSwitchVersion = (newVersion: 'v1' | 'v2') => {
+    setVersion(newVersion);
+    localStorage.setItem('pace_active_version', newVersion);
+
+    const url = new URL(window.location.href);
+    url.searchParams.set('v', newVersion === 'v1' ? '1' : '2');
+    window.history.pushState({}, '', url.toString());
+  };
+
+  // 監聽瀏覽器上一頁/下一頁
   useEffect(() => {
-    const root = document.documentElement;
-    root.classList.remove('font-scale-normal', 'font-scale-large', 'font-scale-xlarge');
-    root.classList.add(`font-scale-${fontSize}`);
-    
-    if (fontSize === 'normal') {
-      root.style.fontSize = '14px';
-    } else if (fontSize === 'large') {
-      root.style.fontSize = '17px';
-    } else {
-      root.style.fontSize = '20px';
-    }
-
-    localStorage.setItem('pace_font_size', fontSize);
-  }, [fontSize]);
-
-  // Periodic and on-focus version check to detect new deployments automatically
-  useEffect(() => {
-    const checkVersion = async () => {
-      try {
-        const res = await fetch(`./version.json?_t=${Date.now()}`, { cache: 'no-store' });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.buildTime && typeof __APP_BUILD_TIME__ !== 'undefined' && data.buildTime !== __APP_BUILD_TIME__) {
-            setHasNewVersion(true);
-          }
-        }
-      } catch {
-        // ignore offline / network errors
-      }
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const vParam = params.get('v');
+      if (vParam === '1') setVersion('v1');
+      else if (vParam === '2') setVersion('v2');
     };
-
-    const timer = setTimeout(checkVersion, 3000);
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        checkVersion();
-      }
-    };
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    const interval = setInterval(checkVersion, 2 * 60 * 1000);
-
-    return () => {
-      clearTimeout(timer);
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
   }, []);
 
-  // Setup / Welcome Screen (Redesigned with M.A.P.S)
-  if (gameState.phase === 'SETUP') {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center p-4 sm:p-8 bg-[#060913] text-slate-100 relative overflow-hidden">
-        {/* Background decorative radars */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full border border-cyan-500/10 pointer-events-none animate-pulse-slow" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[450px] h-[450px] rounded-full border border-blue-500/10 pointer-events-none" />
-
-        <div className="relative z-10 max-w-5xl w-full rounded-3xl border border-cyan-500/30 bg-slate-950/90 p-6 sm:p-10 shadow-2xl backdrop-blur-2xl">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            {/* Left Column: Brand & PACE Philosophy Live Preview */}
-            <div className="lg:col-span-6 flex flex-col items-start text-left">
-              {/* Logo */}
-              <div className="inline-flex p-3.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-4 shadow-inner">
-                <Radio className="w-10 h-10 animate-pulse" />
-              </div>
-
-              <div className="flex items-center gap-2 mb-2 flex-wrap">
-                <span className="text-xs font-black font-mono px-3 py-1 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 tracking-wider uppercase">
-                  Tactical Board Game
-                </span>
-                <span className="text-xs font-mono px-2.5 py-1 rounded-full bg-purple-950 text-purple-300 border border-purple-500/40">
-                  M.A.P.S 認知架構
-                </span>
-              </div>
-
-              <h1 className="text-3xl sm:text-5xl font-black font-orbitron tracking-wider text-slate-100 mb-3">
-                PACE <span className="text-cyan-400">通訊先鋒</span>
-              </h1>
-
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed mb-5">
-                在充斥強烈電磁脈衝 (EMP)、雪崩與全頻干擾的極端戰場中，組建四重應急通訊防線，即時連通搜救任務奪得勝利！
-              </p>
-
-              {/* Live PACE Mini Preview (A - Applicable & P - Patterns) */}
-              <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2 font-mono text-xs mb-2">
-                <div className="p-2.5 rounded-xl bg-cyan-950/50 border border-cyan-500/40 text-cyan-300 shadow-inner">
-                  <span className="font-black block text-[11px]">[P] Primary</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">5G專網/衛星</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-blue-950/50 border border-blue-500/40 text-blue-300 shadow-inner">
-                  <span className="font-black block text-[11px]">[A] Alternate</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">軍規跳頻電台</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-amber-950/50 border border-amber-500/40 text-amber-300 shadow-inner">
-                  <span className="font-black block text-[11px]">[C] Contingency</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">手搖有線/震波</span>
-                </div>
-                <div className="p-2.5 rounded-xl bg-red-950/50 border border-red-500/40 text-red-300 shadow-inner">
-                  <span className="font-black block text-[11px]">[E] Emergency</span>
-                  <span className="text-[10px] text-slate-400 block mt-0.5">光學信差/信鴿</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Column: Game Mode Selection & Onboarding (M - Minimal & S - Step-by-Step) */}
-            <div className="lg:col-span-6 flex flex-col gap-4 bg-slate-900/60 p-6 rounded-3xl border border-slate-800">
-              <span className="text-xs font-mono font-bold text-slate-300 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-cyan-400" /> 選擇作戰演習模式 (Game Mode)
-              </span>
-
-              {/* Mode Selection Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={() => gameState.startGame('SinglePlayer', selectedBotCount)}
-                  className="p-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-black font-mono text-sm tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.98]"
-                >
-                  <Bot className="w-5 h-5" />
-                  <span>單人作戰 vs AI</span>
-                </button>
-
-                <button
-                  onClick={() => gameState.startGame('PassAndPlay')}
-                  className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold font-mono text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
-                >
-                  <Users className="w-5 h-5" />
-                  <span>同機雙人輪流</span>
-                </button>
-              </div>
-
-              {/* AI Bot Count Setting */}
-              <div className="flex items-center justify-between gap-3 text-xs sm:text-sm font-mono text-slate-400 px-3 py-2 rounded-xl bg-black/40 border border-white/5">
-                <span>AI 對手數量:</span>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3].map(count => (
-                    <button
-                      key={count}
-                      onClick={() => setSelectedBotCount(count)}
-                      className={`px-3 py-1 rounded-lg border text-xs font-bold transition-all ${
-                        selectedBotCount === count
-                          ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-sm'
-                          : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      {count} 人
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Interactive Tutorial Button (Dedicated Prominent Onboarding Card) */}
-              <button
-                onClick={gameState.startTutorial}
-                className="w-full p-4 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold font-mono text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
-              >
-                <GraduationCap className="w-5 h-5 text-purple-400 animate-bounce" />
-                <span>🎓 進入實戰新手教學 (雙回合 10 步手把手引導)</span>
-              </button>
-
-              {/* Quick Utility Tools */}
-              <div className="flex items-center justify-center gap-3 pt-3 border-t border-slate-800 text-xs font-mono flex-wrap">
-                <button
-                  onClick={() => setIsCompendiumOpen(true)}
-                  className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-purple-950/30"
-                >
-                  <Layers className="w-4 h-4 text-purple-400" />
-                  <span>卡片全圖鑑</span>
-                </button>
-                <span className="text-slate-700">|</span>
-                <button
-                  onClick={() => setIsTutorialModalOpen(true)}
-                  className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-300 transition-all px-2.5 py-1 rounded-lg hover:bg-slate-800"
-                >
-                  <BookOpen className="w-4 h-4 text-cyan-400" />
-                  <span>作戰手冊</span>
-                </button>
-                <span className="text-slate-700">|</span>
-                <button
-                  onClick={() => setIsGuideOpen(true)}
-                  className="flex items-center gap-1.5 text-slate-400 hover:text-cyan-300 transition-all px-2.5 py-1 rounded-lg hover:bg-slate-800"
-                >
-                  <Shield className="w-4 h-4 text-cyan-400" />
-                  <span>PACE 科普</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* New Version Alert Banner */}
-        {hasNewVersion && (
-          <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce">
-            <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 border border-cyan-300 text-slate-950 shadow-2xl backdrop-blur-md font-mono text-xs sm:text-sm font-black">
-              <Sparkles className="w-4 h-4 text-slate-950 animate-spin" />
-              <span>PACE 通訊先鋒發布了最新版本！</span>
-              <button
-                onClick={() => window.location.reload()}
-                className="px-3 py-1 rounded-xl bg-slate-950 hover:bg-slate-900 text-cyan-300 border border-cyan-400/50 text-xs font-bold transition-all active:scale-95"
-              >
-                立即載入
-              </button>
-              <button
-                onClick={() => setHasNewVersion(false)}
-                className="p-1 text-slate-950 hover:text-white"
-                title="關閉提示"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          </div>
-        )}
-
-        <TutorialModal isOpen={isTutorialModalOpen} onClose={() => setIsTutorialModalOpen(false)} />
-        <PACEGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
-        <CardCompendiumModal isOpen={isCompendiumOpen} onClose={() => setIsCompendiumOpen(false)} />
-      </div>
-    );
+  if (version === 'v1') {
+    return <AppV1 onSwitchToV2={() => handleSwitchVersion('v2')} />;
   }
 
-  // Active Game Arena - Redesigned spacious layout
-  return (
-    <div className="min-h-screen p-3 sm:p-5 flex flex-col gap-4 max-w-[1700px] mx-auto text-slate-100 relative">
-      {/* New Version Alert Banner */}
-      {hasNewVersion && (
-        <div className="fixed top-4 left-1/2 -translate-x-1/2 z-50 animate-bounce">
-          <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-500 border border-cyan-300 text-slate-950 shadow-2xl backdrop-blur-md font-mono text-xs sm:text-sm font-black">
-            <Sparkles className="w-4 h-4 text-slate-950 animate-spin" />
-            <span>PACE 通訊先鋒發布了最新版本！</span>
-            <button
-              onClick={() => window.location.reload()}
-              className="px-3 py-1 rounded-xl bg-slate-950 hover:bg-slate-900 text-cyan-300 border border-cyan-400/50 text-xs font-bold transition-all active:scale-95"
-            >
-              立即載入
-            </button>
-            <button
-              onClick={() => setHasNewVersion(false)}
-              className="p-1 text-slate-950 hover:text-white"
-              title="關閉提示"
-            >
-              <X className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-      {/* 1. Turn Header */}
-      <TurnHeader
-        round={gameState.round}
-        maxRounds={gameState.maxRounds}
-        targetScore={gameState.targetScore}
-        activePlayer={gameState.activePlayer}
-        isAI={gameState.activePlayer.isAI}
-        isTutorialMode={gameState.isTutorialMode}
-        fontSize={fontSize}
-        onChangeFontSize={setFontSize}
-        onOpenTutorial={() => setIsTutorialModalOpen(true)}
-        onOpenGuide={() => setIsGuideOpen(true)}
-        onOpenCompendium={() => setIsCompendiumOpen(true)}
-        onReturnToMenu={gameState.returnToMenu}
-      />
-
-      {/* 2. Global Environmental Hazard Banner */}
-      <EventBanner event={gameState.activeEvent} />
-
-      {/* 3. Commander PACE Board - Dedicated Full Width Row */}
-      <PACEBoard
-        player={gameState.activePlayer}
-        isCurrentPlayer={!gameState.activePlayer.isAI}
-        highlight={gameState.isTutorialMode && gameState.tutorialStep === 1}
-      />
-
-      {/* 4. Main Two-Column Operational Area */}
-      <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-        {/* Left Section: Active Crisis Missions (3 cols) + Equipment/Tactic Supply Market (4 cols) */}
-        <div className="xl:col-span-7 flex flex-col gap-4">
-          {/* Crisis Missions */}
-          <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 sm:p-5 shadow-xl backdrop-blur-md">
-            <div className="flex items-center justify-between pb-2 mb-3 border-b border-slate-800">
-              <div className="flex items-center gap-2">
-                <Radio className="w-4 h-4 text-cyan-400" />
-                <h2 className="text-xs sm:text-base font-mono font-bold text-slate-200">
-                  當前突發危機任務 (Active Crisis Missions)
-                </h2>
-              </div>
-              <span className="text-xs font-mono text-slate-400 hidden sm:inline-block">
-                點擊「發起廣播」驗證並獲取積分
-              </span>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-              {gameState.activeMissions.map(mission => {
-                const isTutorialTarget = gameState.isTutorialMode && (
-                  (gameState.tutorialStep === 4 && mission.id === 'mis_mountain_avalanche') ||
-                  (gameState.tutorialStep === 8 && mission.id === 'mis_cyber_emp_strike')
-                );
-                return (
-                  <MissionCardView
-                    key={mission.id}
-                    mission={mission}
-                    activePlayer={gameState.activePlayer}
-                    activeEvent={gameState.activeEvent}
-                    highlight={isTutorialTarget}
-                    disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
-                    onTransmit={gameState.transmitMission}
-                  />
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Market Area */}
-          <MarketArea
-            player={gameState.activePlayer}
-            market={gameState.market}
-            tacticMarket={gameState.tacticMarket}
-            onBuyEquipment={gameState.buyEquipment}
-            onBuyTactic={gameState.buyTactic}
-            disabled={gameState.activePlayer.isAI}
-            tutorialHighlightSlot={
-              gameState.isTutorialMode
-                ? gameState.tutorialStep === 2
-                  ? 'A'
-                  : gameState.tutorialStep === 7
-                  ? 'C'
-                  : undefined
-                : undefined
-            }
-          />
-        </div>
-
-        {/* Right Section: Action Controls (with Hand Tactics) + Combat Log */}
-        <div className="xl:col-span-5 flex flex-col gap-4">
-          {/* Action Control Panel */}
-          <ActionControlPanel
-            player={gameState.activePlayer}
-            isCurrentPlayer={!gameState.activePlayer.isAI}
-            isAI={gameState.activePlayer.isAI}
-            onPlayTactic={gameState.playTactic}
-            onRecharge={gameState.rechargeEnergy}
-            onEndTurn={gameState.endTurn}
-            tutorialHighlightTactic={gameState.isTutorialMode && gameState.tutorialStep === 3}
-            tutorialHighlightEndTurn={gameState.isTutorialMode && (gameState.tutorialStep === 5 || gameState.tutorialStep === 9)}
-            tutorialHighlightRecharge={gameState.isTutorialMode && gameState.tutorialStep === 6}
-          />
-
-          {/* Real-time Combat & Comms Log */}
-          <LogViewer logs={gameState.logs} />
-        </div>
-      </div>
-
-      {/* 5. Bottom Leaderboard */}
-      <ScoreBoard
-        players={gameState.players}
-        activePlayerId={gameState.activePlayer.id}
-        targetScore={gameState.targetScore}
-      />
-
-      {/* Interactive Step-by-Step Tutorial Overlay */}
-      {gameState.isTutorialMode && (
-        <InteractiveTutorial
-          step={gameState.tutorialStep}
-          onNext={gameState.nextTutorialStep}
-          onPrev={gameState.prevTutorialStep}
-          onFinish={gameState.finishTutorial}
-        />
-      )}
-
-      {/* Modals */}
-      <TutorialModal isOpen={isTutorialModalOpen} onClose={() => setIsTutorialModalOpen(false)} />
-      <PACEGuideModal isOpen={isGuideOpen} onClose={() => setIsGuideOpen(false)} />
-      <CardCompendiumModal isOpen={isCompendiumOpen} onClose={() => setIsCompendiumOpen(false)} />
-      <TransmissionResultModal
-        data={gameState.lastTransmission}
-        onClose={gameState.clearLastTransmission}
-      />
-      <GameOverModal
-        winner={gameState.winner}
-        players={gameState.players}
-        onRestart={gameState.restartGame}
-        onReturnToMenu={gameState.returnToMenu}
-      />
-    </div>
-  );
+  return <AppV2 onSwitchToV1={() => handleSwitchVersion('v1')} />;
 }
 
 export default App;
