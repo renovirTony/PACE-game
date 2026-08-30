@@ -114,8 +114,8 @@ export function V2MissionCardView({
             </span>
           )}
           {mission.requiresOptical && (
-            <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/30 font-bold">
-              🔦 光學限定
+            <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/40 font-bold" title="需具備光學閃光能力（如阿爾迪斯信號燈/強光手電筒），非光學之機車信差等無法發射光碼">
+              🔦 需光學信號燈 (摩斯光碼)
             </span>
           )}
           {mission.requiresWired && (
@@ -155,7 +155,19 @@ export function V2MissionCardView({
               <span className="text-xs">➔ 🏆{preview.earnedVP}分</span>
             </>
           ) : (
-            <span>❌ 目前所有防線皆無法連通</span>
+            <div className="flex flex-col text-left gap-0.5 w-full">
+              <span>❌ 目前所有防線皆無法連通</span>
+              {mission.requiresOptical && (
+                <span className="text-[9px] text-amber-300 font-normal">
+                  ※ 需配備【光學摩斯】裝備（如強光手電筒），非光學之機車信差無法發射視距光碼
+                </span>
+              )}
+              {mission.requiresSubterranean && (
+                <span className="text-[9px] text-emerald-300 font-normal">
+                  ※ 需配備具備【地底穿透】之裝備（如敲擊水管或 LoRa 節點）
+                </span>
+              )}
+            </div>
           )}
         </div>
 

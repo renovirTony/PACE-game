@@ -55,15 +55,23 @@ export function computeV2AIDecision(
   activeMissions: CrisisMission[],
   activeEvent: DisasterEvent | null
 ): AIDecision {
-  // 1. 若手牌有戰術卡且有電量或物資需求，優先打出
-  if (aiPlayer.handTactics.length > 0 && aiPlayer.actionPoints >= 1) {
+  // 1. 若手牌有戰術卡且有電量或物資需求，優先即時打出 (0 AP)
+  if (aiPlayer.handTactics.length > 0) {
     const rechargeTactic = aiPlayer.handTactics.find(t => t.effectType === 'RECHARGE_BATTERY');
-    if (rechargeTactic && aiPlayer.energy <= 1) {
+    if (rechargeTactic && aiPlayer.energy <= 2) {
       return { actionType: 'PLAY_TACTIC', targetTactic: rechargeTactic };
     }
     const supplyTactic = aiPlayer.handTactics.find(t => t.effectType === 'AIRDROP_CREDITS');
-    if (supplyTactic && aiPlayer.credits <= 1) {
+    if (supplyTactic && aiPlayer.credits <= 2) {
       return { actionType: 'PLAY_TACTIC', targetTactic: supplyTactic };
+    }
+    const empShieldTactic = aiPlayer.handTactics.find(t => t.effectType === 'FARADAY_SHIELD');
+    if (empShieldTactic && activeEvent?.id === 'evt_emp_strike' && !aiPlayer.activeBuffs?.faradayEmpArmor) {
+      return { actionType: 'PLAY_TACTIC', targetTactic: empShieldTactic };
+    }
+    const communityRelayTactic = aiPlayer.handTactics.find(t => t.effectType === 'COMMUNITY_RELAY');
+    if (communityRelayTactic && !aiPlayer.activeBuffs?.communityRelayActive) {
+      return { actionType: 'PLAY_TACTIC', targetTactic: communityRelayTactic };
     }
   }
 

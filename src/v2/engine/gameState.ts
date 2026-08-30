@@ -559,10 +559,10 @@ export function useV2GameState(): UseV2GameStateReturn {
     return true;
   }, [players, activePlayerIndex, tacticDeck, worldview, addLog]);
 
-  // 打出戰術卡
+  // 打出戰術卡 (0 AP 即時生效 Free Action！)
   const playTactic = useCallback((card: TacticCard): boolean => {
     const curPlayer = players[activePlayerIndex];
-    if (!curPlayer || curPlayer.actionPoints <= 0) {
+    if (!curPlayer) {
       return false;
     }
 
@@ -591,7 +591,6 @@ export function useV2GameState(): UseV2GameStateReturn {
       if (idx !== activePlayerIndex) return p;
       return {
         ...p,
-        actionPoints: p.actionPoints - 1,
         energy: Math.min(p.maxEnergy, p.energy + energyDelta),
         credits: p.credits + creditsDelta,
         activeBuffs: newBuffs,
@@ -600,7 +599,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     }));
 
     const tacticName = card.translations[worldview]?.name || card.id;
-    addLog('action', `【${curPlayer.name}】發動戰術【${tacticName}】！`, curPlayer.id, curPlayer.name);
+    addLog('action', `【${curPlayer.name}】即時發動戰術【${tacticName}】(0 AP)！`, curPlayer.id, curPlayer.name);
     return true;
   }, [players, activePlayerIndex, worldview, addLog]);
 

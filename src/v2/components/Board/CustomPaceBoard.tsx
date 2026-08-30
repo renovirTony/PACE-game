@@ -74,6 +74,38 @@ const mediumMeta: Record<PhysicalMedium, { label: string; icon: string; color: s
   },
 };
 
+export function getCardMediumInfo(card: CommsCard | null) {
+  if (!card) return null;
+  if (card.medium === 'PhysicalOptical') {
+    if (card.id === 'eq_aldis_light_mirror' || card.tags?.includes('光學信號')) {
+      return {
+        label: '光學摩斯',
+        icon: '🔦',
+        color: 'text-amber-300',
+        bgColor: 'bg-amber-950/50',
+        borderColor: 'border-amber-500/50',
+      };
+    }
+    if (card.id === 'eq_acoustic_thumper' || card.tags?.includes('聲學震波')) {
+      return {
+        label: '地底聲學',
+        icon: '🔊',
+        color: 'text-emerald-300',
+        bgColor: 'bg-emerald-950/50',
+        borderColor: 'border-emerald-500/50',
+      };
+    }
+    return {
+      label: '物理信差',
+      icon: '🏃',
+      color: 'text-purple-300',
+      bgColor: 'bg-purple-950/50',
+      borderColor: 'border-purple-500/50',
+    };
+  }
+  return mediumMeta[card.medium];
+}
+
 const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
   P: {
     title: '[P] 主要防線 (Primary)',
@@ -204,7 +236,7 @@ export function CustomPaceBoard({
           const card = board[slot];
           const meta = slotMeta[slot];
           const cardContent = card ? card.translations[worldview] : null;
-          const mediumInfo = card ? mediumMeta[card.medium] : null;
+          const mediumInfo = getCardMediumInfo(card);
           const isSwapSource = activeSwapSlot === slot;
 
           // 判斷當回合天災是否中斷此裝備
@@ -388,7 +420,7 @@ export function CustomPaceBoard({
                     </div>
                   </div>
 
-                  {/* Resilience Badges */}
+                  {/* Resilience & Specific Capability Badges */}
                   <div className="flex items-center gap-1 text-[9px] text-slate-400 flex-wrap pt-0.5">
                     {card.resilience.empShield && (
                       <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold">
@@ -403,6 +435,21 @@ export function CustomPaceBoard({
                     {card.resilience.subterranean && (
                       <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold">
                         🕳️ 地底穿透
+                      </span>
+                    )}
+                    {(card.id === 'eq_aldis_light_mirror' || card.tags?.includes('光學信號')) && (
+                      <span className="px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold">
+                        🔦 視距光碼
+                      </span>
+                    )}
+                    {(card.id === 'eq_motorcycle_runner' || card.tags?.includes('人力信差')) && (
+                      <span className="px-1.5 py-0.5 rounded bg-purple-950/70 text-purple-300 border border-purple-500/40 font-bold">
+                        🏃 實體載體
+                      </span>
+                    )}
+                    {(card.id === 'eq_acoustic_thumper' || card.tags?.includes('聲學震波')) && (
+                      <span className="px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 font-bold">
+                        🔊 聲學震波
                       </span>
                     )}
                     {card.tags && card.tags.map((t) => (
@@ -453,7 +500,7 @@ export function CustomPaceBoard({
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
             {inventory.map((card) => {
               const content = card.translations[worldview];
-              const mediumInfo = mediumMeta[card.medium];
+              const mediumInfo = getCardMediumInfo(card) || mediumMeta[card.medium];
               const isSelected = activeInventoryCard?.id === card.id;
 
               return (

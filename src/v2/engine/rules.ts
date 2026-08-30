@@ -154,11 +154,11 @@ export function checkCardEligibilityV2(
   }
 
   // 6. 檢查特定物理媒介專屬要求 (例如黑夜純視距光學、全頻干擾純實體有線)
-  if (mission.requiresOptical && (card.medium !== 'PhysicalOptical' || card.id !== 'eq_aldis_light_mirror')) {
+  if (mission.requiresOptical && (card.medium !== 'PhysicalOptical' || (card.id !== 'eq_aldis_light_mirror' && !card.tags?.includes('光學信號')))) {
     return {
       eligible: false,
-      blockedReason: `🔦 此任務處於黑夜電磁靜默，必須使用【光學信號燈/摩斯光碼】！`,
-      expertDetail: `黑夜視距引導需使用強光信號燈閃爍光碼，非光學發射手段無法被對岸或直升機肉眼辨識。`,
+      blockedReason: `🔦 此任務處於黑夜電磁靜默，必須使用【光學信號燈/摩斯光碼】（機車信差等實體載體無法發送視距光碼）！`,
+      expertDetail: `黑夜視距引導需使用強光手電筒或阿爾迪斯信號燈閃爍光碼，非光學發射手段（如機車巡守隊）無法被對岸肉眼辨識。`,
     };
   }
 
