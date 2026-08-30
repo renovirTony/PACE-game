@@ -17,7 +17,7 @@ import { V2_EQUIPMENT_CARDS, V2_STARTER_CARDS } from '../data/equipmentCards';
 import { V2_DISASTER_EVENTS } from '../data/disasterEvents';
 import { V2_CRISIS_MISSIONS } from '../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../data/tacticCards';
-import { evaluateV2PACETransmission } from './rules';
+import { evaluateV2PACETransmission, canPlaceCardInSlot } from './rules';
 import { computeV2AIDecision } from './ai';
 import { P2PMultiplayerManager } from './multiplayer';
 import { audioManager } from '../../engine/audio';
@@ -339,6 +339,12 @@ export function useV2GameState(): UseV2GameStateReturn {
       return false;
     }
 
+    const slotCheck = canPlaceCardInSlot(card, targetSlot);
+    if (!slotCheck.valid) {
+      addLog('alert', slotCheck.reason || '無法配置至此槽位！', curPlayer.id, curPlayer.name);
+      return false;
+    }
+
     audioManager.playEquipSound();
 
     const existingCard = curPlayer.paceBoard[targetSlot];
@@ -383,6 +389,10 @@ export function useV2GameState(): UseV2GameStateReturn {
 
   // 自由調動/指派槽位
   const assignSlot = useCallback((slot: PACESlot, card: CommsCard | null) => {
+    if (card) {
+      const slotCheck = canPlaceCardInSlot(card, slot);
+      if (!slotCheck.valid) return;
+    }
     setPlayers(prev => prev.map((p, idx) => {
       if (idx !== activePlayerIndex) return p;
       return {
@@ -395,17 +405,37 @@ export function useV2GameState(): UseV2GameStateReturn {
     }));
   }, [activePlayerIndex]);
 
-  // 自由對調任意兩道防線 (0 AP 消耗，無悔隨時調度)
-  const swapSlots = useCallback((slotA: PACESlot, slotB: PACESlot) => {
-    if (slotA === slotB) return;
+  // 對調任意兩道防線 (消耗 1 AP 戰術調度點數)
+  const swapSlots = useCallback((slotA: PACESlot, slotB: PACESlot): boolean => {
+    if (slotA === slotB) return false;
+    const curPlayer = players[activePlayerIndex];
+    if (!curPlayer || curPlayer.actionPoints <= 0) {
+      addLog('alert', '⚡ 行動點數不足！對調防線需消耗 1 AP 戰術調度點數。', curPlayer?.id, curPlayer?.name);
+      return false;
+    }
+
+    const cardA = curPlayer.paceBoard[slotA];
+    const cardB = curPlayer.paceBoard[slotB];
+
+    // 檢查對調後的合法性 (例如 P 槽不可放置 Low 頻寬純應急工具)
+    const checkA = canPlaceCardInSlot(cardB, slotA);
+    if (!checkA.valid) {
+      addLog('alert', checkA.reason || '無法對調！', curPlayer.id, curPlayer.name);
+      return false;
+    }
+    const checkB = canPlaceCardInSlot(cardA, slotB);
+    if (!checkB.valid) {
+      addLog('alert', checkB.reason || '無法對調！', curPlayer.id, curPlayer.name);
+      return false;
+    }
+
     audioManager.playClick();
 
     setPlayers(prev => prev.map((p, idx) => {
       if (idx !== activePlayerIndex) return p;
-      const cardA = p.paceBoard[slotA];
-      const cardB = p.paceBoard[slotB];
       return {
         ...p,
+        actionPoints: p.actionPoints - 1,
         paceBoard: {
           ...p.paceBoard,
           [slotA]: cardB,
@@ -414,11 +444,11 @@ export function useV2GameState(): UseV2GameStateReturn {
       };
     }));
 
-    const curPlayer = players[activePlayerIndex];
-    addLog('action', `【${curPlayer?.name}】對調了 [${slotA}] 與 [${slotB}] 防線的通訊裝備。`, curPlayer?.id, curPlayer?.name);
+    addLog('action', `【${curPlayer.name}】消耗 1 AP 對調了 [${slotA}] 與 [${slotB}] 防線的通訊裝備。`, curPlayer.id, curPlayer.name);
+    return true;
   }, [players, activePlayerIndex, addLog]);
 
-  // 將某槽位裝備卸下並存入備用倉庫 (安全不刪除)
+  // 將某槽位裝備卸下並存入備用倉庫 (安全收存，0 AP)
   const storeCard = useCallback((slot: PACESlot) => {
     const curPlayer = players[activePlayerIndex];
     const cardToStore = curPlayer?.paceBoard[slot];
@@ -442,10 +472,20 @@ export function useV2GameState(): UseV2GameStateReturn {
     addLog('action', `【${curPlayer.name}】將 [${slot}] 槽位的【${cardName}】卸下收至備用倉庫。`, curPlayer.id, curPlayer.name);
   }, [players, activePlayerIndex, worldview, addLog]);
 
-  // 從備用倉庫重新裝備至指定槽位
-  const equipFromInventory = useCallback((card: CommsCard, targetSlot: PACESlot) => {
+  // 從備用倉庫重新裝備至指定槽位 (消耗 1 AP 戰術調度點數)
+  const equipFromInventory = useCallback((card: CommsCard, targetSlot: PACESlot): boolean => {
     const curPlayer = players[activePlayerIndex];
-    if (!curPlayer) return;
+    if (!curPlayer) return false;
+    if (curPlayer.actionPoints <= 0) {
+      addLog('alert', '⚡ 行動點數不足！從備用倉庫調配裝備需消耗 1 AP 戰術調度點數。', curPlayer.id, curPlayer.name);
+      return false;
+    }
+
+    const slotCheck = canPlaceCardInSlot(card, targetSlot);
+    if (!slotCheck.valid) {
+      addLog('alert', slotCheck.reason || '無法配置至此槽位！', curPlayer.id, curPlayer.name);
+      return false;
+    }
 
     audioManager.playEquipSound();
     const existingCard = curPlayer.paceBoard[targetSlot];
@@ -455,6 +495,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       const remainingInventory = p.inventory.filter(c => c.id !== card.id);
       return {
         ...p,
+        actionPoints: p.actionPoints - 1,
         paceBoard: {
           ...p.paceBoard,
           [targetSlot]: card,
@@ -464,7 +505,8 @@ export function useV2GameState(): UseV2GameStateReturn {
     }));
 
     const cardName = card.translations[worldview]?.name || card.id;
-    addLog('action', `【${curPlayer.name}】從備用倉庫將【${cardName}】配置至 [${targetSlot}] 槽位。`, curPlayer.id, curPlayer.name);
+    addLog('action', `【${curPlayer.name}】消耗 1 AP 從備用倉庫將【${cardName}】配置至 [${targetSlot}] 槽位。`, curPlayer.id, curPlayer.name);
+    return true;
   }, [players, activePlayerIndex, worldview, addLog]);
 
   // 徹底丟棄倉庫中的裝備

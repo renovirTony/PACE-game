@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, WorldviewType } from '../../types/game';
+import { canPlaceCardInSlot } from '../../engine/rules';
 import { 
   Radio, 
   Smartphone, 
@@ -20,7 +21,8 @@ import {
   Trash2,
   ZapOff,
   CloudRain,
-  XCircle
+  XCircle,
+  Lock
 } from 'lucide-react';
 
 interface CustomPaceBoardProps {
@@ -75,8 +77,8 @@ const mediumMeta: Record<PhysicalMedium, { label: string; icon: string; color: s
 const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
   P: {
     title: '[P] 主要防線 (Primary)',
-    subtitle: '日常高頻寬通訊',
-    roleDesc: '平日優先啟動 · 處理大量數據與視訊 · 滿額 100% 收益',
+    subtitle: '日常主流通訊 (需 High/Med 頻寬)',
+    roleDesc: '平日優先啟動 · 處理大量數據與視訊 · 滿額 100% 收益 (限 High/Med)',
     defaultColor: 'border-cyan-500/40 bg-cyan-950/20 text-cyan-300',
   },
   A: {
@@ -141,6 +143,8 @@ export function CustomPaceBoard({
     }
   };
 
+  const hasAP = player.actionPoints > 0;
+
   return (
     <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4">
       {/* Header with Diversity Metric */}
@@ -174,7 +178,7 @@ export function CustomPaceBoard({
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <span className="font-black">共因失效警示 (Common-Mode Vulnerability)：</span>
-            你的 [P] 與 [A] 槽位皆依賴同種【{mediumMeta[pMedium!].label}】媒介！若遭遇對應天災（如大停電或暴風雨），前兩道防線將同時癱瘓！可點擊下方「🔄 調換」隨時調配裝備。
+            你的 [P] 與 [A] 槽位皆依賴同種【{mediumMeta[pMedium!].label}】媒介！若遭遇對應天災（如大停電或暴風雨），前兩道防線將同時癱瘓！可點擊下方「🔄 調換 (1 AP)」隨時調配裝備。
           </div>
         </div>
       )}
@@ -183,7 +187,7 @@ export function CustomPaceBoard({
       {activeSwapSlot && (
         <div className="p-3 rounded-2xl bg-cyan-950/70 border border-cyan-400 text-cyan-200 text-xs flex items-center justify-between animate-fadeIn">
           <span>
-            🔄 正在調換 <b>[{activeSwapSlot}] 防線</b> 的裝備，請點擊目標防線按鈕完成對調：
+            🔄 正在調換 <b>[{activeSwapSlot}] 防線</b> 的裝備 (消耗 1 AP)，請點擊目標防線按鈕完成對調：
           </span>
           <button
             onClick={() => setActiveSwapSlot(null)}
@@ -215,6 +219,21 @@ export function CustomPaceBoard({
 
           const isCardDisabled = isDisasterTargeted || isOutOfPower;
 
+          // 檢查調換合法性
+          let isSwapValidWithSource = true;
+          if (activeSwapSlot && activeSwapSlot !== slot) {
+            const checkSourceToTarget = canPlaceCardInSlot(board[activeSwapSlot], slot);
+            const checkTargetToSource = canPlaceCardInSlot(card, activeSwapSlot);
+            isSwapValidWithSource = checkSourceToTarget.valid && checkTargetToSource.valid;
+          }
+
+          // 檢查倉庫裝備合法性
+          let isEquipValidWithInventory = true;
+          if (activeInventoryCard) {
+            const checkEquip = canPlaceCardInSlot(activeInventoryCard, slot);
+            isEquipValidWithInventory = checkEquip.valid;
+          }
+
           return (
             <div
               key={slot}
@@ -244,21 +263,24 @@ export function CustomPaceBoard({
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => setActiveSwapSlot(isSwapSource ? null : slot)}
+                      disabled={!hasAP && !isSwapSource}
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${
                         isSwapSource
                           ? 'bg-cyan-500 text-slate-950 border-cyan-400'
+                          : !hasAP
+                          ? 'bg-slate-900/40 text-slate-500 border-slate-800 cursor-not-allowed opacity-50'
                           : 'bg-slate-900/80 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border-slate-700'
                       }`}
-                      title="與其他防線對調順序 (0 AP)"
+                      title={hasAP ? "與其他防線對調順序 (消耗 1 AP 戰術調度)" : "行動點數不足 (需 1 AP)"}
                     >
                       <ArrowLeftRight className="w-3 h-3" />
-                      <span>{isSwapSource ? '選擇中' : '調換'}</span>
+                      <span>{isSwapSource ? '選擇中' : '調換 (1 AP)'}</span>
                     </button>
 
                     <button
                       onClick={() => onStoreCard(slot)}
                       className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-700 transition-all flex items-center gap-1"
-                      title="卸下此裝備存入備用倉庫 (不刪除)"
+                      title="卸下此裝備存入備用倉庫 (0 AP，不刪除)"
                     >
                       <Archive className="w-3 h-3" />
                       <span>收存</span>
@@ -285,26 +307,42 @@ export function CustomPaceBoard({
 
               {/* If Swap mode is active on another slot, offer this slot as target */}
               {activeSwapSlot && activeSwapSlot !== slot && (
-                <div className="my-2 p-2 rounded-xl bg-cyan-950 border border-cyan-400 text-center animate-bounce">
-                  <button
-                    onClick={() => handleSwapTarget(slot)}
-                    className="w-full py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs transition-all"
-                  >
-                    🔄 對調至 [{slot}] 防線
-                  </button>
-                </div>
+                isSwapValidWithSource ? (
+                  <div className="my-2 p-2 rounded-xl bg-cyan-950 border border-cyan-400 text-center animate-bounce">
+                    <button
+                      onClick={() => handleSwapTarget(slot)}
+                      className="w-full py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs transition-all"
+                    >
+                      🔄 對調至 [{slot}] 防線 (1 AP)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="my-2 p-2 rounded-xl bg-red-950/80 border border-red-500/60 text-center">
+                    <span className="text-[11px] font-bold text-red-300 flex items-center justify-center gap-1">
+                      <Lock className="w-3 h-3" /> [P] 槽限 High/Med 頻寬
+                    </span>
+                  </div>
+                )
               )}
 
               {/* If Inventory Equip mode is active, offer this slot as target */}
               {activeInventoryCard && (
-                <div className="my-2 p-2 rounded-xl bg-purple-950 border border-purple-400 text-center animate-bounce">
-                  <button
-                    onClick={() => handleEquipFromInv(slot)}
-                    className="w-full py-1.5 rounded-lg bg-purple-400 hover:bg-purple-300 text-slate-950 font-black text-xs transition-all"
-                  >
-                    📥 裝備至 [{slot}] 防線
-                  </button>
-                </div>
+                isEquipValidWithInventory ? (
+                  <div className="my-2 p-2 rounded-xl bg-purple-950 border border-purple-400 text-center animate-bounce">
+                    <button
+                      onClick={() => handleEquipFromInv(slot)}
+                      className="w-full py-1.5 rounded-lg bg-purple-400 hover:bg-purple-300 text-slate-950 font-black text-xs transition-all"
+                    >
+                      📥 裝備至 [{slot}] 防線 (1 AP)
+                    </button>
+                  </div>
+                ) : (
+                  <div className="my-2 p-2 rounded-xl bg-red-950/80 border border-red-500/60 text-center">
+                    <span className="text-[11px] font-bold text-red-300 flex items-center justify-center gap-1">
+                      <Lock className="w-3 h-3" /> [P] 槽限 High/Med 頻寬
+                    </span>
+                  </div>
+                )
               )}
 
               {/* Card Body or Empty Placeholder */}
@@ -439,13 +477,17 @@ export function CustomPaceBoard({
                   <div className="flex items-center gap-1 shrink-0">
                     <button
                       onClick={() => setActiveInventoryCard(isSelected ? null : card)}
+                      disabled={!hasAP && !isSelected}
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
                         isSelected
                           ? 'bg-purple-500 text-slate-950'
+                          : !hasAP
+                          ? 'bg-slate-800/40 text-slate-500 border border-slate-800 cursor-not-allowed opacity-50'
                           : 'bg-slate-800 hover:bg-purple-950 text-purple-300 border border-purple-500/40'
                       }`}
+                      title={hasAP ? "從倉庫調配裝備至防線 (消耗 1 AP)" : "行動點數不足 (需 1 AP)"}
                     >
-                      {isSelected ? '選擇槽位' : '裝備'}
+                      {isSelected ? '選擇槽位' : '裝備 (1 AP)'}
                     </button>
                   </div>
                 </div>

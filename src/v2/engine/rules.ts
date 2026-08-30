@@ -11,6 +11,25 @@ import {
 const PACE_ORDER: PACESlot[] = ['P', 'A', 'C', 'E'];
 
 /**
+ * 檢查裝備卡是否符合槽位規範門檻
+ * [P] 主要防線：必須具備日常通訊能力，最低頻寬需為 Medium 或 High（不可放置 Low 頻寬純應急工具）
+ * [A], [C], [E]：開放自由配置
+ */
+export function canPlaceCardInSlot(
+  card: CommsCard | null,
+  slot: PACESlot
+): { valid: boolean; reason?: string } {
+  if (!card) return { valid: true };
+  if (slot === 'P' && card.bandwidth === 'Low') {
+    return {
+      valid: false,
+      reason: '⚠️ [P] 主要防線需具備日常通聯能力（最低頻寬需為 Medium 或 High），不能配置 Low 頻寬純應急工具！',
+    };
+  }
+  return { valid: true };
+}
+
+/**
  * 檢查單張設備卡是否符合任務要求及物理環境限制
  */
 export function checkCardEligibilityV2(

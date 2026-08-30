@@ -15,8 +15,8 @@ export interface AIDecision {
 export function findBestSlotForCard(player: Player, card: CommsCard): PACESlot {
   const board = player.paceBoard;
 
-  // 1. 如果 P 空著且該卡為 High 頻寬，優先放 P
-  if (!board.P && card.bandwidth === 'High') return 'P';
+  // 1. 如果 P 空著且該卡為 High 或 Medium 頻寬，優先放 P
+  if (!board.P && (card.bandwidth === 'High' || card.bandwidth === 'Medium')) return 'P';
 
   // 2. 如果 A 空著且該卡為 High/Medium 頻寬，且媒介與 P 不同，優先放 A
   if (!board.A && (card.bandwidth === 'High' || card.bandwidth === 'Medium')) {
@@ -36,13 +36,13 @@ export function findBestSlotForCard(player: Player, card: CommsCard): PACESlot {
   if (card.bandwidth === 'High' && board.P && board.P.bandwidth !== 'High') return 'P';
   if (card.resilience.empShield && board.C && !board.C.resilience.empShield) return 'C';
 
-  // 預設找第一個空槽位
-  if (!board.P) return 'P';
+  // 預設找第一個空槽位 (P 槽必須具備 Medium 或 High 頻寬)
+  if (!board.P && card.bandwidth !== 'Low') return 'P';
   if (!board.A) return 'A';
   if (!board.C) return 'C';
   if (!board.E) return 'E';
 
-  return 'A'; // 覆蓋 A 備援
+  return card.bandwidth === 'Low' ? 'C' : 'A'; // 覆蓋適當備援槽位
 }
 
 /**
