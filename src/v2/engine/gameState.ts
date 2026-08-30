@@ -59,7 +59,7 @@ export interface UseV2GameStateReturn {
   nextTutorialStep: () => void;
   prevTutorialStep: () => void;
   startTutorial: () => void;
-  finishTutorial: () => void;
+  finishTutorial: (action?: 'menu' | 'play') => void;
 
   // Multiplayer State
   roomCode: string;
@@ -152,10 +152,29 @@ export function useV2GameState(): UseV2GameStateReturn {
       playerId,
       playerName,
       message,
-      details
+      details,
     };
     setLogs(prev => [newLog, ...prev.slice(0, 49)]);
   }, [round]);
+
+  const leaveRoom = useCallback(() => {
+    if (multiplayerRef.current) {
+      multiplayerRef.current.disconnect();
+      multiplayerRef.current = null;
+    }
+    setRoomCode('');
+    setIsHost(false);
+    setPeers([]);
+    setConnectionStatus('disconnected');
+    setConnectionMsg('');
+  }, []);
+
+  const returnToMenu = useCallback(() => {
+    setPhase('SETUP');
+    setIsTutorialMode(false);
+    setTutorialStep(1);
+    leaveRoom();
+  }, [leaveRoom]);
 
   // 初始化並開始遊戲
   const startGame = useCallback((mode: GameMode, bots: number = 2) => {
@@ -384,15 +403,15 @@ export function useV2GameState(): UseV2GameStateReturn {
     // 精選市場裝備卡 (衛星電話、強光手電筒、通訊車、地下光纖)
     const satPhone = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_satellite_phone') || V2_EQUIPMENT_CARDS[0];
     const aldisLight = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_aldis_light_mirror') || V2_EQUIPMENT_CARDS[1];
-    const commsVan = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_emergency_comms_van') || V2_EQUIPMENT_CARDS[2];
-    const wiredPhone = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_subterranean_phone') || V2_EQUIPMENT_CARDS[3];
+    const commsVan = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_mesh_cell_truck') || V2_EQUIPMENT_CARDS[2];
+    const wiredPhone = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_fiber_hotline') || V2_EQUIPMENT_CARDS[3];
     const tutMarket = [satPhone, aldisLight, commsVan, wiredPhone];
     const restEquip = V2_EQUIPMENT_CARDS.filter(c => !tutMarket.some(m => m.id === c.id));
 
     // 精選戰術市場
     const priorityTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_priority_logistics') || V2_TACTIC_CARDS[0];
     const burstTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_burst_transmission') || V2_TACTIC_CARDS[1];
-    const genTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_emergency_generator') || V2_TACTIC_CARDS[2];
+    const genTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_mobile_generator') || V2_TACTIC_CARDS[2];
     const tutTacticMarket = [priorityTactic, burstTactic, genTactic];
     const restTactics = V2_TACTIC_CARDS.filter(t => t.id !== agileTactic.id && !tutTacticMarket.some(m => m.id === t.id));
 
@@ -429,10 +448,18 @@ export function useV2GameState(): UseV2GameStateReturn {
     setTutorialStep(s => Math.max(1, s - 1));
   }, []);
 
-  const finishTutorial = useCallback(() => {
+  const finishTutorial = useCallback((action: 'menu' | 'play' = 'menu') => {
     setIsTutorialMode(false);
-    addLog('success', '🎉 恭喜完成新手教學！現在開始自由指揮演習！');
-  }, [addLog]);
+    setTutorialStep(1);
+    if (action === 'menu') {
+      setPhase('SETUP');
+      leaveRoom();
+      addLog('info', '🏠 已結束新手教學，返回指揮部主選單。');
+    } else {
+      startGame('SinglePlayer', 1);
+      addLog('success', '🎉 結訓認證完成！已展開全新正式實戰演習！');
+    }
+  }, [leaveRoom, startGame, addLog]);
 
   // 購買裝備卡並自選放入槽位 (若原槽位有裝備，自動收納至備用倉庫，不直接覆蓋刪除！)
   const buyEquipment = useCallback((card: CommsCard, targetSlot: PACESlot): boolean => {
@@ -870,6 +897,23 @@ export function useV2GameState(): UseV2GameStateReturn {
       };
     }));
 
+    // 若處於新手教學模式，點擊結束回合直接結算天災並留在指揮官視角
+    if (isTutorialMode) {
+      const nextRound = round + 1;
+      setRound(nextRound);
+      const blackoutEvt = V2_DISASTER_EVENTS.find(e => e.id === 'evt_grid_blackout') || V2_DISASTER_EVENTS[0];
+      setActiveEvent(blackoutEvt);
+      addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${blackoutEvt.translations[worldview]?.title}】！`);
+
+      // 重置玩家 AP 並固定由指揮官行動
+      setPlayers(prev => prev.map(p => ({
+        ...p,
+        actionPoints: p.maxActionPoints,
+      })));
+      setActivePlayerIndex(0);
+      return;
+    }
+
     const nextIndex = (activePlayerIndex + 1) % players.length;
 
     // 若所有玩家輪過一圈，推進大回合
@@ -889,11 +933,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       setRound(nextRound);
 
       // 翻開下一個災難事件 (若事件庫空了也重洗)
-      if (isTutorialMode) {
-        const blackoutEvt = V2_DISASTER_EVENTS.find(e => e.id === 'evt_grid_blackout') || V2_DISASTER_EVENTS[0];
-        setActiveEvent(blackoutEvt);
-        addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${blackoutEvt.translations[worldview]?.title}】！`);
-      } else if (eventDeck.length > 0) {
+      if (eventDeck.length > 0) {
         const nextEvt = eventDeck[0];
         setActiveEvent(nextEvt);
         setEventDeck(d => d.slice(1));
@@ -1036,18 +1076,6 @@ export function useV2GameState(): UseV2GameStateReturn {
     setIsHost(false);
   }, []);
 
-  const leaveRoom = useCallback(() => {
-    if (multiplayerRef.current) {
-      multiplayerRef.current.disconnect();
-      multiplayerRef.current = null;
-    }
-    setRoomCode('');
-    setIsHost(false);
-    setPeers([]);
-    setConnectionStatus('disconnected');
-    setConnectionMsg('');
-  }, []);
-
   const clearLastTransmission = useCallback(() => {
     setLastTransmission(null);
   }, []);
@@ -1055,11 +1083,6 @@ export function useV2GameState(): UseV2GameStateReturn {
   const restartGame = useCallback(() => {
     startGame(gameMode, botCount);
   }, [startGame, gameMode, botCount]);
-
-  const returnToMenu = useCallback(() => {
-    setPhase('SETUP');
-    leaveRoom();
-  }, [leaveRoom]);
 
   const activePlayer = players[activePlayerIndex] || players[0] || {
     id: 'p1',

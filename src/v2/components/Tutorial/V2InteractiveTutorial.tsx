@@ -1,11 +1,11 @@
 import React from 'react';
-import { GraduationCap, ArrowRight, ArrowLeft, Check, Sparkles, X, Target, Lightbulb } from 'lucide-react';
+import { GraduationCap, ArrowRight, ArrowLeft, Check, X, Target, Lightbulb, Home, Play } from 'lucide-react';
 
 interface V2InteractiveTutorialProps {
   step: number;
   onNext: () => void;
   onPrev: () => void;
-  onFinish: () => void;
+  onFinish: (action: 'menu' | 'play') => void;
 }
 
 export interface TutorialStepDef {
@@ -118,11 +118,11 @@ export function V2InteractiveTutorial({
           </div>
 
           <button
-            onClick={onFinish}
+            onClick={() => onFinish('menu')}
             className="p-1.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all text-xs flex items-center gap-1 font-bold"
-            title="跳過教學直接開始遊戲"
+            title="退出教學回到主選單"
           >
-            <span>跳過教學</span>
+            <span>退出教學</span>
             <X className="w-4 h-4" />
           </button>
         </div>
@@ -145,7 +145,7 @@ export function V2InteractiveTutorial({
         </div>
 
         {/* Navigation Buttons */}
-        <div className="flex items-center justify-between pt-1">
+        <div className="flex items-center justify-between pt-1 gap-2 flex-wrap sm:flex-nowrap">
           <button
             onClick={onPrev}
             disabled={step === 1}
@@ -154,7 +154,7 @@ export function V2InteractiveTutorial({
             <ArrowLeft className="w-3.5 h-3.5" /> 上一步
           </button>
 
-          <div className="flex items-center gap-1.5">
+          <div className="hidden sm:flex items-center gap-1.5">
             {V2_TUTORIAL_STEPS.map((s) => (
               <div
                 key={s.step}
@@ -170,13 +170,22 @@ export function V2InteractiveTutorial({
           </div>
 
           {isLast ? (
-            <button
-              onClick={onFinish}
-              className="px-5 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-400 hover:to-cyan-300 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-lg shadow-cyan-500/25 active:scale-95 flex items-center gap-1.5"
-            >
-              <Check className="w-4 h-4" />
-              <span>完成教學，開始實戰！</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onFinish('menu')}
+                className="px-3.5 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 font-bold text-xs transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+              >
+                <Home className="w-4 h-4 text-cyan-400" />
+                <span>返回主選單</span>
+              </button>
+              <button
+                onClick={() => onFinish('play')}
+                className="px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500 to-cyan-400 hover:from-purple-400 hover:to-cyan-300 text-slate-950 font-black text-xs transition-all shadow-lg shadow-cyan-500/25 active:scale-95 flex items-center gap-1.5"
+              >
+                <Play className="w-4 h-4" />
+                <span>展開正式演習！</span>
+              </button>
+            </div>
           ) : (
             <button
               onClick={onNext}

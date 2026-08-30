@@ -335,11 +335,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                         !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
                     }
                     onTransmit={(m) => {
-                      const res = gameState.transmitMission(m);
-                      if (gameState.isTutorialMode && gameState.tutorialStep === 5) {
-                        gameState.nextTutorialStep();
-                      }
-                      return res;
+                      return gameState.transmitMission(m);
                     }}
                     tutorialHighlightMission={gameState.isTutorialMode && gameState.tutorialStep === 5 && idx === 0}
                   />
@@ -410,8 +406,8 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
           targetScore={gameState.targetScore}
         />
 
-        {/* Interactive Step-by-Step Tutorial Overlay */}
-        {gameState.isTutorialMode && (
+        {/* Interactive Step-by-Step Tutorial Overlay (Hidden when Debrief Modal is open) */}
+        {gameState.isTutorialMode && !gameState.lastTransmission && (
           <V2InteractiveTutorial
             step={gameState.tutorialStep}
             onNext={gameState.nextTutorialStep}
@@ -424,7 +420,12 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         <V2TransmissionResultModal
           data={gameState.lastTransmission}
           worldview={gameState.worldview}
-          onClose={gameState.clearLastTransmission}
+          onClose={() => {
+            gameState.clearLastTransmission();
+            if (gameState.isTutorialMode && gameState.tutorialStep === 5) {
+              gameState.nextTutorialStep();
+            }
+          }}
         />
 
         <V2GameOverModal
