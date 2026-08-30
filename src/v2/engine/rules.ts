@@ -225,12 +225,14 @@ export function evaluateV2PACETransmission(
     });
 
     if (eligible) {
-      // 計算降級回報率
+      // 計算降級回報率 (若啟動志願者中繼台，C 與 E 槽位均視同 A 槽享有 100% 滿額收益！)
       let degradationRate = 1.0;
-      if (slot === 'C') {
-        degradationRate = player.activeBuffs?.communityRelayActive ? 0.85 : 0.7;
+      if (player.activeBuffs?.communityRelayActive) {
+        degradationRate = 1.0;
+      } else if (slot === 'C') {
+        degradationRate = 0.7;
       } else if (slot === 'E') {
-        degradationRate = player.activeBuffs?.communityRelayActive ? 0.75 : 0.5;
+        degradationRate = 0.5;
       }
 
       const earnedVP = Math.max(1, Math.round(mission.vpReward * degradationRate));
@@ -247,11 +249,15 @@ export function evaluateV2PACETransmission(
         reasonText = `🔄 主要手段受阻，成功切換至 [A 備用防線]！`;
         expertDebrief = `備援生效！當主要通道失靈時，【${cardName}】成功接替，維持 100% 任務達成率。`;
       } else if (slot === 'C') {
-        reasonText = `🛡️ 前兩道防線中斷，成功啟動 [C 應急防線]！（通訊降級獲得 ${Math.round(degradationRate * 100)}% 收益）`;
-        expertDebrief = `應急止血成功！在常規手段全倒下，依靠強韌的【${cardName}】救回危機！雖然傳輸受限而有些微降級，但守住了生命防線。`;
+        reasonText = player.activeBuffs?.communityRelayActive 
+          ? `🛡️ 啟動 [C 應急防線]！因【志願者中繼台】加持，獲得 100% 滿額收益！`
+          : `🛡️ 前兩道防線中斷，成功啟動 [C 應急防線]！（通訊降級獲得 ${Math.round(degradationRate * 100)}% 收益）`;
+        expertDebrief = `應急止血成功！在常規手段全倒下，依靠強韌的【${cardName}】救回危機！${player.activeBuffs?.communityRelayActive ? '志願者中繼節點成功將應急訊號補償至滿額 100% 傳輸率！' : '雖然傳輸受限而有些微降級，但守住了生命防線。'}`;
       } else if (slot === 'E') {
-        reasonText = `🚨 全線常規崩潰，依靠終極 [E 緊急防線] 逆轉生還！（緊急降級獲得 ${Math.round(degradationRate * 100)}% 收益）`;
-        expertDebrief = `終極保命！在電磁與電網全毀的絕境中，最原始的【${cardName}】送出了最後的生還座標！這就是為什麼 PACE 必須保留最後一道物理防線！`;
+        reasonText = player.activeBuffs?.communityRelayActive
+          ? `🚨 啟動終極 [E 緊急防線]！因【志願者中繼台】加持，獲得 100% 滿額收益！`
+          : `🚨 全線常規崩潰，依靠終極 [E 緊急防線] 逆轉生還！（緊急降級獲得 ${Math.round(degradationRate * 100)}% 收益）`;
+        expertDebrief = `終極保命！在電磁與電網全毀的絕境中，最原始的【${cardName}】送出了最後的生還座標！${player.activeBuffs?.communityRelayActive ? '志願者中繼站完成了全線轉發，救難收益達到滿額 100%！' : '這就是為什麼 PACE 必須保留最後一道物理防線！'}`;
       }
 
       if (commonModeWarning) {

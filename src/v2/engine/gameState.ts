@@ -405,12 +405,15 @@ export function useV2GameState(): UseV2GameStateReturn {
     }));
   }, [activePlayerIndex]);
 
-  // 對調任意兩道防線 (消耗 1 AP 戰術調度點數)
+  // 對調任意兩道防線 (消耗 1 AP 戰術調度點數，若有敏捷協議則 0 AP)
   const swapSlots = useCallback((slotA: PACESlot, slotB: PACESlot): boolean => {
     if (slotA === slotB) return false;
     const curPlayer = players[activePlayerIndex];
-    if (!curPlayer || curPlayer.actionPoints <= 0) {
-      addLog('alert', '⚡ 行動點數不足！對調防線需消耗 1 AP 戰術調度點數。', curPlayer?.id, curPlayer?.name);
+    if (!curPlayer) return false;
+
+    const isAgile = Boolean(curPlayer.activeBuffs?.agileProtocolActive);
+    if (!isAgile && curPlayer.actionPoints <= 0) {
+      addLog('alert', '⚡ 行動點數不足！對調防線需消耗 1 AP 戰術調度點數（或啟用敏捷通訊協議）。', curPlayer.id, curPlayer.name);
       return false;
     }
 
@@ -435,7 +438,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       if (idx !== activePlayerIndex) return p;
       return {
         ...p,
-        actionPoints: p.actionPoints - 1,
+        actionPoints: isAgile ? p.actionPoints : p.actionPoints - 1,
         paceBoard: {
           ...p.paceBoard,
           [slotA]: cardB,
@@ -444,7 +447,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       };
     }));
 
-    addLog('action', `【${curPlayer.name}】消耗 1 AP 對調了 [${slotA}] 與 [${slotB}] 防線的通訊裝備。`, curPlayer.id, curPlayer.name);
+    addLog('action', `【${curPlayer.name}】${isAgile ? '【敏捷協議 0 AP】' : '消耗 1 AP '}對調了 [${slotA}] 與 [${slotB}] 防線的通訊裝備。`, curPlayer.id, curPlayer.name);
     return true;
   }, [players, activePlayerIndex, addLog]);
 
@@ -472,12 +475,14 @@ export function useV2GameState(): UseV2GameStateReturn {
     addLog('action', `【${curPlayer.name}】將 [${slot}] 槽位的【${cardName}】卸下收至備用倉庫。`, curPlayer.id, curPlayer.name);
   }, [players, activePlayerIndex, worldview, addLog]);
 
-  // 從備用倉庫重新裝備至指定槽位 (消耗 1 AP 戰術調度點數)
+  // 從備用倉庫重新裝備至指定槽位 (消耗 1 AP 戰術調度點數，若有敏捷協議則 0 AP)
   const equipFromInventory = useCallback((card: CommsCard, targetSlot: PACESlot): boolean => {
     const curPlayer = players[activePlayerIndex];
     if (!curPlayer) return false;
-    if (curPlayer.actionPoints <= 0) {
-      addLog('alert', '⚡ 行動點數不足！從備用倉庫調配裝備需消耗 1 AP 戰術調度點數。', curPlayer.id, curPlayer.name);
+
+    const isAgile = Boolean(curPlayer.activeBuffs?.agileProtocolActive);
+    if (!isAgile && curPlayer.actionPoints <= 0) {
+      addLog('alert', '⚡ 行動點數不足！從備用倉庫調配裝備需消耗 1 AP 戰術調度點數（或啟用敏捷通訊協議）。', curPlayer.id, curPlayer.name);
       return false;
     }
 
@@ -495,7 +500,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       const remainingInventory = p.inventory.filter(c => c.id !== card.id);
       return {
         ...p,
-        actionPoints: p.actionPoints - 1,
+        actionPoints: isAgile ? p.actionPoints : p.actionPoints - 1,
         paceBoard: {
           ...p.paceBoard,
           [targetSlot]: card,
@@ -505,7 +510,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     }));
 
     const cardName = card.translations[worldview]?.name || card.id;
-    addLog('action', `【${curPlayer.name}】消耗 1 AP 從備用倉庫將【${cardName}】配置至 [${targetSlot}] 槽位。`, curPlayer.id, curPlayer.name);
+    addLog('action', `【${curPlayer.name}】${isAgile ? '【敏捷協議 0 AP】' : '消耗 1 AP '}從備用倉庫將【${cardName}】配置至 [${targetSlot}] 槽位。`, curPlayer.id, curPlayer.name);
     return true;
   }, [players, activePlayerIndex, worldview, addLog]);
 
@@ -582,9 +587,8 @@ export function useV2GameState(): UseV2GameStateReturn {
       newBuffs.faradayEmpArmor = true;
     } else if (card.effectType === 'COMMUNITY_RELAY') {
       newBuffs.communityRelayActive = true;
-    } else if (card.effectType === 'SCOUT_AHEAD') {
-      energyDelta = 1;
-      creditsDelta = 1;
+    } else if (card.effectType === 'AGILE_PROTOCOL') {
+      newBuffs.agileProtocolActive = true;
     }
 
     setPlayers(prev => prev.map((p, idx) => {

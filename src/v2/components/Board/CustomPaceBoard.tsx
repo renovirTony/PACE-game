@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, WorldviewType } from '../../types/game';
 import { canPlaceCardInSlot } from '../../engine/rules';
+import { UnifiedCommsCardContent, getCommsCardMediumInfo, PHYSICAL_MEDIUM_META } from '../Cards/UnifiedCommsCardView';
 import { 
   Radio, 
   Smartphone, 
@@ -30,80 +31,10 @@ interface CustomPaceBoardProps {
   activeEvent: DisasterEvent | null;
   isCurrentPlayer: boolean;
   worldview: WorldviewType;
-  onSwapSlots: (slotA: PACESlot, slotB: PACESlot) => void;
+  onSwapSlots: (slotA: PACESlot, slotB: PACESlot) => void | boolean;
   onStoreCard: (slot: PACESlot) => void;
-  onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void;
+  onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void | boolean;
   onDiscardFromInventory?: (cardId: string) => void;
-}
-
-const mediumMeta: Record<PhysicalMedium, { label: string; icon: string; color: string; bgColor: string; borderColor: string }> = {
-  Cellular: {
-    label: '公眾網/基地台',
-    icon: '🏙️',
-    color: 'text-cyan-400',
-    bgColor: 'bg-cyan-950/40',
-    borderColor: 'border-cyan-500/40',
-  },
-  Satellite: {
-    label: '衛星通訊',
-    icon: '🛰️',
-    color: 'text-blue-400',
-    bgColor: 'bg-blue-950/40',
-    borderColor: 'border-blue-500/40',
-  },
-  Radio: {
-    label: '無線電波',
-    icon: '📻',
-    color: 'text-amber-400',
-    bgColor: 'bg-amber-950/40',
-    borderColor: 'border-amber-500/40',
-  },
-  Wired: {
-    label: '實體有線',
-    icon: '🔌',
-    color: 'text-emerald-400',
-    bgColor: 'bg-emerald-950/40',
-    borderColor: 'border-emerald-500/40',
-  },
-  PhysicalOptical: {
-    label: '人力/光學/聲波',
-    icon: '🏃',
-    color: 'text-purple-400',
-    bgColor: 'bg-purple-950/40',
-    borderColor: 'border-purple-500/40',
-  },
-};
-
-export function getCardMediumInfo(card: CommsCard | null) {
-  if (!card) return null;
-  if (card.medium === 'PhysicalOptical') {
-    if (card.id === 'eq_aldis_light_mirror' || card.tags?.includes('光學信號')) {
-      return {
-        label: '光學摩斯',
-        icon: '🔦',
-        color: 'text-amber-300',
-        bgColor: 'bg-amber-950/50',
-        borderColor: 'border-amber-500/50',
-      };
-    }
-    if (card.id === 'eq_acoustic_thumper' || card.tags?.includes('聲學震波')) {
-      return {
-        label: '地底聲學',
-        icon: '🔊',
-        color: 'text-emerald-300',
-        bgColor: 'bg-emerald-950/50',
-        borderColor: 'border-emerald-500/50',
-      };
-    }
-    return {
-      label: '物理信差',
-      icon: '🏃',
-      color: 'text-purple-300',
-      bgColor: 'bg-purple-950/50',
-      borderColor: 'border-purple-500/50',
-    };
-  }
-  return mediumMeta[card.medium];
 }
 
 const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
@@ -210,7 +141,7 @@ export function CustomPaceBoard({
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <span className="font-black">共因失效警示 (Common-Mode Vulnerability)：</span>
-            你的 [P] 與 [A] 槽位皆依賴同種【{mediumMeta[pMedium!].label}】媒介！若遭遇對應天災（如大停電或暴風雨），前兩道防線將同時癱瘓！可點擊下方「🔄 調換 (1 AP)」隨時調配裝備。
+            你的 [P] 與 [A] 槽位皆依賴同種【{PHYSICAL_MEDIUM_META[pMedium!].label}】媒介！若遭遇對應天災，前兩道防線將同時癱瘓！可點擊下方「🔄 調換」隨時調配防線。
           </div>
         </div>
       )}
@@ -219,7 +150,7 @@ export function CustomPaceBoard({
       {activeSwapSlot && (
         <div className="p-3 rounded-2xl bg-cyan-950/70 border border-cyan-400 text-cyan-200 text-xs flex items-center justify-between animate-fadeIn">
           <span>
-            🔄 正在調換 <b>[{activeSwapSlot}] 防線</b> 的裝備 (消耗 1 AP)，請點擊目標防線按鈕完成對調：
+            🔄 正在調換 <b>[{activeSwapSlot}] 防線</b> 的裝備 {player.activeBuffs?.agileProtocolActive ? '(敏捷協議 0 AP)' : '(消耗 1 AP)'}，請點擊目標防線按鈕完成對調：
           </span>
           <button
             onClick={() => setActiveSwapSlot(null)}
@@ -235,9 +166,10 @@ export function CustomPaceBoard({
         {slots.map((slot) => {
           const card = board[slot];
           const meta = slotMeta[slot];
-          const cardContent = card ? card.translations[worldview] : null;
-          const mediumInfo = getCardMediumInfo(card);
+          const mediumInfo = getCommsCardMediumInfo(card);
           const isSwapSource = activeSwapSlot === slot;
+          const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
+          const hasAP = player.actionPoints > 0 || isAgile;
 
           // 判斷當回合天災是否中斷此裝備
           const isEmpImmune = Boolean(card?.resilience.empShield || player.activeBuffs?.faradayEmpArmor);
@@ -303,10 +235,10 @@ export function CustomPaceBoard({
                           ? 'bg-slate-900/40 text-slate-500 border-slate-800 cursor-not-allowed opacity-50'
                           : 'bg-slate-900/80 hover:bg-cyan-950 text-slate-300 hover:text-cyan-300 border-slate-700'
                       }`}
-                      title={hasAP ? "與其他防線對調順序 (消耗 1 AP 戰術調度)" : "行動點數不足 (需 1 AP)"}
+                      title={hasAP ? (isAgile ? "與其他防線對調順序 (敏捷協議 0 AP)" : "與其他防線對調順序 (消耗 1 AP 戰術調度)") : "行動點數不足 (需 1 AP)"}
                     >
                       <ArrowLeftRight className="w-3 h-3" />
-                      <span>{isSwapSource ? '選擇中' : '調換 (1 AP)'}</span>
+                      <span>{isSwapSource ? '選擇中' : isAgile ? '調換 (0 AP)' : '調換 (1 AP)'}</span>
                     </button>
 
                     <button
@@ -345,7 +277,7 @@ export function CustomPaceBoard({
                       onClick={() => handleSwapTarget(slot)}
                       className="w-full py-1.5 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs transition-all"
                     >
-                      🔄 對調至 [{slot}] 防線 (1 AP)
+                      🔄 對調至 [{slot}] 防線 {isAgile ? '(0 AP)' : '(1 AP)'}
                     </button>
                   </div>
                 ) : (
@@ -365,7 +297,7 @@ export function CustomPaceBoard({
                       onClick={() => handleEquipFromInv(slot)}
                       className="w-full py-1.5 rounded-lg bg-purple-400 hover:bg-purple-300 text-slate-950 font-black text-xs transition-all"
                     >
-                      📥 裝備至 [{slot}] 防線 (1 AP)
+                      📥 裝備至 [{slot}] 防線 {isAgile ? '(0 AP)' : '(1 AP)'}
                     </button>
                   </div>
                 ) : (
@@ -377,88 +309,9 @@ export function CustomPaceBoard({
                 )
               )}
 
-              {/* Card Body or Empty Placeholder */}
-              {card && cardContent ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-sm font-black text-slate-100 leading-snug">
-                      {cardContent.name}
-                    </span>
-                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${mediumInfo?.bgColor} ${mediumInfo?.borderColor} ${mediumInfo?.color}`}>
-                      {mediumInfo?.icon} {mediumInfo?.label}
-                    </span>
-                  </div>
-
-                  {/* Clean readable text without aggressive clamping */}
-                  <p className="text-xs text-slate-300 leading-relaxed">
-                    {cardContent.desc}
-                  </p>
-
-                  {/* Technical Specs Attributes Matrix */}
-                  <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-white/5 text-[10px]">
-                    <div className="p-1.5 rounded-lg bg-black/40 text-center">
-                      <span className="text-slate-500 block text-[9px]">頻寬門檻</span>
-                      <span className={`font-black ${
-                        card.bandwidth === 'High' ? 'text-cyan-400' : card.bandwidth === 'Medium' ? 'text-amber-400' : 'text-emerald-400'
-                      }`}>
-                        {card.bandwidth}
-                      </span>
-                    </div>
-
-                    <div className="p-1.5 rounded-lg bg-black/40 text-center">
-                      <span className="text-slate-500 block text-[9px]">通訊距離</span>
-                      <span className="font-bold text-slate-200 truncate block">
-                        {card.range}
-                      </span>
-                    </div>
-
-                    <div className="p-1.5 rounded-lg bg-black/40 text-center">
-                      <span className="text-slate-500 block text-[9px]">運作耗電</span>
-                      <span className="font-bold text-amber-300">
-                        {card.powerCost}⚡
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Resilience & Specific Capability Badges */}
-                  <div className="flex items-center gap-1 text-[9px] text-slate-400 flex-wrap pt-0.5">
-                    {card.resilience.empShield && (
-                      <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold">
-                        🛡️ 抗EMP
-                      </span>
-                    )}
-                    {card.resilience.weatherResistant && (
-                      <span className="px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-bold">
-                        🌧️ 耐天候
-                      </span>
-                    )}
-                    {card.resilience.subterranean && (
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold">
-                        🕳️ 地底穿透
-                      </span>
-                    )}
-                    {(card.id === 'eq_aldis_light_mirror' || card.tags?.includes('光學信號')) && (
-                      <span className="px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold">
-                        🔦 視距光碼
-                      </span>
-                    )}
-                    {(card.id === 'eq_motorcycle_runner' || card.tags?.includes('人力信差')) && (
-                      <span className="px-1.5 py-0.5 rounded bg-purple-950/70 text-purple-300 border border-purple-500/40 font-bold">
-                        🏃 實體載體
-                      </span>
-                    )}
-                    {(card.id === 'eq_acoustic_thumper' || card.tags?.includes('聲學震波')) && (
-                      <span className="px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 font-bold">
-                        🔊 聲學震波
-                      </span>
-                    )}
-                    {card.tags && card.tags.map((t) => (
-                      <span key={t} className="px-1.5 py-0.5 rounded bg-black/30 text-slate-400 border border-white/5">
-                        #{t}
-                      </span>
-                    ))}
-                  </div>
-                </div>
+              {/* Card Body or Empty Placeholder (MAPS Unified Layout) */}
+              {card ? (
+                <UnifiedCommsCardContent card={card} worldview={worldview} />
               ) : (
                 <div className="py-8 flex flex-col items-center justify-center text-center gap-2">
                   <span className="text-2xl opacity-40">📭</span>
@@ -499,42 +352,35 @@ export function CustomPaceBoard({
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
             {inventory.map((card) => {
-              const content = card.translations[worldview];
-              const mediumInfo = getCardMediumInfo(card) || mediumMeta[card.medium];
               const isSelected = activeInventoryCard?.id === card.id;
+              const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
+              const hasAP = player.actionPoints > 0 || isAgile;
 
               return (
                 <div
                   key={card.id}
-                  className={`p-2.5 rounded-xl border flex items-center justify-between gap-2 text-xs ${
+                  className={`p-3 rounded-2xl border flex flex-col justify-between gap-2.5 text-xs transition-all ${
                     isSelected
-                      ? 'border-purple-400 bg-purple-950/60 shadow-md'
+                      ? 'border-purple-400 bg-purple-950/60 shadow-lg shadow-purple-500/20'
                       : 'border-slate-800 bg-slate-900/90'
                   }`}
                 >
-                  <div className="flex flex-col truncate">
-                    <span className="font-bold text-slate-200 truncate">
-                      {content?.name}
-                    </span>
-                    <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                      {mediumInfo.icon} {mediumInfo.label} · {card.bandwidth}
-                    </span>
-                  </div>
+                  <UnifiedCommsCardContent card={card} worldview={worldview} />
 
-                  <div className="flex items-center gap-1 shrink-0">
+                  <div className="pt-2 border-t border-white/5 flex items-center justify-end">
                     <button
                       onClick={() => setActiveInventoryCard(isSelected ? null : card)}
                       disabled={!hasAP && !isSelected}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all ${
+                      className={`w-full py-1.5 rounded-xl text-xs font-bold transition-all ${
                         isSelected
-                          ? 'bg-purple-500 text-slate-950'
+                          ? 'bg-purple-500 text-slate-950 font-black'
                           : !hasAP
                           ? 'bg-slate-800/40 text-slate-500 border border-slate-800 cursor-not-allowed opacity-50'
-                          : 'bg-slate-800 hover:bg-purple-950 text-purple-300 border border-purple-500/40'
+                          : 'bg-purple-950/80 hover:bg-purple-900 text-purple-300 border border-purple-500/40'
                       }`}
-                      title={hasAP ? "從倉庫調配裝備至防線 (消耗 1 AP)" : "行動點數不足 (需 1 AP)"}
+                      title={hasAP ? (isAgile ? "從倉庫調配裝備至防線 (敏捷協議 0 AP)" : "從倉庫調配裝備至防線 (消耗 1 AP)") : "行動點數不足 (需 1 AP)"}
                     >
-                      {isSelected ? '選擇槽位' : '裝備 (1 AP)'}
+                      {isSelected ? '請選擇目標槽位' : isAgile ? '裝備 (0 AP)' : '裝備 (1 AP)'}
                     </button>
                   </div>
                 </div>

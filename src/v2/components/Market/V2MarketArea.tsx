@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, TacticCard, WorldviewType } from '../../types/game';
-import { ShoppingBag, Zap, Coins, Plus, Check, AlertTriangle, XCircle } from 'lucide-react';
+import { canPlaceCardInSlot } from '../../engine/rules';
+import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
+import { ShoppingBag, Zap, Coins, Plus, Check, AlertTriangle, XCircle, Lock } from 'lucide-react';
 
 interface V2MarketAreaProps {
   player: Player;
@@ -12,14 +14,6 @@ interface V2MarketAreaProps {
   onBuyEquipment: (card: CommsCard, targetSlot: PACESlot) => boolean;
   onBuyTactic: (card: TacticCard) => boolean;
 }
-
-const mediumNames: Record<PhysicalMedium, { label: string; icon: string; color: string }> = {
-  Cellular: { label: '公眾網', icon: '🏙️', color: 'text-cyan-400' },
-  Satellite: { label: '衛星', icon: '🛰️', color: 'text-blue-400' },
-  Radio: { label: '無線電', icon: '📻', color: 'text-amber-400' },
-  Wired: { label: '實體線', icon: '🔌', color: 'text-emerald-400' },
-  PhysicalOptical: { label: '人力/光學', icon: '🏃', color: 'text-purple-400' },
-};
 
 export function V2MarketArea({
   player,
@@ -63,8 +57,6 @@ export function V2MarketArea({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {market.map((card) => {
-            const content = card.translations[worldview];
-            const mediumInfo = mediumNames[card.medium];
             const canAfford = player.credits >= card.cost && player.actionPoints >= 1;
             const isSelected = selectedCardForSlot?.id === card.id;
 
@@ -84,16 +76,6 @@ export function V2MarketArea({
                     : 'border-slate-800 bg-slate-900/80 hover:border-slate-700'
                 }`}
               >
-                {/* Top Badge: Medium & Cost */}
-                <div className="flex items-center justify-between gap-1 text-[10px]">
-                  <span className={`px-2 py-0.5 rounded-full font-bold border border-white/10 bg-black/40 ${mediumInfo.color}`}>
-                    {mediumInfo.icon} {mediumInfo.label}
-                  </span>
-                  <span className="font-bold text-emerald-300 px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30">
-                    💰 {card.cost} 物資
-                  </span>
-                </div>
-
                 {/* Disaster Target Alert */}
                 {isDisasterTargeted && (
                   <div className="p-1 rounded-lg bg-red-950/80 border border-red-500/40 text-red-300 text-[10px] font-bold flex items-center gap-1">
@@ -102,53 +84,59 @@ export function V2MarketArea({
                   </div>
                 )}
 
-                {/* Name & Desc */}
-                <div>
-                  <h4 className="text-xs sm:text-sm font-black text-slate-100 leading-snug">
-                    {content?.name}
-                  </h4>
-                  <p className="text-[11px] text-slate-300 mt-1 leading-relaxed">
-                    {content?.desc}
-                  </p>
-                </div>
-
-                {/* Attributes */}
-                <div className="grid grid-cols-3 gap-1 text-[9px] text-center border-t border-white/5 pt-1.5 text-slate-400">
-                  <div>頻寬: <span className="font-bold text-slate-200">{card.bandwidth}</span></div>
-                  <div>距離: <span className="font-bold text-slate-200 truncate">{card.range}</span></div>
-                  <div>耗電: <span className="font-bold text-amber-300">{card.powerCost}⚡</span></div>
-                </div>
+                {/* Unified Card Content with Cost Badge */}
+                <UnifiedCommsCardContent
+                  card={card}
+                  worldview={worldview}
+                  headerRightBadge={
+                    <span className="font-bold text-emerald-300 px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 text-[10px]">
+                      💰 {card.cost} 物資
+                    </span>
+                  }
+                />
 
                 {/* Slot Choice Action */}
                 {isSelected ? (
-                  <div className="flex flex-col gap-1.5 pt-1 border-t border-cyan-500/30 animate-fadeIn">
+                  <div className="flex flex-col gap-1.5 pt-2 border-t border-cyan-500/30 animate-fadeIn">
                     <span className="text-[10px] text-cyan-300 text-center font-bold">
                       請選擇放入哪個槽位：
                     </span>
                     <div className="grid grid-cols-4 gap-1">
                       {(['P', 'A', 'C', 'E'] as PACESlot[]).map((slot) => {
                         const hasOldCard = Boolean(player.paceBoard[slot]);
+                        const slotValidation = canPlaceCardInSlot(card, slot);
+                        const isSlotAllowed = slotValidation.valid;
+
                         return (
                           <button
                             key={slot}
+                            disabled={!isSlotAllowed}
                             onClick={() => handleSlotSelect(slot)}
                             className={`py-1.5 rounded-lg font-black text-xs transition-all active:scale-95 flex flex-col items-center justify-center ${
-                              hasOldCard
+                              !isSlotAllowed
+                                ? 'bg-slate-900 border border-slate-800 text-slate-600 opacity-40 cursor-not-allowed'
+                                : hasOldCard
                                 ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
                                 : 'bg-cyan-500 hover:bg-cyan-400 text-slate-950'
                             }`}
-                            title={hasOldCard ? `放入 [${slot}] (原裝備將移至備用倉庫)` : `放入 [${slot}] 空槽`}
+                            title={
+                              !isSlotAllowed
+                                ? slotValidation.reason || '此槽位不允許放入此裝備'
+                                : hasOldCard
+                                ? `放入 [${slot}] (原裝備將移至備用倉庫)`
+                                : `放入 [${slot}] 空槽`
+                            }
                           >
                             <span>[{slot}]</span>
                             <span className="text-[9px] font-normal opacity-80">
-                              {hasOldCard ? '置換收存' : '空槽'}
+                              {!isSlotAllowed ? '不符' : hasOldCard ? '收存' : '空槽'}
                             </span>
                           </button>
                         );
                       })}
                     </div>
                     <span className="text-[9px] text-slate-400 text-center mt-0.5">
-                      💡 若槽位已有裝備，原裝備會自動安全移至【備用裝備倉庫】
+                      💡 原槽位裝備會安全移至【備用裝備倉庫】
                     </span>
                     <button
                       onClick={() => setSelectedCardForSlot(null)}

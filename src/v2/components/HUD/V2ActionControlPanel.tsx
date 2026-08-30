@@ -116,12 +116,12 @@ export function V2ActionControlPanel({
                       )}
                       {tactic.effectType === 'COMMUNITY_RELAY' && (
                         <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-cyan-950 text-cyan-300 border border-cyan-500/30">
-                          👥 降級減半
+                          👥 C/E 滿額 100%
                         </span>
                       )}
-                      {tactic.effectType === 'SCOUT_AHEAD' && (
+                      {tactic.effectType === 'AGILE_PROTOCOL' && (
                         <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-purple-950 text-purple-300 border border-purple-500/30">
-                          🔍 偵察 +1⚡+1💰
+                          🔄 調換 0 AP
                         </span>
                       )}
                     </div>

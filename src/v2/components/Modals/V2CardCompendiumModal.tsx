@@ -4,6 +4,7 @@ import { V2_EQUIPMENT_CARDS, V2_STARTER_CARDS } from '../../data/equipmentCards'
 import { V2_DISASTER_EVENTS } from '../../data/disasterEvents';
 import { V2_CRISIS_MISSIONS } from '../../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../../data/tacticCards';
+import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
 import { Layers, Shield, Radio, Sparkles, CloudRain, Package, X, Globe, Sun, ZapOff, Cable } from 'lucide-react';
 
 interface V2CardCompendiumModalProps {
@@ -158,68 +159,23 @@ export function V2CardCompendiumModal({
           {/* Equipment Tab */}
           {activeTab === 'equipment' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {filteredEquipments.map((card) => {
-                const content = card.translations[modalWorldview];
-                const medium = mediumLabels[card.medium];
-                return (
-                  <div
-                    key={card.id}
-                    className="p-3.5 rounded-2xl border border-slate-800 bg-slate-900/80 flex flex-col justify-between gap-2.5"
-                  >
-                    <div className="flex items-center justify-between text-xs">
-                      <span className="px-2 py-0.5 rounded-full font-bold bg-black/50 border border-white/10 text-cyan-300">
-                        {medium.icon} {medium.label}
-                      </span>
-                      <span className="font-bold text-emerald-300">
+              {filteredEquipments.map((card) => (
+                <div
+                  key={card.id}
+                  className="p-3.5 rounded-2xl border border-slate-800 bg-slate-900/80 flex flex-col justify-between gap-2.5 hover:border-slate-700 transition-all"
+                >
+                  <UnifiedCommsCardContent
+                    card={card}
+                    worldview={modalWorldview}
+                    showFlavor={true}
+                    headerRightBadge={
+                      <span className="font-bold text-emerald-300 text-xs px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30">
                         💰 {card.cost} 物資
                       </span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-black text-slate-100">
-                        {content?.name}
-                      </h4>
-                      <p className="text-xs text-slate-300 mt-1 leading-relaxed">
-                        {content?.desc}
-                      </p>
-                      <p className="text-[10px] text-slate-400 italic mt-1">
-                        "{content?.flavor}"
-                      </p>
-                    </div>
-
-                    {/* Technical Specs Attributes */}
-                    <div className="grid grid-cols-3 gap-1 text-[10px] text-center border-t border-white/5 pt-2 text-slate-400">
-                      <div>頻寬: <b className="text-cyan-300">{card.bandwidth}</b></div>
-                      <div>距離: <b className="text-slate-200 truncate">{card.range}</b></div>
-                      <div>耗電: <b className="text-amber-300">{card.powerCost}⚡</b></div>
-                    </div>
-
-                    {/* Resilience & Features */}
-                    <div className="flex items-center gap-1 text-[9px] text-slate-400 flex-wrap pt-1 border-t border-white/5">
-                      {card.resilience.empShield && (
-                        <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold">
-                          🛡️ 抗EMP
-                        </span>
-                      )}
-                      {card.resilience.weatherResistant && (
-                        <span className="px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-bold">
-                          🌧️ 耐天候
-                        </span>
-                      )}
-                      {card.resilience.subterranean && (
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold">
-                          🕳️ 地底穿透
-                        </span>
-                      )}
-                      {card.tags && card.tags.map((t) => (
-                        <span key={t} className="px-1.5 py-0.5 rounded bg-black/30 text-slate-400 border border-white/5">
-                          #{t}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })}
+                    }
+                  />
+                </div>
+              ))}
             </div>
           )}
 

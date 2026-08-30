@@ -73,6 +73,10 @@ export function computeV2AIDecision(
     if (communityRelayTactic && !aiPlayer.activeBuffs?.communityRelayActive) {
       return { actionType: 'PLAY_TACTIC', targetTactic: communityRelayTactic };
     }
+    const agileTactic = aiPlayer.handTactics.find(t => t.effectType === 'AGILE_PROTOCOL');
+    if (agileTactic && !aiPlayer.activeBuffs?.agileProtocolActive && (aiPlayer.inventory.length > 0 || aiPlayer.actionPoints === 0)) {
+      return { actionType: 'PLAY_TACTIC', targetTactic: agileTactic };
+    }
   }
 
   // 2. 檢驗當前看板上的任務，若有高成功率且回報佳的任務，立即發起通訊

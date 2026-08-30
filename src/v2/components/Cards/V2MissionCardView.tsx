@@ -95,32 +95,34 @@ export function V2MissionCardView({
           {content?.desc}
         </p>
 
-        {/* Requirements Tag Matrix */}
-        <div className="flex items-center gap-1.5 text-[10px] text-slate-400 flex-wrap pt-1.5 border-t border-white/5">
-          <span>距離: {mission.requiredRange.join('/')}</span>
+        {/* Requirements Badges (MAPS Minimal & Clean) */}
+        <div className="flex items-center gap-1.5 text-[10px] text-slate-300 flex-wrap pt-1.5 border-t border-white/5">
+          <span className="px-1.5 py-0.5 rounded bg-black/40 border border-white/10 font-bold">
+            📡 {mission.requiredRange.join('/')}
+          </span>
           {mission.requiresWeatherResist && (
-            <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 font-bold">
               🌧️ 耐天候
             </span>
           )}
           {mission.requiresSubterranean && (
-            <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold">
               🕳️ 地底穿透
             </span>
           )}
           {mission.requiresEmpShield && (
-            <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/30 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-500/40 font-bold">
               🛡️ 需抗EMP
             </span>
           )}
           {mission.requiresOptical && (
-            <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/40 font-bold" title="需具備光學閃光能力（如阿爾迪斯信號燈/強光手電筒），非光學之機車信差等無法發射光碼">
-              🔦 需光學信號燈 (摩斯光碼)
+            <span className="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40 font-bold" title="需具備光學閃光能力（如阿爾迪斯燈/強光手電筒）">
+              🔦 需光學摩斯
             </span>
           )}
           {mission.requiresWired && (
-            <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-bold">
-              🔌 實體有線
+            <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold">
+              🔌 需實體有線
             </span>
           )}
         </div>
@@ -141,7 +143,7 @@ export function V2MissionCardView({
           </div>
         </div>
 
-        {/* Live Fallback Preview */}
+        {/* Live Fallback Preview (MAPS Minimal & Tangible) */}
         <div className={`p-2 rounded-xl text-[11px] font-bold border flex items-center justify-between ${
           preview.canTransmit
             ? preview.successfulSlot === 'P' || preview.successfulSlot === 'A'
@@ -151,23 +153,11 @@ export function V2MissionCardView({
         }`}>
           {preview.canTransmit ? (
             <>
-              <span>預計由 [{preview.successfulSlot}] 接手 ({Math.round(preview.degradationRate * 100)}% 收益)</span>
+              <span>預計由 [{preview.successfulSlot}] 防線接手 ({Math.round(preview.degradationRate * 100)}% 收益)</span>
               <span className="text-xs">➔ 🏆{preview.earnedVP}分</span>
             </>
           ) : (
-            <div className="flex flex-col text-left gap-0.5 w-full">
-              <span>❌ 目前所有防線皆無法連通</span>
-              {mission.requiresOptical && (
-                <span className="text-[9px] text-amber-300 font-normal">
-                  ※ 需配備【光學摩斯】裝備（如強光手電筒），非光學之機車信差無法發射視距光碼
-                </span>
-              )}
-              {mission.requiresSubterranean && (
-                <span className="text-[9px] text-emerald-300 font-normal">
-                  ※ 需配備具備【地底穿透】之裝備（如敲擊水管或 LoRa 節點）
-                </span>
-              )}
-            </div>
+            <span className="w-full text-center">❌ 目前防線未滿足任務條件 (無法連通)</span>
           )}
         </div>
 
