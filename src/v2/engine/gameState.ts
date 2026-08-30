@@ -181,7 +181,9 @@ export function useV2GameState(): UseV2GameStateReturn {
     const initialEvent = shuffledEvents[0];
     const restEvents = shuffledEvents.slice(1);
 
-    const shuffledStarters = shuffleArray(V2_STARTER_CARDS);
+    // PACE 起始配置：P 固定為日常手機公眾網 (Cellular / High)，A 固定為第一備援無線電 (Radio / Medium)
+    const cellStarter = V2_STARTER_CARDS.find(c => c.id === 'start_cellular_phone') || V2_STARTER_CARDS[0];
+    const radioStarter = V2_STARTER_CARDS.find(c => c.id === 'start_frs_walkie') || V2_STARTER_CARDS[1];
 
     // 玩家配置
     const newPlayers: Player[] = [];
@@ -200,8 +202,8 @@ export function useV2GameState(): UseV2GameStateReturn {
       energy: 3,
       maxEnergy: 6,
       paceBoard: {
-        P: shuffledStarters[0] || null,
-        A: shuffledStarters[1] || null,
+        P: cellStarter,
+        A: radioStarter,
         C: null,
         E: null,
       },
@@ -227,7 +229,6 @@ export function useV2GameState(): UseV2GameStateReturn {
 
       for (let i = 0; i < bots; i++) {
         const cfg = botConfigs[i % botConfigs.length];
-        const botStarters = shuffleArray(V2_STARTER_CARDS);
         newPlayers.push({
           id: `ai_${i + 1}`,
           name: cfg.name,
@@ -242,8 +243,8 @@ export function useV2GameState(): UseV2GameStateReturn {
           energy: 3,
           maxEnergy: 6,
           paceBoard: {
-            P: botStarters[0] || null,
-            A: botStarters[1] || null,
+            P: cellStarter,
+            A: radioStarter,
             C: null,
             E: null,
           },
@@ -261,7 +262,6 @@ export function useV2GameState(): UseV2GameStateReturn {
         });
       }
     } else if (mode === 'PassAndPlay') {
-      const p2Starters = shuffleArray(V2_STARTER_CARDS);
       newPlayers.push({
         id: 'p2',
         name: '二號指揮官',
@@ -275,8 +275,8 @@ export function useV2GameState(): UseV2GameStateReturn {
         energy: 3,
         maxEnergy: 6,
         paceBoard: {
-          P: p2Starters[0] || null,
-          A: p2Starters[1] || null,
+          P: cellStarter,
+          A: radioStarter,
           C: null,
           E: null,
         },
@@ -311,13 +311,115 @@ export function useV2GameState(): UseV2GameStateReturn {
     addLog('info', `📢 災難演習開始！首波環境事件【${initialEvent.translations[worldview]?.title}】已生效！`);
   }, [worldview, addLog]);
 
-  // 新手教學引導啟動
+  // 新手教學引導啟動 (100% 確定性精選教學牌組與任務)
   const startTutorial = useCallback(() => {
-    startGame('SinglePlayer', 1);
+    const cellStarter = V2_STARTER_CARDS.find(c => c.id === 'start_cellular_phone') || V2_STARTER_CARDS[0];
+    const radioStarter = V2_STARTER_CARDS.find(c => c.id === 'start_frs_walkie') || V2_STARTER_CARDS[1];
+    const agileTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_agile_protocol') || V2_TACTIC_CARDS[0];
+
+    const tutPlayers: Player[] = [
+      {
+        id: 'p1',
+        name: '你 (指揮官)',
+        isAI: false,
+        avatar: '📡',
+        color: '#06b6d4',
+        score: 0,
+        credits: 3,
+        actionPoints: 3,
+        maxActionPoints: 3,
+        energy: 4,
+        maxEnergy: 6,
+        paceBoard: {
+          P: cellStarter,
+          A: radioStarter,
+          C: null,
+          E: null,
+        },
+        inventory: [],
+        handTactics: [agileTactic],
+        completedMissions: [],
+        stats: {
+          transmissions: 0,
+          pSuccesses: 0,
+          aSuccesses: 0,
+          cSuccesses: 0,
+          eSuccesses: 0,
+          degradedTransmissions: 0,
+        },
+      },
+      {
+        id: 'ai_1',
+        name: '應變組長 雅婷',
+        isAI: true,
+        aiPersonality: 'Pragmatic',
+        avatar: '🤖',
+        color: '#a855f7',
+        score: 0,
+        credits: 3,
+        actionPoints: 3,
+        maxActionPoints: 3,
+        energy: 3,
+        maxEnergy: 6,
+        paceBoard: {
+          P: cellStarter,
+          A: radioStarter,
+          C: null,
+          E: null,
+        },
+        inventory: [],
+        handTactics: [],
+        completedMissions: [],
+        stats: {
+          transmissions: 0,
+          pSuccesses: 0,
+          aSuccesses: 0,
+          cSuccesses: 0,
+          eSuccesses: 0,
+          degradedTransmissions: 0,
+        },
+      },
+    ];
+
+    // 精選市場裝備卡 (衛星電話、強光手電筒、通訊車、地下光纖)
+    const satPhone = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_satellite_phone') || V2_EQUIPMENT_CARDS[0];
+    const aldisLight = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_aldis_light_mirror') || V2_EQUIPMENT_CARDS[1];
+    const commsVan = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_emergency_comms_van') || V2_EQUIPMENT_CARDS[2];
+    const wiredPhone = V2_EQUIPMENT_CARDS.find(c => c.id === 'eq_subterranean_phone') || V2_EQUIPMENT_CARDS[3];
+    const tutMarket = [satPhone, aldisLight, commsVan, wiredPhone];
+    const restEquip = V2_EQUIPMENT_CARDS.filter(c => !tutMarket.some(m => m.id === c.id));
+
+    // 精選戰術市場
+    const priorityTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_priority_logistics') || V2_TACTIC_CARDS[0];
+    const burstTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_burst_transmission') || V2_TACTIC_CARDS[1];
+    const genTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_emergency_generator') || V2_TACTIC_CARDS[2];
+    const tutTacticMarket = [priorityTactic, burstTactic, genTactic];
+    const restTactics = V2_TACTIC_CARDS.filter(t => t.id !== agileTactic.id && !tutTacticMarket.some(m => m.id === t.id));
+
+    // 精選危機任務 (山區搜救、SOS求救、空拍傳輸)
+    const missionMountain = V2_CRISIS_MISSIONS.find(m => m.id === 'mis_mountain_search_team') || V2_CRISIS_MISSIONS[0];
+    const missionSOS = V2_CRISIS_MISSIONS.find(m => m.id === 'mis_sos_coordinates_beacon') || V2_CRISIS_MISSIONS[1];
+    const missionDrone = V2_CRISIS_MISSIONS.find(m => m.id === 'mis_drone_recon_video') || V2_CRISIS_MISSIONS[2];
+    const tutMissions = [missionMountain, missionSOS, missionDrone];
+    const restMissions = V2_CRISIS_MISSIONS.filter(m => !tutMissions.some(tm => tm.id === m.id));
+
+    setGameMode('SinglePlayer');
+    setPlayers(tutPlayers);
+    setActivePlayerIndex(0);
+    setMarket(tutMarket);
+    setEquipmentDeck(restEquip);
+    setTacticMarket(tutTacticMarket);
+    setTacticDeck(restTactics);
+    setActiveMissions(tutMissions);
+    setMissionDeck(restMissions);
+    setActiveEvent(null); // 教學初期為晴朗無天災狀態
+    setRound(1);
+    setWinner(null);
+    setPhase('PLAYER_ACTION');
     setIsTutorialMode(true);
     setTutorialStep(1);
-    addLog('info', '🎓 進入實戰新手教學：跟隨提示逐步掌握自組 PACE 與媒介獨立性！');
-  }, [startGame, addLog]);
+    addLog('info', '🎓 進入實戰新手教學：跟隨引導逐步掌握自組 PACE 防線與媒介獨立性！');
+  }, [addLog]);
 
   const nextTutorialStep = useCallback(() => {
     setTutorialStep(s => s + 1);
@@ -787,7 +889,11 @@ export function useV2GameState(): UseV2GameStateReturn {
       setRound(nextRound);
 
       // 翻開下一個災難事件 (若事件庫空了也重洗)
-      if (eventDeck.length > 0) {
+      if (isTutorialMode) {
+        const blackoutEvt = V2_DISASTER_EVENTS.find(e => e.id === 'evt_grid_blackout') || V2_DISASTER_EVENTS[0];
+        setActiveEvent(blackoutEvt);
+        addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${blackoutEvt.translations[worldview]?.title}】！`);
+      } else if (eventDeck.length > 0) {
         const nextEvt = eventDeck[0];
         setActiveEvent(nextEvt);
         setEventDeck(d => d.slice(1));
@@ -808,12 +914,12 @@ export function useV2GameState(): UseV2GameStateReturn {
     }
 
     setActivePlayerIndex(nextIndex);
-  }, [players, activePlayerIndex, round, maxRounds, targetScore, eventDeck, worldview, addLog]);
+  }, [players, activePlayerIndex, round, maxRounds, targetScore, eventDeck, isTutorialMode, worldview, addLog]);
 
-  // AI 自動決策執行循環
+  // AI 自動決策執行循環 (教學模式中暫停 AI 搶先行動)
   useEffect(() => {
     const curPlayer = players[activePlayerIndex];
-    if (phase !== 'PLAYER_ACTION' || !curPlayer || !curPlayer.isAI) {
+    if (phase !== 'PLAYER_ACTION' || !curPlayer || !curPlayer.isAI || isTutorialMode) {
       return;
     }
 
