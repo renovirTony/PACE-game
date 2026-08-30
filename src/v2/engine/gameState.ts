@@ -335,7 +335,10 @@ export function useV2GameState(): UseV2GameStateReturn {
   // 購買裝備卡並自選放入槽位 (若原槽位有裝備，自動收納至備用倉庫，不直接覆蓋刪除！)
   const buyEquipment = useCallback((card: CommsCard, targetSlot: PACESlot): boolean => {
     const curPlayer = players[activePlayerIndex];
-    if (!curPlayer || curPlayer.actionPoints <= 0 || curPlayer.credits < card.cost) {
+    if (!curPlayer) return false;
+
+    const isFreeBuy = Boolean(curPlayer.activeBuffs?.freeMarketPurchaseActive);
+    if ((!isFreeBuy && curPlayer.actionPoints <= 0) || curPlayer.credits < card.cost) {
       return false;
     }
 
@@ -354,7 +357,11 @@ export function useV2GameState(): UseV2GameStateReturn {
       return {
         ...p,
         credits: p.credits - card.cost,
-        actionPoints: p.actionPoints - 1,
+        actionPoints: isFreeBuy ? p.actionPoints : p.actionPoints - 1,
+        activeBuffs: {
+          ...p.activeBuffs,
+          freeMarketPurchaseActive: false, // 消耗掉免 AP 採購次數
+        },
         paceBoard: {
           ...p.paceBoard,
           [targetSlot]: card,
@@ -383,7 +390,7 @@ export function useV2GameState(): UseV2GameStateReturn {
 
     const cardName = card.translations[worldview]?.name || card.id;
     const displacedText = existingCard ? `（原裝備【${existingCard.translations[worldview]?.name || existingCard.id}】已安全收納至備用倉庫）` : '';
-    addLog('action', `【${curPlayer.name}】採購裝備【${cardName}】並配置至 [${targetSlot}] 槽位。${displacedText}`, curPlayer.id, curPlayer.name);
+    addLog('action', `【${curPlayer.name}】${isFreeBuy ? '【後勤通道 0 AP】' : '消耗 1 AP '}採購裝備【${cardName}】並配置至 [${targetSlot}] 槽位。${displacedText}`, curPlayer.id, curPlayer.name);
     return true;
   }, [players, activePlayerIndex, equipmentDeck, worldview, addLog]);
 
@@ -525,10 +532,13 @@ export function useV2GameState(): UseV2GameStateReturn {
     }));
   }, [activePlayerIndex]);
 
-  // 購買戰術卡
+  // 購買戰術卡 (若有綠色後勤通道則 0 AP)
   const buyTactic = useCallback((card: TacticCard): boolean => {
     const curPlayer = players[activePlayerIndex];
-    if (!curPlayer || curPlayer.actionPoints <= 0 || curPlayer.credits < card.cost) {
+    if (!curPlayer) return false;
+
+    const isFreeBuy = Boolean(curPlayer.activeBuffs?.freeMarketPurchaseActive);
+    if ((!isFreeBuy && curPlayer.actionPoints <= 0) || curPlayer.credits < card.cost) {
       return false;
     }
 
@@ -539,7 +549,11 @@ export function useV2GameState(): UseV2GameStateReturn {
       return {
         ...p,
         credits: p.credits - card.cost,
-        actionPoints: p.actionPoints - 1,
+        actionPoints: isFreeBuy ? p.actionPoints : p.actionPoints - 1,
+        activeBuffs: {
+          ...p.activeBuffs,
+          freeMarketPurchaseActive: false, // 消耗掉免 AP 採購次數
+        },
         handTactics: [...p.handTactics, card],
       };
     }));
@@ -560,7 +574,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     });
 
     const tacticName = card.translations[worldview]?.name || card.id;
-    addLog('action', `【${curPlayer.name}】購入戰術卡【${tacticName}】加入手牌。`, curPlayer.id, curPlayer.name);
+    addLog('action', `【${curPlayer.name}】${isFreeBuy ? '【後勤通道 0 AP】' : '消耗 1 AP '}購入戰術卡【${tacticName}】加入手牌。`, curPlayer.id, curPlayer.name);
     return true;
   }, [players, activePlayerIndex, tacticDeck, worldview, addLog]);
 
@@ -589,6 +603,10 @@ export function useV2GameState(): UseV2GameStateReturn {
       newBuffs.communityRelayActive = true;
     } else if (card.effectType === 'AGILE_PROTOCOL') {
       newBuffs.agileProtocolActive = true;
+    } else if (card.effectType === 'FREE_MARKET_PURCHASE') {
+      newBuffs.freeMarketPurchaseActive = true;
+    } else if (card.effectType === 'FREE_TRANSMISSION') {
+      newBuffs.freeTransmissionActive = true;
     }
 
     setPlayers(prev => prev.map((p, idx) => {
@@ -629,9 +647,25 @@ export function useV2GameState(): UseV2GameStateReturn {
     return true;
   }, [players, activePlayerIndex, addLog]);
 
-  // 發起任務通訊檢定 (V2 Fallback 核心 + 任務牌庫無限循環補充！)
+  // 發起任務通訊檢定 (若有突發通訊令則 0 AP)
   const transmitMission = useCallback((mission: CrisisMission): TransmissionResult => {
     const curPlayer = players[activePlayerIndex];
+    const isFreeTrans = Boolean(curPlayer?.activeBuffs?.freeTransmissionActive);
+    if (!isFreeTrans && (curPlayer?.actionPoints || 0) <= 0) {
+      return {
+        canTransmit: false,
+        successfulSlot: null,
+        usedCard: null,
+        fallbackDepth: -1,
+        degradationRate: 0,
+        earnedVP: 0,
+        earnedCredits: 0,
+        reason: '行動點數不足，無法發起任務通訊！',
+        expertDebrief: '發起任務通訊需要消耗 1 AP 或使用【連續突發通訊令】戰術卡。',
+        slotEvaluations: [],
+      };
+    }
+
     const result = evaluateV2PACETransmission(curPlayer, mission, activeEvent, worldview);
 
     if (result.canTransmit && result.usedCard) {
@@ -643,7 +677,11 @@ export function useV2GameState(): UseV2GameStateReturn {
         if (idx !== activePlayerIndex) return p;
         return {
           ...p,
-          actionPoints: p.actionPoints - 1,
+          actionPoints: isFreeTrans ? p.actionPoints : p.actionPoints - 1,
+          activeBuffs: {
+            ...p.activeBuffs,
+            freeTransmissionActive: false, // 消耗掉免 AP 通訊次數
+          },
           energy: Math.max(0, p.energy - effectivePowerCost),
           score: p.score + result.earnedVP,
           credits: p.credits + result.earnedCredits,
@@ -683,19 +721,23 @@ export function useV2GameState(): UseV2GameStateReturn {
       const missionTitle = mission.translations[worldview]?.title || mission.id;
       addLog(
         'success',
-        `【${curPlayer.name}】成功連通【${missionTitle}】！透過 [${result.successfulSlot}] 槽位獲得 🏆${result.earnedVP} 分與 💰${result.earnedCredits} 物資。`,
+        `【${curPlayer.name}】${isFreeTrans ? '【突發通訊 0 AP】' : '消耗 1 AP '}成功連通【${missionTitle}】！透過 [${result.successfulSlot}] 槽位獲得 🏆${result.earnedVP} 分與 💰${result.earnedCredits} 物資。`,
         curPlayer.id,
         curPlayer.name
       );
     } else {
       audioManager.playAlertSound();
 
-      // 通訊失敗，白扣 1 AP
+      // 通訊失敗，白扣 1 AP (若有突發通訊令則消耗該 buff)
       setPlayers(prev => prev.map((p, idx) => {
         if (idx !== activePlayerIndex) return p;
         return {
           ...p,
-          actionPoints: p.actionPoints - 1,
+          actionPoints: isFreeTrans ? p.actionPoints : p.actionPoints - 1,
+          activeBuffs: {
+            ...p.activeBuffs,
+            freeTransmissionActive: false,
+          },
         };
       }));
 

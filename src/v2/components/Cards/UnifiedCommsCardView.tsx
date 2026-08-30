@@ -151,39 +151,26 @@ export function UnifiedCommsCardContent({
         </div>
       </div>
 
-      {/* Resilience & Specific Capability Badges (MAPS Minimal - No Hashtags) */}
-      <div className="flex items-center gap-1 text-[9px] text-slate-400 flex-wrap pt-0.5">
-        {card.resilience.empShield && (
-          <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold">
-            🛡️ 抗EMP
-          </span>
-        )}
-        {card.resilience.weatherResistant && (
-          <span className="px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-bold">
-            🌧️ 耐天候
-          </span>
-        )}
-        {card.resilience.subterranean && (
-          <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold">
-            🕳️ 地底穿透
-          </span>
-        )}
-        {(card.id === 'eq_aldis_light_mirror' || card.tags?.includes('光學信號')) && (
-          <span className="px-1.5 py-0.5 rounded bg-amber-950/70 text-amber-300 border border-amber-500/40 font-bold">
-            🔦 視距光碼
-          </span>
-        )}
-        {(card.id === 'eq_motorcycle_runner' || card.tags?.includes('人力信差')) && (
-          <span className="px-1.5 py-0.5 rounded bg-purple-950/70 text-purple-300 border border-purple-500/40 font-bold">
-            🏃 實體載體
-          </span>
-        )}
-        {(card.id === 'eq_acoustic_thumper' || card.tags?.includes('聲學震波')) && (
-          <span className="px-1.5 py-0.5 rounded bg-emerald-950/70 text-emerald-300 border border-emerald-500/40 font-bold">
-            🔊 聲學震波
-          </span>
-        )}
-      </div>
+      {/* Resilience Badges (MAPS Minimal - Only True Resiliences) */}
+      {(card.resilience.empShield || card.resilience.weatherResistant || card.resilience.subterranean) && (
+        <div className="flex items-center gap-1 text-[9px] text-slate-400 flex-wrap pt-0.5">
+          {card.resilience.empShield && (
+            <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold">
+              🛡️ 抗EMP
+            </span>
+          )}
+          {card.resilience.weatherResistant && (
+            <span className="px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-bold">
+              🌧️ 耐天候
+            </span>
+          )}
+          {card.resilience.subterranean && (
+            <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold">
+              🕳️ 地底穿透
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }

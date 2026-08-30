@@ -48,7 +48,9 @@ export type TacticEffectType =
   | 'DEPLOY_ANTENNA'
   | 'FARADAY_SHIELD'
   | 'COMMUNITY_RELAY'
-  | 'AGILE_PROTOCOL';
+  | 'AGILE_PROTOCOL'
+  | 'FREE_MARKET_PURCHASE'
+  | 'FREE_TRANSMISSION';
 
 export interface TacticCard {
   id: string;
@@ -97,10 +99,12 @@ export interface DisasterEvent {
 }
 
 export interface PlayerBuffs {
-  antennaBoostRange?: boolean;   // 八木天線：本回合無線電距離 +1 階
-  faradayEmpArmor?: boolean;     // 法拉第袋：本回合所有電子設備免疫 EMP
-  communityRelayActive?: boolean;// 社區中繼站：本回合 C/E 通訊視同 A 槽（100% 滿額收益）
-  agileProtocolActive?: boolean; // 敏捷協議：本回合防線對調與倉庫調配 0 AP
+  antennaBoostRange?: boolean;        // 八木天線：本回合無線電距離 +1 階
+  faradayEmpArmor?: boolean;          // 法拉第袋：本回合所有電子設備免疫 EMP
+  communityRelayActive?: boolean;     // 社區中繼站：本回合 C/E 通訊視同 A 槽（100% 滿額收益）
+  agileProtocolActive?: boolean;      // 敏捷協議：本回合防線對調與倉庫調配 0 AP
+  freeMarketPurchaseActive?: boolean; // 綠色後勤通道：本回合下一次市場採購 0 AP
+  freeTransmissionActive?: boolean;   // 連續突發通訊令：本回合下一次任務通訊檢定 0 AP
 }
 
 export interface Player {

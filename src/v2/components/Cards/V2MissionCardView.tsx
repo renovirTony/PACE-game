@@ -162,18 +162,27 @@ export function V2MissionCardView({
         </div>
 
         {/* Transmit Action Button */}
-        <button
-          onClick={() => onTransmit(mission)}
-          disabled={disabled || activePlayer.actionPoints <= 0}
-          className={`w-full py-2.5 rounded-xl font-black text-xs tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${
-            preview.canTransmit
-              ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 shadow-cyan-500/20'
-              : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'
-          } ${disabled || activePlayer.actionPoints <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-        >
-          <Radio className="w-4 h-4" />
-          <span>發起通訊檢定 (消耗 1 AP)</span>
-        </button>
+        {(() => {
+          const isFreeTrans = Boolean(activePlayer.activeBuffs?.freeTransmissionActive);
+          const canTransmitAP = activePlayer.actionPoints > 0 || isFreeTrans;
+
+          return (
+            <button
+              onClick={() => onTransmit(mission)}
+              disabled={disabled || !canTransmitAP}
+              className={`w-full py-2.5 rounded-xl font-black text-xs tracking-wider flex items-center justify-center gap-1.5 transition-all shadow-md active:scale-95 ${
+                isFreeTrans
+                  ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 shadow-amber-500/30 font-black'
+                  : preview.canTransmit
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-400 hover:to-blue-400 text-slate-950 shadow-cyan-500/20'
+                  : 'bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700'
+              } ${disabled || !canTransmitAP ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Radio className="w-4 h-4" />
+              <span>{isFreeTrans ? '發起通訊檢定 (0 AP [突發通訊])' : '發起通訊檢定 (消耗 1 AP)'}</span>
+            </button>
+          );
+        })()}
       </div>
     </div>
   );

@@ -309,7 +309,11 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                     activePlayer={gameState.activePlayer}
                     activeEvent={gameState.activeEvent}
                     worldview={gameState.worldview}
-                    disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                    disabled={
+                      gameState.activePlayer.isAI ||
+                      (gameState.activePlayer.actionPoints <= 0 &&
+                        !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
+                    }
                     onTransmit={gameState.transmitMission}
                   />
                 ))}

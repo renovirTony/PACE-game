@@ -157,4 +157,56 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
       },
     },
   },
+  {
+    id: 'tac_priority_logistics',
+    cost: 1,
+    effectType: 'FREE_MARKET_PURCHASE',
+    value: 1,
+    translations: {
+      CivilDefense: {
+        name: '綠色後勤通道 (Priority Logistics)',
+        desc: '本回合下一次「採購裝備」或「採購戰術」不消耗 AP（0 AP 快速調配）！',
+        flavor: '公所開闢綠色物資通道，救災器材隨到隨領，免除行政作業延遲。',
+        icon: 'ShoppingBag',
+      },
+      IslandResilience: {
+        name: '優先戰備調度令',
+        desc: '本回合下一次市場採購 0 AP。',
+        flavor: '優先後勤通行證，迅速調集前線急需之各類頻段設備。',
+        icon: 'ShoppingBag',
+      },
+      CyberDisconnect: {
+        name: '黑市直連協議',
+        desc: '本回合下一次採購硬體 0 AP。',
+        flavor: '暗網高頻交易通道，物資瞬間到位，繞過一切審查阻滯。',
+        icon: 'ShoppingBag',
+      },
+    },
+  },
+  {
+    id: 'tac_burst_transmission',
+    cost: 3,
+    effectType: 'FREE_TRANSMISSION',
+    value: 1,
+    translations: {
+      CivilDefense: {
+        name: '連續突發通訊令 (Burst Transmission)',
+        desc: '本回合下一次「發起任務通訊檢定」不消耗 AP（0 AP 突發廣播），突破單回合通訊極限！',
+        flavor: '全頻道高功率突發廣播，在干擾間隙中連續送出多份求救信標！',
+        icon: 'Radio',
+      },
+      IslandResilience: {
+        name: '多頻段突發通訊令',
+        desc: '本回合下一次發起任務通訊檢定 0 AP。',
+        flavor: '所有可用射頻瞬間齊發，實施飽和式突發通信。',
+        icon: 'Radio',
+      },
+      CyberDisconnect: {
+        name: '全頻段超載脈衝廣播',
+        desc: '本回合下一次通訊檢定 0 AP。',
+        flavor: '將所有頻段推至超載極限，瞬間擊穿電磁風暴。',
+        icon: 'Radio',
+      },
+    },
+  },
 ];

@@ -38,6 +38,43 @@ export function V2ActionControlPanel({
         </span>
       </div>
 
+      {/* Active Buffs Status Banner (MAPS Applicable Principle) */}
+      {player.activeBuffs && Object.values(player.activeBuffs).some(Boolean) && (
+        <div className="p-2.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center gap-1.5 flex-wrap text-[11px]">
+          <span className="text-cyan-400 font-bold">⚡ 本回合戰術增益：</span>
+          {player.activeBuffs.agileProtocolActive && (
+            <span className="px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/40 font-black animate-pulse">
+              🔄 敏捷防線 (調換 0 AP)
+            </span>
+          )}
+          {player.activeBuffs.freeMarketPurchaseActive && (
+            <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-black animate-pulse">
+              🛒 綠色後勤 (採購 0 AP)
+            </span>
+          )}
+          {player.activeBuffs.freeTransmissionActive && (
+            <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 font-black animate-pulse">
+              📡 突發通訊令 (通訊 0 AP)
+            </span>
+          )}
+          {player.activeBuffs.communityRelayActive && (
+            <span className="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-black">
+              👥 志願者中繼 (C/E 滿額 100%)
+            </span>
+          )}
+          {player.activeBuffs.faradayEmpArmor && (
+            <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-500/40 font-black">
+              🛡️ 法拉第屏蔽 (免疫 EMP)
+            </span>
+          )}
+          {player.activeBuffs.antennaBoostRange && (
+            <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-500/40 font-black">
+              📡 八木增益 (距離 +1)
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Quick Field Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Recharge Action */}
@@ -122,6 +159,16 @@ export function V2ActionControlPanel({
                       {tactic.effectType === 'AGILE_PROTOCOL' && (
                         <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-purple-950 text-purple-300 border border-purple-500/30">
                           🔄 調換 0 AP
+                        </span>
+                      )}
+                      {tactic.effectType === 'FREE_MARKET_PURCHASE' && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-emerald-950 text-emerald-300 border border-emerald-500/30">
+                          🛒 採購 0 AP
+                        </span>
+                      )}
+                      {tactic.effectType === 'FREE_TRANSMISSION' && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[9px] font-black bg-amber-950 text-amber-300 border border-amber-500/30">
+                          📡 通訊 0 AP
                         </span>
                       )}
                     </div>

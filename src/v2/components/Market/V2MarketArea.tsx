@@ -57,7 +57,8 @@ export function V2MarketArea({
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           {market.map((card) => {
-            const canAfford = player.credits >= card.cost && player.actionPoints >= 1;
+            const isFreeBuy = Boolean(player.activeBuffs?.freeMarketPurchaseActive);
+            const canAfford = player.credits >= card.cost && (player.actionPoints >= 1 || isFreeBuy);
             const isSelected = selectedCardForSlot?.id === card.id;
 
             // 檢查是否受當前天災阻斷
@@ -151,12 +152,14 @@ export function V2MarketArea({
                     disabled={disabled || !canAfford}
                     className={`w-full py-1.5 rounded-xl font-bold text-xs flex items-center justify-center gap-1 transition-all ${
                       canAfford
-                        ? 'bg-slate-800 hover:bg-cyan-600 hover:text-slate-950 text-slate-200 border border-slate-700'
+                        ? isFreeBuy
+                          ? 'bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black shadow-md'
+                          : 'bg-slate-800 hover:bg-cyan-600 hover:text-slate-950 text-slate-200 border border-slate-700'
                         : 'bg-slate-900 text-slate-600 border border-slate-800 opacity-50 cursor-not-allowed'
                     }`}
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>採購裝備 (1 AP)</span>
+                    <span>{isFreeBuy ? '採購裝備 (0 AP [後勤])' : '採購裝備 (1 AP)'}</span>
                   </button>
                 )}
               </div>
@@ -174,12 +177,13 @@ export function V2MarketArea({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           {tacticMarket.map((tactic) => {
             const content = tactic.translations[worldview];
-            const canAfford = player.credits >= tactic.cost && player.actionPoints >= 1;
+            const isFreeBuy = Boolean(player.activeBuffs?.freeMarketPurchaseActive);
+            const canAfford = player.credits >= tactic.cost && (player.actionPoints >= 1 || isFreeBuy);
 
             return (
               <div
                 key={tactic.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3.5 flex flex-col justify-between gap-2"
+                className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3.5 flex flex-col justify-between gap-2 hover:border-slate-700 transition-all"
               >
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-black text-slate-100 truncate">
@@ -199,11 +203,13 @@ export function V2MarketArea({
                   disabled={disabled || !canAfford}
                   className={`w-full py-1.5 rounded-xl font-bold text-xs transition-all ${
                     canAfford
-                      ? 'bg-slate-800 hover:bg-emerald-600 hover:text-slate-950 text-slate-200 border border-slate-700'
+                      ? isFreeBuy
+                        ? 'bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black shadow-md'
+                        : 'bg-slate-800 hover:bg-emerald-600 hover:text-slate-950 text-slate-200 border border-slate-700'
                       : 'bg-slate-900 text-slate-600 border border-slate-800 opacity-50 cursor-not-allowed'
                   }`}
                 >
-                  購入戰術卡 (1 AP)
+                  {isFreeBuy ? '購入戰術 (0 AP [後勤])' : '購入戰術卡 (1 AP)'}
                 </button>
               </div>
             );

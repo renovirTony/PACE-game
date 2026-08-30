@@ -77,10 +77,18 @@ export function computeV2AIDecision(
     if (agileTactic && !aiPlayer.activeBuffs?.agileProtocolActive && (aiPlayer.inventory.length > 0 || aiPlayer.actionPoints === 0)) {
       return { actionType: 'PLAY_TACTIC', targetTactic: agileTactic };
     }
+    const freeBuyTactic = aiPlayer.handTactics.find(t => t.effectType === 'FREE_MARKET_PURCHASE');
+    if (freeBuyTactic && !aiPlayer.activeBuffs?.freeMarketPurchaseActive && aiPlayer.credits >= 1) {
+      return { actionType: 'PLAY_TACTIC', targetTactic: freeBuyTactic };
+    }
+    const burstTactic = aiPlayer.handTactics.find(t => t.effectType === 'FREE_TRANSMISSION');
+    if (burstTactic && !aiPlayer.activeBuffs?.freeTransmissionActive) {
+      return { actionType: 'PLAY_TACTIC', targetTactic: burstTactic };
+    }
   }
 
   // 2. 檢驗當前看板上的任務，若有高成功率且回報佳的任務，立即發起通訊
-  if (aiPlayer.actionPoints >= 1) {
+  if (aiPlayer.actionPoints >= 1 || aiPlayer.activeBuffs?.freeTransmissionActive) {
     for (const mission of activeMissions) {
       // 依序檢查 P -> A -> C -> E 是否有能完成該任務的卡
       const slots: PACESlot[] = ['P', 'A', 'C', 'E'];
