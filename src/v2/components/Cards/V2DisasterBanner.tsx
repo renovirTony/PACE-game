@@ -5,6 +5,7 @@ import { CloudRain, BatteryLow, ZapOff, Layers, ShieldAlert, Sparkles, AlertTria
 interface V2DisasterBannerProps {
   event: DisasterEvent | null;
   worldview: WorldviewType;
+  tutorialHighlight?: boolean;
 }
 
 const mediumNames: Record<PhysicalMedium, string> = {
@@ -15,7 +16,7 @@ const mediumNames: Record<PhysicalMedium, string> = {
   PhysicalOptical: '人力/光學',
 };
 
-export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
+export function V2DisasterBanner({ event, worldview, tutorialHighlight }: V2DisasterBannerProps) {
   if (!event) return null;
 
   const content = event.translations[worldview];
@@ -40,11 +41,18 @@ export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
   const isHazard = event.targetedMedia.length > 0;
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-xl backdrop-blur-md font-mono flex flex-col md:flex-row items-start md:items-center justify-between gap-4 ${
-      isHazard
+    <div className={`rounded-2xl border p-4 shadow-xl backdrop-blur-md font-mono flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all relative ${
+      tutorialHighlight
+        ? 'border-purple-500 ring-4 ring-purple-500/50 shadow-purple-500/30 bg-purple-950/30'
+        : isHazard
         ? 'border-red-500/40 bg-red-950/30 text-red-100'
         : 'border-emerald-500/40 bg-emerald-950/30 text-emerald-100'
     }`}>
+      {tutorialHighlight && (
+        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
+          <span>🎯 [教學引導] 全域天災直接中斷對應物理媒介</span>
+        </div>
+      )}
       {/* Left: Icon & Description */}
       <div className="flex items-start gap-3.5 max-w-3xl">
         <div className={`p-2.5 rounded-xl border shrink-0 ${

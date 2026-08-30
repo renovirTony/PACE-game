@@ -269,6 +269,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         <V2DisasterBanner
           event={gameState.activeEvent}
           worldview={gameState.worldview}
+          tutorialHighlight={gameState.isTutorialMode && gameState.tutorialStep === 7}
         />
 
         {/* 3. Commander Custom PACE Defense Board */}
@@ -277,10 +278,29 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
           activeEvent={gameState.activeEvent}
           isCurrentPlayer={!gameState.activePlayer.isAI}
           worldview={gameState.worldview}
-          onSwapSlots={gameState.swapSlots}
-          onStoreCard={gameState.storeCard}
-          onEquipFromInventory={gameState.equipFromInventory}
+          onSwapSlots={(slotA, slotB) => {
+            const res = gameState.swapSlots(slotA, slotB);
+            if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
+              gameState.nextTutorialStep();
+            }
+            return res;
+          }}
+          onStoreCard={(slot) => {
+            gameState.storeCard(slot);
+            if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
+              gameState.nextTutorialStep();
+            }
+          }}
+          onEquipFromInventory={(card, slot) => {
+            const res = gameState.equipFromInventory(card, slot);
+            if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
+              gameState.nextTutorialStep();
+            }
+            return res;
+          }}
           onDiscardFromInventory={gameState.discardFromInventory}
+          tutorialHighlightBoard={gameState.isTutorialMode && gameState.tutorialStep === 1}
+          tutorialHighlightSwap={gameState.isTutorialMode && gameState.tutorialStep === 4}
         />
 
         {/* 4. Operational Area: Left (Missions + Market) / Right (Actions + Log) */}
@@ -302,7 +322,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                {gameState.activeMissions.map((mission) => (
+                {gameState.activeMissions.map((mission, idx) => (
                   <V2MissionCardView
                     key={mission.id}
                     mission={mission}
@@ -314,7 +334,14 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                       (gameState.activePlayer.actionPoints <= 0 &&
                         !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
                     }
-                    onTransmit={gameState.transmitMission}
+                    onTransmit={(m) => {
+                      const res = gameState.transmitMission(m);
+                      if (gameState.isTutorialMode && gameState.tutorialStep === 5) {
+                        gameState.nextTutorialStep();
+                      }
+                      return res;
+                    }}
+                    tutorialHighlightMission={gameState.isTutorialMode && gameState.tutorialStep === 5 && idx === 0}
                   />
                 ))}
               </div>
@@ -328,8 +355,15 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               tacticMarket={gameState.tacticMarket}
               worldview={gameState.worldview}
               disabled={gameState.activePlayer.isAI}
-              onBuyEquipment={gameState.buyEquipment}
+              onBuyEquipment={(card, slot) => {
+                const res = gameState.buyEquipment(card, slot);
+                if (res && gameState.isTutorialMode && gameState.tutorialStep === 2) {
+                  gameState.nextTutorialStep();
+                }
+                return res;
+              }}
               onBuyTactic={gameState.buyTactic}
+              tutorialHighlightMarket={gameState.isTutorialMode && gameState.tutorialStep === 2}
             />
           </div>
 
@@ -340,9 +374,29 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               isCurrentPlayer={!gameState.activePlayer.isAI}
               isAI={gameState.activePlayer.isAI}
               worldview={gameState.worldview}
-              onPlayTactic={gameState.playTactic}
-              onRecharge={gameState.rechargeEnergy}
-              onEndTurn={gameState.endTurn}
+              onPlayTactic={(t) => {
+                const res = gameState.playTactic(t);
+                if (res && gameState.isTutorialMode && gameState.tutorialStep === 3) {
+                  gameState.nextTutorialStep();
+                }
+                return res;
+              }}
+              onRecharge={() => {
+                const res = gameState.rechargeEnergy();
+                if (res && gameState.isTutorialMode && gameState.tutorialStep === 6) {
+                  gameState.nextTutorialStep();
+                }
+                return res;
+              }}
+              onEndTurn={() => {
+                gameState.endTurn();
+                if (gameState.isTutorialMode && gameState.tutorialStep === 7) {
+                  gameState.nextTutorialStep();
+                }
+              }}
+              tutorialHighlightTactics={gameState.isTutorialMode && gameState.tutorialStep === 3}
+              tutorialHighlightRecharge={gameState.isTutorialMode && gameState.tutorialStep === 6}
+              tutorialHighlightEndTurn={gameState.isTutorialMode && gameState.tutorialStep === 7}
             />
 
             <LogViewer logs={gameState.logs} />

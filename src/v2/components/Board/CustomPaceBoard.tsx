@@ -35,6 +35,8 @@ interface CustomPaceBoardProps {
   onStoreCard: (slot: PACESlot) => void;
   onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void | boolean;
   onDiscardFromInventory?: (cardId: string) => void;
+  tutorialHighlightBoard?: boolean;
+  tutorialHighlightSwap?: boolean;
 }
 
 const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
@@ -73,6 +75,8 @@ export function CustomPaceBoard({
   onStoreCard,
   onEquipFromInventory,
   onDiscardFromInventory,
+  tutorialHighlightBoard,
+  tutorialHighlightSwap,
 }: CustomPaceBoardProps) {
   const slots: PACESlot[] = ['P', 'A', 'C', 'E'];
   const board = player.paceBoard;
@@ -109,7 +113,17 @@ export function CustomPaceBoard({
   const hasAP = player.actionPoints > 0;
 
   return (
-    <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4">
+    <div className={`rounded-3xl border bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4 transition-all relative ${
+      tutorialHighlightBoard
+        ? 'border-purple-500 ring-4 ring-purple-500/50 shadow-purple-500/30'
+        : 'border-slate-800'
+    }`}>
+      {tutorialHighlightBoard && (
+        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
+          <span>🎯 [教學引導] PACE 自組四重防線面板</span>
+        </div>
+      )}
+
       {/* Header with Diversity Metric */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
         <div className="flex items-center gap-2">
@@ -178,7 +192,7 @@ export function CustomPaceBoard({
           );
 
           // 判斷當前電量是否足夠啟動
-          const effectivePowerCost = card ? card.powerCost + (activeEvent?.powerDrainBonus || 0) : 0;
+          const effectivePowerCost = (card?.powerCost || 0) + (activeEvent?.powerDrainBonus || 0);
           const isOutOfPower = Boolean(card && player.energy < effectivePowerCost);
 
           const isCardDisabled = isDisasterTargeted || isOutOfPower;
@@ -229,7 +243,9 @@ export function CustomPaceBoard({
                       onClick={() => setActiveSwapSlot(isSwapSource ? null : slot)}
                       disabled={!hasAP && !isSwapSource}
                       className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${
-                        isSwapSource
+                        tutorialHighlightSwap && slot === 'P'
+                          ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/50 animate-bounce font-black'
+                          : isSwapSource
                           ? 'bg-cyan-500 text-slate-950 border-cyan-400'
                           : !hasAP
                           ? 'bg-slate-900/40 text-slate-500 border-slate-800 cursor-not-allowed opacity-50'

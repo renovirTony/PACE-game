@@ -96,23 +96,25 @@ export function UnifiedCommsCardContent({
   const mediumInfo = getCommsCardMediumInfo(card);
 
   return (
-    <div className="flex flex-col gap-2.5">
-      {/* Top: Name & Medium Badge + Optional Header Right Badge */}
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col">
-          <h4 className="text-xs sm:text-sm font-black text-slate-100 leading-snug">
-            {content?.name || card.id}
-          </h4>
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          {mediumInfo && (
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${mediumInfo.bgColor} ${mediumInfo.borderColor} ${mediumInfo.color}`}>
-              {mediumInfo.icon} {mediumInfo.label}
-            </span>
-          )}
-          {headerRightBadge}
-        </div>
+    <div className="flex flex-col gap-2 font-mono w-full">
+      {/* Top Metadata Row: Medium Badge (Left) & Cost/Action Badge (Right) */}
+      <div className="flex items-center justify-between gap-1.5 w-full">
+        {mediumInfo && (
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${mediumInfo.bgColor} ${mediumInfo.borderColor} ${mediumInfo.color}`}>
+            {mediumInfo.icon} {mediumInfo.label}
+          </span>
+        )}
+        {headerRightBadge && (
+          <div className="shrink-0 flex items-center">
+            {headerRightBadge}
+          </div>
+        )}
       </div>
+
+      {/* Full-Width Card Title */}
+      <h4 className="text-xs sm:text-sm font-black text-slate-100 leading-snug break-words">
+        {content?.name || card.id}
+      </h4>
 
       {/* Description */}
       <p className="text-[11px] sm:text-xs text-slate-300 leading-relaxed">

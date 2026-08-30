@@ -13,6 +13,7 @@ interface V2MarketAreaProps {
   disabled?: boolean;
   onBuyEquipment: (card: CommsCard, targetSlot: PACESlot) => boolean;
   onBuyTactic: (card: TacticCard) => boolean;
+  tutorialHighlightMarket?: boolean;
 }
 
 export function V2MarketArea({
@@ -24,6 +25,7 @@ export function V2MarketArea({
   disabled,
   onBuyEquipment,
   onBuyTactic,
+  tutorialHighlightMarket,
 }: V2MarketAreaProps) {
   const [selectedCardForSlot, setSelectedCardForSlot] = useState<CommsCard | null>(null);
 
@@ -35,7 +37,17 @@ export function V2MarketArea({
   };
 
   return (
-    <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4">
+    <div className={`rounded-3xl border bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4 transition-all relative ${
+      tutorialHighlightMarket
+        ? 'border-purple-500 ring-4 ring-purple-500/50 shadow-purple-500/30'
+        : 'border-slate-800'
+    }`}>
+      {tutorialHighlightMarket && (
+        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
+          <span>🎯 [教學任務] 點擊【採購裝備】並指派至 [C] 或 [E] 槽！</span>
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-800">
         <div className="flex items-center gap-2">
@@ -56,7 +68,7 @@ export function V2MarketArea({
         </span>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
-          {market.map((card) => {
+          {market.map((card, idx) => {
             const isFreeBuy = Boolean(player.activeBuffs?.freeMarketPurchaseActive);
             const canAfford = player.credits >= card.cost && (player.actionPoints >= 1 || isFreeBuy);
             const isSelected = selectedCardForSlot?.id === card.id;
@@ -72,6 +84,8 @@ export function V2MarketArea({
                 className={`rounded-2xl border p-3.5 flex flex-col justify-between gap-2.5 transition-all relative ${
                   isSelected
                     ? 'border-cyan-400 bg-cyan-950/40 shadow-lg shadow-cyan-500/20'
+                    : tutorialHighlightMarket && idx === 0
+                    ? 'border-purple-400 ring-2 ring-purple-400 bg-purple-950/30 shadow-lg shadow-purple-500/30'
                     : isDisasterTargeted
                     ? 'border-red-500/40 bg-red-950/20'
                     : 'border-slate-800 bg-slate-900/80 hover:border-slate-700'

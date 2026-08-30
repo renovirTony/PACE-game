@@ -10,6 +10,7 @@ interface V2MissionCardViewProps {
   worldview: WorldviewType;
   disabled?: boolean;
   onTransmit: (mission: CrisisMission) => TransmissionResult;
+  tutorialHighlightMission?: boolean;
 }
 
 export function V2MissionCardView({
@@ -19,6 +20,7 @@ export function V2MissionCardView({
   worldview,
   disabled,
   onTransmit,
+  tutorialHighlightMission,
 }: V2MissionCardViewProps) {
   const content = mission.translations[worldview];
 
@@ -77,7 +79,16 @@ export function V2MissionCardView({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-800 bg-slate-900/90 p-4 shadow-xl flex flex-col justify-between gap-3 font-mono hover:border-slate-700 transition-all">
+    <div className={`rounded-2xl border p-4 shadow-xl flex flex-col justify-between gap-3 font-mono transition-all relative ${
+      tutorialHighlightMission
+        ? 'border-purple-500 ring-4 ring-purple-500/50 bg-purple-950/30 shadow-purple-500/30'
+        : 'border-slate-800 bg-slate-900/90 hover:border-slate-700'
+    }`}>
+      {tutorialHighlightMission && (
+        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
+          <span>🎯 [教學任務] 點擊【發起通訊檢定】！</span>
+        </div>
+      )}
       {/* Top: Icon, Bandwidth Badge, Title */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
