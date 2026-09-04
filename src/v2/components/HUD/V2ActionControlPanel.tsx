@@ -10,9 +10,6 @@ interface V2ActionControlPanelProps {
   onPlayTactic: (card: TacticCard) => boolean;
   onRecharge: () => boolean;
   onEndTurn: () => void;
-  tutorialHighlightTactics?: boolean;
-  tutorialHighlightRecharge?: boolean;
-  tutorialHighlightEndTurn?: boolean;
 }
 
 export function V2ActionControlPanel({
@@ -23,9 +20,6 @@ export function V2ActionControlPanel({
   onPlayTactic,
   onRecharge,
   onEndTurn,
-  tutorialHighlightTactics,
-  tutorialHighlightRecharge,
-  tutorialHighlightEndTurn,
 }: V2ActionControlPanelProps) {
   const canActWithAP = isCurrentPlayer && !isAI && player.actionPoints > 0;
   const canPlayTactic = isCurrentPlayer && !isAI;
@@ -85,12 +79,11 @@ export function V2ActionControlPanel({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {/* Recharge Action */}
         <button
+          data-tutorial="recharge-btn"
           onClick={onRecharge}
           disabled={!canRecharge}
           className={`p-3 rounded-2xl border font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 ${
-            tutorialHighlightRecharge
-              ? 'bg-amber-500 hover:bg-amber-400 text-slate-950 font-black ring-4 ring-amber-400 ring-offset-2 ring-offset-slate-950 animate-bounce shadow-xl'
-              : canRecharge
+            canRecharge
               ? 'bg-amber-950/40 hover:bg-amber-900/60 border-amber-500/40 text-amber-300'
               : 'bg-slate-900 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
           }`}
@@ -101,13 +94,10 @@ export function V2ActionControlPanel({
 
         {/* End Turn Action */}
         <button
+          data-tutorial="end-turn-btn"
           onClick={onEndTurn}
           disabled={!isCurrentPlayer || isAI}
-          className={`p-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm ${
-            tutorialHighlightEndTurn
-              ? 'bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-black ring-4 ring-cyan-400 ring-offset-2 ring-offset-slate-950 animate-bounce shadow-xl'
-              : 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 font-bold'
-          }`}
+          className="p-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 font-bold"
         >
           <span>結束作戰回合 (End Turn)</span>
           <ArrowRight className="w-4 h-4 text-cyan-400" />
@@ -115,17 +105,13 @@ export function V2ActionControlPanel({
       </div>
 
       {/* Hand Tactics Section */}
-      <div className={`flex flex-col gap-2 pt-2 border-t transition-all rounded-2xl p-2 ${
-        tutorialHighlightTactics
-          ? 'border-purple-500 ring-2 ring-purple-500 bg-purple-950/20 shadow-lg shadow-purple-500/20'
-          : 'border-slate-800'
-      }`}>
+      <div className="flex flex-col gap-2 pt-2 border-t border-slate-800 rounded-2xl p-2 transition-all">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
             <Shield className="w-4 h-4 text-purple-400" /> 手牌戰術卡 ({player.handTactics.length} 張)
           </span>
           <span className="text-[10px] text-purple-400 font-bold">
-            {tutorialHighlightTactics ? '👉 點擊右側【即時發動 (0 AP)】！' : '⚡ 手牌戰術打出為 0 AP 即時生效！'}
+            ⚡ 手牌戰術打出為 0 AP 即時生效！
           </span>
         </div>
 
@@ -135,11 +121,12 @@ export function V2ActionControlPanel({
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-2.5">
-            {player.handTactics.map((tactic) => {
+            {player.handTactics.map((tactic, idx) => {
               const content = tactic.translations[worldview];
               return (
                 <div
                   key={tactic.id}
+                  data-tutorial={idx === 0 ? 'tactic-card-0' : undefined}
                   className="p-3 rounded-2xl bg-slate-900/90 border border-purple-500/30 hover:border-purple-500/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
                 >
                   <div className="flex flex-col gap-1 flex-1">

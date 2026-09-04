@@ -310,11 +310,11 @@ export function V2CardCompendiumModal({
                     key={tactic.id}
                     className="p-4 rounded-2xl border border-purple-500/30 bg-purple-950/20 flex flex-col justify-between gap-2.5"
                   >
-                    <div className="flex items-center justify-between text-xs">
-                      <h4 className="text-sm font-black text-purple-300">
+                    <div className="flex items-start justify-between gap-2 text-xs">
+                      <h4 className="text-sm font-black text-purple-300 leading-snug break-words flex-1 min-w-0">
                         {content?.name}
                       </h4>
-                      <span className="font-bold text-emerald-300">💰 {tactic.cost} 物資</span>
+                      <span className="font-bold text-emerald-300 shrink-0">💰 {tactic.cost} 物資</span>
                     </div>
 
                     <p className="text-xs text-slate-200 leading-relaxed">

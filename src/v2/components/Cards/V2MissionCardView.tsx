@@ -10,7 +10,7 @@ interface V2MissionCardViewProps {
   worldview: WorldviewType;
   disabled?: boolean;
   onTransmit: (mission: CrisisMission) => TransmissionResult;
-  tutorialHighlightMission?: boolean;
+  dataTutorial?: string;
 }
 
 export function V2MissionCardView({
@@ -20,7 +20,7 @@ export function V2MissionCardView({
   worldview,
   disabled,
   onTransmit,
-  tutorialHighlightMission,
+  dataTutorial,
 }: V2MissionCardViewProps) {
   const content = mission.translations[worldview];
 
@@ -79,16 +79,10 @@ export function V2MissionCardView({
   };
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-xl flex flex-col justify-between gap-3 font-mono transition-all relative ${
-      tutorialHighlightMission
-        ? 'border-purple-500 ring-4 ring-purple-500/50 bg-purple-950/30 shadow-purple-500/30'
-        : 'border-slate-800 bg-slate-900/90 hover:border-slate-700'
-    }`}>
-      {tutorialHighlightMission && (
-        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
-          <span>🎯 [教學任務] 點擊【發起通訊檢定】！</span>
-        </div>
-      )}
+    <div
+      data-tutorial={dataTutorial}
+      className="rounded-2xl border p-4 shadow-xl flex flex-col justify-between gap-3 font-mono transition-all relative border-slate-800 bg-slate-900/90 hover:border-slate-700"
+    >
       {/* Top: Icon, Bandwidth Badge, Title */}
       <div className="flex flex-col gap-2">
         <div className="flex items-center justify-between gap-2">
@@ -108,31 +102,31 @@ export function V2MissionCardView({
 
         {/* Requirements Badges (MAPS Minimal & Clean) */}
         <div className="flex items-center gap-1.5 text-[10px] text-slate-300 flex-wrap pt-1.5 border-t border-white/5">
-          <span className="px-1.5 py-0.5 rounded bg-black/40 border border-white/10 font-bold">
-            📡 {mission.requiredRange.join('/')}
+          <span className="px-1.5 py-0.5 rounded bg-black/40 border border-white/10 font-bold whitespace-nowrap">
+            📡 {mission.requiredRange.map(r => r === 'Local' ? '近程' : r === 'LineOfSight' ? '視距' : r === 'LongRange' ? '長程' : r === 'Penetrating' ? '穿透' : r === 'Global' ? '全球' : r).join('/')}
           </span>
           {mission.requiresWeatherResist && (
-            <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-cyan-950/80 text-cyan-300 border border-cyan-500/40 font-bold whitespace-nowrap">
               🌧️ 耐天候
             </span>
           )}
           {mission.requiresSubterranean && (
-            <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold whitespace-nowrap">
               🕳️ 地底穿透
             </span>
           )}
           {mission.requiresEmpShield && (
-            <span className="px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-500/40 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-500/40 font-bold whitespace-nowrap">
               🛡️ 需抗EMP
             </span>
           )}
           {mission.requiresOptical && (
-            <span className="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40 font-bold" title="需具備光學閃光能力（如阿爾迪斯燈/強光手電筒）">
+            <span className="px-1.5 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-500/40 font-bold whitespace-nowrap" title="需具備光學閃光能力（如阿爾迪斯燈/強光手電筒）">
               🔦 需光學摩斯
             </span>
           )}
           {mission.requiresWired && (
-            <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 font-bold whitespace-nowrap">
               🔌 需實體有線
             </span>
           )}

@@ -13,7 +13,6 @@ interface V2MarketAreaProps {
   disabled?: boolean;
   onBuyEquipment: (card: CommsCard, targetSlot: PACESlot) => boolean;
   onBuyTactic: (card: TacticCard) => boolean;
-  tutorialHighlightMarket?: boolean;
 }
 
 export function V2MarketArea({
@@ -25,7 +24,6 @@ export function V2MarketArea({
   disabled,
   onBuyEquipment,
   onBuyTactic,
-  tutorialHighlightMarket,
 }: V2MarketAreaProps) {
   const [selectedCardForSlot, setSelectedCardForSlot] = useState<CommsCard | null>(null);
 
@@ -37,16 +35,7 @@ export function V2MarketArea({
   };
 
   return (
-    <div className={`rounded-3xl border bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4 transition-all relative ${
-      tutorialHighlightMarket
-        ? 'border-purple-500 ring-4 ring-purple-500/50 shadow-purple-500/30'
-        : 'border-slate-800'
-    }`}>
-      {tutorialHighlightMarket && (
-        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
-          <span>🎯 [教學任務] 點擊【採購裝備】並指派至 [C] 或 [E] 槽！</span>
-        </div>
-      )}
+    <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4 transition-all relative">
 
       {/* Header */}
       <div className="flex items-center justify-between pb-2 border-b border-slate-800">
@@ -67,7 +56,7 @@ export function V2MarketArea({
           📡 通訊工具裝備 (可自選指派防線槽位)
         </span>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {market.map((card, idx) => {
             const isFreeBuy = Boolean(player.activeBuffs?.freeMarketPurchaseActive);
             const canAfford = player.credits >= card.cost && (player.actionPoints >= 1 || isFreeBuy);
@@ -81,11 +70,10 @@ export function V2MarketArea({
             return (
               <div
                 key={card.id}
-                className={`rounded-2xl border p-3.5 flex flex-col justify-between gap-2.5 transition-all relative ${
+                data-tutorial={idx === 0 ? 'market-card-0' : undefined}
+                className={`market-equipment-card rounded-2xl border p-3.5 flex flex-col justify-between gap-2.5 transition-all relative h-full ${
                   isSelected
                     ? 'border-cyan-400 bg-cyan-950/40 shadow-lg shadow-cyan-500/20'
-                    : tutorialHighlightMarket && idx === 0
-                    ? 'border-purple-400 ring-2 ring-purple-400 bg-purple-950/30 shadow-lg shadow-purple-500/30'
                     : isDisasterTargeted
                     ? 'border-red-500/40 bg-red-950/20'
                     : 'border-slate-800 bg-slate-900/80 hover:border-slate-700'
@@ -93,7 +81,7 @@ export function V2MarketArea({
               >
                 {/* Disaster Target Alert */}
                 {isDisasterTargeted && (
-                  <div className="p-1 rounded-lg bg-red-950/80 border border-red-500/40 text-red-300 text-[10px] font-bold flex items-center gap-1">
+                  <div className="market-disaster-alert p-1 rounded-lg bg-red-950/80 border border-red-500/40 text-red-300 text-[10px] font-bold flex items-center gap-1">
                     <AlertTriangle className="w-3 h-3 text-red-400 shrink-0" />
                     <span>當前天災中斷此媒介</span>
                   </div>
@@ -197,10 +185,10 @@ export function V2MarketArea({
             return (
               <div
                 key={tactic.id}
-                className="rounded-2xl border border-slate-800 bg-slate-900/70 p-3.5 flex flex-col justify-between gap-2 hover:border-slate-700 transition-all"
+                className="market-tactic-card rounded-2xl border border-slate-800 bg-slate-900/70 p-3.5 flex flex-col justify-between gap-2 hover:border-slate-700 transition-all h-full"
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-black text-slate-100 truncate">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="text-xs font-black text-slate-100 leading-snug break-words flex-1 min-w-0">
                     {content?.name}
                   </span>
                   <span className="font-bold text-emerald-300 text-xs px-2 py-0.5 rounded-full bg-emerald-950/60 border border-emerald-500/30 shrink-0">

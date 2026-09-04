@@ -35,8 +35,6 @@ interface CustomPaceBoardProps {
   onStoreCard: (slot: PACESlot) => void;
   onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void | boolean;
   onDiscardFromInventory?: (cardId: string) => void;
-  tutorialHighlightBoard?: boolean;
-  tutorialHighlightSwap?: boolean;
 }
 
 const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
@@ -75,8 +73,6 @@ export function CustomPaceBoard({
   onStoreCard,
   onEquipFromInventory,
   onDiscardFromInventory,
-  tutorialHighlightBoard,
-  tutorialHighlightSwap,
 }: CustomPaceBoardProps) {
   const slots: PACESlot[] = ['P', 'A', 'C', 'E'];
   const board = player.paceBoard;
@@ -113,17 +109,10 @@ export function CustomPaceBoard({
   const hasAP = player.actionPoints > 0;
 
   return (
-    <div className={`rounded-3xl border bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4 transition-all relative ${
-      tutorialHighlightBoard
-        ? 'border-purple-500 ring-4 ring-purple-500/50 shadow-purple-500/30'
-        : 'border-slate-800'
-    }`}>
-      {tutorialHighlightBoard && (
-        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
-          <span>🎯 [教學引導] PACE 自組四重防線面板</span>
-        </div>
-      )}
-
+    <div
+      data-tutorial="pace-board"
+      className="rounded-3xl border border-slate-800 bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md font-mono flex flex-col gap-4 transition-all relative"
+    >
       {/* Header with Diversity Metric */}
       <div className="flex flex-wrap items-center justify-between gap-2 pb-2 border-b border-slate-800">
         <div className="flex items-center gap-2">
@@ -215,7 +204,7 @@ export function CustomPaceBoard({
           return (
             <div
               key={slot}
-              className={`rounded-2xl border p-3.5 flex flex-col justify-between transition-all relative ${
+              className={`pace-slot-card rounded-2xl border p-3.5 flex flex-col justify-between transition-all relative ${
                 isSwapSource
                   ? 'border-cyan-400 bg-cyan-950/60 shadow-xl shadow-cyan-500/30'
                   : isCardDisabled
@@ -226,8 +215,8 @@ export function CustomPaceBoard({
               }`}
             >
               {/* Slot Header */}
-              <div className="flex items-center justify-between gap-1 pb-2 mb-2 border-b border-white/5">
-                <div>
+              <div className="flex flex-wrap items-center justify-between gap-1.5 pb-2 mb-2 border-b border-white/5">
+                <div className="min-w-0">
                   <span className="text-xs font-black block text-slate-200">
                     {meta.title}
                   </span>
@@ -238,14 +227,13 @@ export function CustomPaceBoard({
 
                 {/* Card Management Controls */}
                 {card && isCurrentPlayer && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1 shrink-0 ml-auto">
                     <button
+                      data-tutorial={slot === 'P' ? 'slot-p' : undefined}
                       onClick={() => setActiveSwapSlot(isSwapSource ? null : slot)}
                       disabled={!hasAP && !isSwapSource}
-                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 ${
-                        tutorialHighlightSwap && slot === 'P'
-                          ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-lg shadow-purple-500/50 animate-bounce font-black'
-                          : isSwapSource
+                      className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-all flex items-center gap-1 whitespace-nowrap shrink-0 ${
+                        isSwapSource
                           ? 'bg-cyan-500 text-slate-950 border-cyan-400'
                           : !hasAP
                           ? 'bg-slate-900/40 text-slate-500 border-slate-800 cursor-not-allowed opacity-50'
@@ -253,17 +241,17 @@ export function CustomPaceBoard({
                       }`}
                       title={hasAP ? (isAgile ? "與其他防線對調順序 (敏捷協議 0 AP)" : "與其他防線對調順序 (消耗 1 AP 戰術調度)") : "行動點數不足 (需 1 AP)"}
                     >
-                      <ArrowLeftRight className="w-3 h-3" />
-                      <span>{isSwapSource ? '選擇中' : isAgile ? '調換 (0 AP)' : '調換 (1 AP)'}</span>
+                      <ArrowLeftRight className="w-3 h-3 shrink-0" />
+                      <span className="whitespace-nowrap">{isSwapSource ? '選擇中' : isAgile ? '調換 0AP' : '調換 1AP'}</span>
                     </button>
 
                     <button
                       onClick={() => onStoreCard(slot)}
-                      className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-700 transition-all flex items-center gap-1"
+                      className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-700 transition-all flex items-center gap-1 whitespace-nowrap shrink-0"
                       title="卸下此裝備存入備用倉庫 (0 AP，不刪除)"
                     >
-                      <Archive className="w-3 h-3" />
-                      <span>收存</span>
+                      <Archive className="w-3 h-3 shrink-0" />
+                      <span className="whitespace-nowrap">收存</span>
                     </button>
                   </div>
                 )}
@@ -271,7 +259,7 @@ export function CustomPaceBoard({
 
               {/* Disaster Interruption Banner Badge */}
               {isDisasterTargeted && activeEvent && (
-                <div className="mb-2 p-1.5 rounded-xl bg-red-900/80 border border-red-500 text-white text-[11px] font-black flex items-center justify-center gap-1.5 animate-pulse shadow-md">
+                <div className="slot-disaster-alert mb-2 p-1.5 rounded-xl bg-red-900/80 border border-red-500 text-white text-[11px] font-black flex items-center justify-center gap-1.5 animate-pulse shadow-md">
                   <XCircle className="w-4 h-4 text-red-300" />
                   <span>天災阻斷中：【{activeEvent.translations[worldview]?.title}】</span>
                 </div>
@@ -279,7 +267,7 @@ export function CustomPaceBoard({
 
               {/* Power Outage Warning Badge */}
               {!isDisasterTargeted && isOutOfPower && (
-                <div className="mb-2 p-1.5 rounded-xl bg-amber-900/80 border border-amber-500 text-amber-200 text-[11px] font-bold flex items-center justify-center gap-1.5">
+                <div className="slot-power-alert mb-2 p-1.5 rounded-xl bg-amber-900/80 border border-amber-500 text-amber-200 text-[11px] font-bold flex items-center justify-center gap-1.5">
                   <ZapOff className="w-4 h-4 text-amber-300" />
                   <span>電量不足（需 {effectivePowerCost}⚡ / 現有 {player.energy}⚡）</span>
                 </div>
@@ -366,7 +354,7 @@ export function CustomPaceBoard({
             )}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
             {inventory.map((card) => {
               const isSelected = activeInventoryCard?.id === card.id;
               const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);

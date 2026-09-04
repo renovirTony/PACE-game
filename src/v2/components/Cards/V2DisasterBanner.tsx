@@ -5,7 +5,6 @@ import { CloudRain, BatteryLow, ZapOff, Layers, ShieldAlert, Sparkles, AlertTria
 interface V2DisasterBannerProps {
   event: DisasterEvent | null;
   worldview: WorldviewType;
-  tutorialHighlight?: boolean;
 }
 
 const mediumNames: Record<PhysicalMedium, string> = {
@@ -16,7 +15,7 @@ const mediumNames: Record<PhysicalMedium, string> = {
   PhysicalOptical: '人力/光學',
 };
 
-export function V2DisasterBanner({ event, worldview, tutorialHighlight }: V2DisasterBannerProps) {
+export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
   if (!event) return null;
 
   const content = event.translations[worldview];
@@ -41,21 +40,14 @@ export function V2DisasterBanner({ event, worldview, tutorialHighlight }: V2Disa
   const isHazard = event.targetedMedia.length > 0;
 
   return (
-    <div className={`rounded-2xl border p-4 shadow-xl backdrop-blur-md font-mono flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all relative ${
-      tutorialHighlight
-        ? 'border-purple-500 ring-4 ring-purple-500/50 shadow-purple-500/30 bg-purple-950/30'
-        : isHazard
+    <div className={`v2-disaster-banner rounded-2xl border p-4 shadow-xl backdrop-blur-md font-mono flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all relative ${
+      isHazard
         ? 'border-red-500/40 bg-red-950/30 text-red-100'
         : 'border-emerald-500/40 bg-emerald-950/30 text-emerald-100'
     }`}>
-      {tutorialHighlight && (
-        <div className="absolute -top-3 left-6 px-3 py-1 rounded-full bg-purple-600 text-white font-black text-xs shadow-lg shadow-purple-500/50 flex items-center gap-1.5 animate-bounce">
-          <span>🎯 [教學引導] 全域天災直接中斷對應物理媒介</span>
-        </div>
-      )}
       {/* Left: Icon & Description */}
       <div className="flex items-start gap-3.5 max-w-3xl">
-        <div className={`p-2.5 rounded-xl border shrink-0 ${
+        <div className={`disaster-icon-box p-2.5 rounded-xl border shrink-0 ${
           isHazard ? 'bg-red-950/80 border-red-500/50' : 'bg-emerald-950/80 border-emerald-500/50'
         }`}>
           {getEventIcon()}
@@ -63,7 +55,7 @@ export function V2DisasterBanner({ event, worldview, tutorialHighlight }: V2Disa
 
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-black px-2 py-0.5 rounded uppercase border bg-black/40 border-white/10">
+            <span className="disaster-badge text-xs font-black px-2 py-0.5 rounded uppercase border bg-black/40 border-white/10 text-amber-300">
               全域物理災情 (Active Disaster)
             </span>
             <h3 className="text-sm sm:text-base font-black text-slate-100">
@@ -84,14 +76,14 @@ export function V2DisasterBanner({ event, worldview, tutorialHighlight }: V2Disa
       {/* Right: Targeted Media Badges */}
       {isHazard ? (
         <div className="flex flex-col items-start md:items-end gap-1.5 shrink-0">
-          <span className="text-[10px] uppercase font-bold text-red-300 flex items-center gap-1">
+          <span className="disaster-target-label text-[10px] uppercase font-bold text-red-300 flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5 text-red-400" /> 中斷物理媒介：
           </span>
           <div className="flex items-center gap-1.5 flex-wrap">
             {event.targetedMedia.map((m) => (
               <span
                 key={m}
-                className="px-2.5 py-1 rounded-xl bg-red-950 border border-red-500/60 text-red-200 text-xs font-black shadow-sm"
+                className="disaster-media-pill px-2.5 py-1 rounded-xl bg-red-950 border border-red-500/60 text-red-200 text-xs font-black shadow-sm"
               >
                 🚫 {mediumNames[m]}
               </span>

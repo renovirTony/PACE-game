@@ -138,9 +138,9 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     value: 1,
     translations: {
       CivilDefense: {
-        name: '敏捷應急通訊協議 (Agile Protocol)',
+        name: '敏捷應急通訊協議',
         desc: '本回合所有「防線對調」與「倉庫換裝」均為 0 AP，可自由無悔重組 PACE 四重防線！',
-        flavor: '臨機應變是應急通訊的第一原則，迅速切換頻率與防線配置。',
+        flavor: '臨機應變是應急通訊的第一原則，迅速切換頻率與防線配置 (Agile Protocol)。',
         icon: 'Zap',
       },
       IslandResilience: {
@@ -164,9 +164,9 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     value: 1,
     translations: {
       CivilDefense: {
-        name: '綠色後勤通道 (Priority Logistics)',
+        name: '綠色後勤通道',
         desc: '本回合下一次「採購裝備」或「採購戰術」不消耗 AP（0 AP 快速調配）！',
-        flavor: '公所開闢綠色物資通道，救災器材隨到隨領，免除行政作業延遲。',
+        flavor: '公所開闢綠色物資通道 (Priority Logistics)，救災器材隨到隨領，免除行政作業延遲。',
         icon: 'ShoppingBag',
       },
       IslandResilience: {
@@ -190,9 +190,9 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     value: 1,
     translations: {
       CivilDefense: {
-        name: '連續突發通訊令 (Burst Transmission)',
+        name: '連續突發通訊令',
         desc: '本回合下一次「發起任務通訊檢定」不消耗 AP（0 AP 突發廣播），突破單回合通訊極限！',
-        flavor: '全頻道高功率突發廣播，在干擾間隙中連續送出多份求救信標！',
+        flavor: '全頻道高功率突發廣播 (Burst Transmission)，在干擾間隙中連續送出多份求救信標！',
         icon: 'Radio',
       },
       IslandResilience: {

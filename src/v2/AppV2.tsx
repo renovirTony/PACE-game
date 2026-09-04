@@ -11,10 +11,11 @@ import { MultiplayerLobbyModal } from './components/Modals/MultiplayerLobbyModal
 import { V2GameOverModal } from './components/Modals/V2GameOverModal';
 import { V2CardCompendiumModal } from './components/Modals/V2CardCompendiumModal';
 import { V2GuideModal } from './components/Modals/V2GuideModal';
+import { DisplaySettingsModal, FontSizeMode, ThemeMode } from './components/Modals/DisplaySettingsModal';
 import { V2InteractiveTutorial } from './components/Tutorial/V2InteractiveTutorial';
 import { LogViewer } from '../components/HUD/LogViewer';
 import { V2ScoreBoard } from './components/HUD/V2ScoreBoard';
-import { Radio, Bot, Users, Globe, Shield, Sparkles, Layers, BookOpen, GraduationCap } from 'lucide-react';
+import { Radio, Bot, Users, Globe, Shield, Sparkles, Layers, BookOpen, GraduationCap, Sliders } from 'lucide-react';
 
 interface AppV2Props {
   onSwitchToV1?: () => void;
@@ -25,7 +26,37 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
   const [isMultiplayerModalOpen, setIsMultiplayerModalOpen] = useState(false);
   const [isCompendiumOpen, setIsCompendiumOpen] = useState(false);
   const [isGuideOpen, setIsGuideOpen] = useState(false);
+  const [isDisplaySettingsOpen, setIsDisplaySettingsOpen] = useState(false);
   const [selectedBotCount, setSelectedBotCount] = useState(2);
+
+  // Font Size state with localStorage persistence (Default to 'large' for enhanced desktop readability)
+  const [fontSize, setFontSize] = useState<FontSizeMode>(() => {
+    const saved = localStorage.getItem('pace_font_size');
+    return (saved === 'normal' || saved === 'large' || saved === 'xlarge') ? saved : 'large';
+  });
+
+  // Color Theme state with localStorage persistence (3 curated modes: tactical-dark, soft-muted, daylight)
+  const [theme, setTheme] = useState<ThemeMode>(() => {
+    const saved = localStorage.getItem('pace_theme');
+    return (saved === 'tactical-dark' || saved === 'soft-muted' || saved === 'daylight')
+      ? (saved as ThemeMode)
+      : 'tactical-dark';
+  });
+
+  // Apply font scale class to document root
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove('font-scale-normal', 'font-scale-large', 'font-scale-xlarge');
+    root.classList.add(`font-scale-${fontSize}`);
+    localStorage.setItem('pace_font_size', fontSize);
+  }, [fontSize]);
+
+  // Apply color theme data-attribute to document root
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('pace_theme', theme);
+  }, [theme]);
 
   // Auto-detect room parameter from URL (?v=2&room=CODE)
   useEffect(() => {
@@ -126,9 +157,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <button
                   onClick={() => gameState.startGame('SinglePlayer', selectedBotCount)}
-                  className="p-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-black text-sm tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.98]"
+                  className="p-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-sm tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.98]"
                 >
-                  <Bot className="w-5 h-5" />
+                  <Bot className="w-5 h-5 text-white" />
                   <span>單人作戰 vs AI</span>
                 </button>
 
@@ -164,7 +195,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               {/* Interactive Tutorial Button */}
               <button
                 onClick={gameState.startTutorial}
-                className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
+                className="tutorial-launch-btn w-full p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
               >
                 <GraduationCap className="w-5 h-5 text-purple-400 animate-bounce" />
                 <span>🎓 進入實戰新手教學 (8 步驟手把手引導)</span>
@@ -173,14 +204,23 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               {/* Online Multiplayer Lobby Button */}
               <button
                 onClick={() => setIsMultiplayerModalOpen(true)}
-                className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 text-cyan-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-cyan-950/40"
+                className="multiplayer-launch-btn w-full p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 text-cyan-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-cyan-950/40"
               >
                 <Globe className="w-5 h-5 text-cyan-400 animate-spin-slow" />
                 <span>🌐 建立/加入 遠端多人連線房間 (WebRTC P2P)</span>
               </button>
 
               {/* Utility Tools in Setup */}
-              <div className="flex items-center justify-center gap-3 pt-2 border-t border-slate-800 text-xs">
+              <div className="flex items-center justify-center gap-2.5 pt-2 border-t border-slate-800 text-xs flex-wrap">
+                <button
+                  onClick={() => setIsDisplaySettingsOpen(true)}
+                  className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-cyan-950/40 border border-cyan-500/20"
+                  title="調整字體大小與護眼主題配色"
+                >
+                  <Sliders className="w-4 h-4 text-cyan-400" />
+                  <span>視覺與字體偏好</span>
+                </button>
+                <span className="text-slate-700">|</span>
                 <button
                   onClick={() => setIsCompendiumOpen(true)}
                   className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-purple-950/30"
@@ -241,6 +281,15 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
           isOpen={isGuideOpen}
           onClose={() => setIsGuideOpen(false)}
         />
+
+        <DisplaySettingsModal
+          isOpen={isDisplaySettingsOpen}
+          onClose={() => setIsDisplaySettingsOpen(false)}
+          fontSize={fontSize}
+          onChangeFontSize={setFontSize}
+          theme={theme}
+          onChangeTheme={setTheme}
+        />
       </div>
     );
   }
@@ -258,6 +307,10 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
           isAI={gameState.activePlayer.isAI}
           worldview={gameState.worldview}
           onChangeWorldview={gameState.setWorldview}
+          fontSize={fontSize}
+          onChangeFontSize={setFontSize}
+          theme={theme}
+          onOpenDisplaySettings={() => setIsDisplaySettingsOpen(true)}
           onSwitchToV1={onSwitchToV1}
           onReturnToMenu={gameState.returnToMenu}
           onOpenCompendium={() => setIsCompendiumOpen(true)}
@@ -269,7 +322,6 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         <V2DisasterBanner
           event={gameState.activeEvent}
           worldview={gameState.worldview}
-          tutorialHighlight={gameState.isTutorialMode && gameState.tutorialStep === 7}
         />
 
         {/* 3. Commander Custom PACE Defense Board */}
@@ -299,8 +351,6 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             return res;
           }}
           onDiscardFromInventory={gameState.discardFromInventory}
-          tutorialHighlightBoard={gameState.isTutorialMode && gameState.tutorialStep === 1}
-          tutorialHighlightSwap={gameState.isTutorialMode && gameState.tutorialStep === 4}
         />
 
         {/* 4. Operational Area: Left (Missions + Market) / Right (Actions + Log) */}
@@ -337,7 +387,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                     onTransmit={(m) => {
                       return gameState.transmitMission(m);
                     }}
-                    tutorialHighlightMission={gameState.isTutorialMode && gameState.tutorialStep === 5 && idx === 0}
+                    dataTutorial={idx === 0 ? 'mission-card-0' : undefined}
                   />
                 ))}
               </div>
@@ -359,7 +409,6 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 return res;
               }}
               onBuyTactic={gameState.buyTactic}
-              tutorialHighlightMarket={gameState.isTutorialMode && gameState.tutorialStep === 2}
             />
           </div>
 
@@ -390,9 +439,6 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   gameState.nextTutorialStep();
                 }
               }}
-              tutorialHighlightTactics={gameState.isTutorialMode && gameState.tutorialStep === 3}
-              tutorialHighlightRecharge={gameState.isTutorialMode && gameState.tutorialStep === 6}
-              tutorialHighlightEndTurn={gameState.isTutorialMode && gameState.tutorialStep === 7}
             />
 
             <LogViewer logs={gameState.logs} />
@@ -445,6 +491,15 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         <V2GuideModal
           isOpen={isGuideOpen}
           onClose={() => setIsGuideOpen(false)}
+        />
+
+        <DisplaySettingsModal
+          isOpen={isDisplaySettingsOpen}
+          onClose={() => setIsDisplaySettingsOpen(false)}
+          fontSize={fontSize}
+          onChangeFontSize={setFontSize}
+          theme={theme}
+          onChangeTheme={setTheme}
         />
       </div>
     </div>

@@ -19,15 +19,36 @@
   }
 }
 
-/* Dynamic Root Font Scaling */
+/* Dynamic Root Font Scaling (嚴格防折行微調) */
 html.font-scale-normal {
   font-size: 14px !important;
 }
 html.font-scale-large {
-  font-size: 17px !important;
+  font-size: 15.5px !important;
 }
 html.font-scale-xlarge {
-  font-size: 20px !important;
+  font-size: 17.5px !important;
+}
+
+/* Ensure micro-spec fixed sizes scale nicely without blowing up layouts */
+html.font-scale-large .text-\[9px\] {
+  font-size: 0.65rem !important;
+}
+html.font-scale-large .text-\[10px\] {
+  font-size: 0.72rem !important;
+}
+html.font-scale-large .text-\[11px\] {
+  font-size: 0.78rem !important;
+}
+
+html.font-scale-xlarge .text-\[9px\] {
+  font-size: 0.72rem !important;
+}
+html.font-scale-xlarge .text-\[10px\] {
+  font-size: 0.78rem !important;
+}
+html.font-scale-xlarge .text-\[11px\] {
+  font-size: 0.85rem !important;
 }
 
 /* Custom scrollbars */
@@ -92,3 +113,377 @@ html.font-scale-xlarge {
     box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.75), 0 0 35px rgba(6, 182, 212, 0.9);
   }
 }
+
+/* ==========================================================================
+   精簡 3 種核心配色主題 (原本的配色、色調柔和版本、日間白底版本)
+   ========================================================================== */
+
+/* 1. 色調柔和版本 (Soft Muted - 低對比護眼、溫和深灰底色、柔順無眩光) */
+[data-theme="soft-muted"] body {
+  background-color: #13161f !important;
+  background-image: 
+    radial-gradient(circle at 50% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 60%),
+    radial-gradient(circle at 100% 100%, rgba(99, 102, 241, 0.04) 0%, transparent 50%),
+    linear-gradient(to bottom, transparent, rgba(19, 22, 31, 0.85)),
+    radial-gradient(#1e293b 1px, transparent 1px) !important;
+}
+[data-theme="soft-muted"] .bg-\[\#060913\],
+[data-theme="soft-muted"] .bg-\[\#070a13\] {
+  background-color: #13161f !important;
+}
+[data-theme="soft-muted"] .bg-slate-950,
+[data-theme="soft-muted"] .bg-slate-950\/90,
+[data-theme="soft-muted"] .bg-slate-950\/95,
+[data-theme="soft-muted"] .bg-slate-950\/80 {
+  background-color: rgba(22, 27, 36, 0.95) !important;
+  border-color: rgba(51, 65, 85, 0.7) !important;
+}
+[data-theme="soft-muted"] .bg-slate-900,
+[data-theme="soft-muted"] .bg-slate-900\/80,
+[data-theme="soft-muted"] .bg-slate-900\/90,
+[data-theme="soft-muted"] .bg-slate-900\/70,
+[data-theme="soft-muted"] .bg-slate-900\/60,
+[data-theme="soft-muted"] .bg-black\/40 {
+  background-color: rgba(29, 36, 48, 0.85) !important;
+}
+[data-theme="soft-muted"] .border-slate-800 {
+  border-color: rgba(51, 65, 85, 0.65) !important;
+}
+[data-theme="soft-muted"] .border-slate-700 {
+  border-color: rgba(71, 85, 105, 0.65) !important;
+}
+[data-theme="soft-muted"] .text-cyan-400 {
+  color: #38bdf8 !important;
+}
+[data-theme="soft-muted"] .text-cyan-300 {
+  color: #7dd3fc !important;
+}
+[data-theme="soft-muted"] .border-cyan-500\/30,
+[data-theme="soft-muted"] .border-cyan-500\/40,
+[data-theme="soft-muted"] .border-cyan-500\/50,
+[data-theme="soft-muted"] .border-cyan-500 {
+  border-color: rgba(56, 189, 248, 0.4) !important;
+}
+[data-theme="soft-muted"] .bg-cyan-950,
+[data-theme="soft-muted"] .bg-cyan-950\/40,
+[data-theme="soft-muted"] .bg-cyan-500\/10 {
+  background-color: rgba(12, 74, 110, 0.4) !important;
+}
+[data-theme="soft-muted"] .text-slate-100 {
+  color: #f1f5f9 !important;
+}
+[data-theme="soft-muted"] .text-slate-300 {
+  color: #cbd5e1 !important;
+}
+[data-theme="soft-muted"] .text-slate-400 {
+  color: #94a3b8 !important;
+}
+
+/* 2. 日間模式 (Daylight - 專為白底環境調校，深黑銳利文字 + 柔和彩色色塊，極致易讀性) */
+[data-theme="daylight"] body {
+  background-color: #f1f5f9 !important;
+  background-image: none !important;
+  color: #0f172a !important;
+}
+
+[data-theme="daylight"] .bg-\[\#060913\],
+[data-theme="daylight"] .bg-\[\#070a13\] {
+  background-color: #f1f5f9 !important;
+}
+
+/* 白底卡片與主要視窗容器 */
+[data-theme="daylight"] .bg-slate-950,
+[data-theme="daylight"] .bg-slate-950\/90,
+[data-theme="daylight"] .bg-slate-950\/95,
+[data-theme="daylight"] .bg-slate-950\/80,
+[data-theme="daylight"] .bg-slate-900\/60,
+[data-theme="daylight"] .bg-slate-900\/80 {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* 卡片內部微型方塊與規格容器 (維持清爽白底或極淡灰底) */
+[data-theme="daylight"] .bg-slate-900,
+[data-theme="daylight"] .bg-slate-900\/90,
+[data-theme="daylight"] .bg-slate-900\/70,
+[data-theme="daylight"] .bg-slate-900\/40,
+[data-theme="daylight"] .bg-black\/40,
+[data-theme="daylight"] .bg-black\/50 {
+  background-color: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* 邊框調整 */
+[data-theme="daylight"] .border-slate-800,
+[data-theme="daylight"] .border-slate-700,
+[data-theme="daylight"] .border-white\/5,
+[data-theme="daylight"] .border-white\/10 {
+  border-color: #e2e8f0 !important;
+}
+
+/* 文字層級：深黑與深灰，確保白底高對比 */
+[data-theme="daylight"] .text-slate-100,
+[data-theme="daylight"] .text-slate-200 {
+  color: #0f172a !important; /* 標題深藍黑 */
+}
+[data-theme="daylight"] .text-slate-300 {
+  color: #334155 !important; /* 內文深石板灰 */
+}
+[data-theme="daylight"] .text-slate-400 {
+  color: #475569 !important; /* 輔助文字 */
+}
+[data-theme="daylight"] .text-slate-500 {
+  color: #64748b !important; /* 微型標籤說明 */
+}
+
+/* 滾動條樣式 */
+[data-theme="daylight"] ::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+[data-theme="daylight"] ::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+}
+
+/* --------------------------------------------------------------------------
+   卡片容器保護：防線卡片與市場裝備卡在白底模式下一律以白底/淡底呈現，嚴禁整張變死紅/深色
+   -------------------------------------------------------------------------- */
+[data-theme="daylight"] .pace-slot-card,
+[data-theme="daylight"] .market-equipment-card,
+[data-theme="daylight"] .market-tactic-card {
+  background-color: #ffffff !important;
+  border-color: #cbd5e1 !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 18px rgba(15, 23, 42, 0.06) !important;
+}
+
+/* 當卡片被天災阻斷時：保持白底 + 清晰柔和紅邊框與警示環，不覆蓋整張卡為暗粉色 */
+[data-theme="daylight"] .pace-slot-card.border-red-500\/60,
+[data-theme="daylight"] .pace-slot-card[class*="border-red-"],
+[data-theme="daylight"] .market-equipment-card.border-red-500\/40,
+[data-theme="daylight"] .market-equipment-card[class*="border-red-"] {
+  background-color: #fff9f9 !important;
+  border-color: #f87171 !important;
+  box-shadow: 0 4px 18px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* --------------------------------------------------------------------------
+   天災橫幅 (V2DisasterBanner) 白底優化：高對比醒目紅警示條
+   -------------------------------------------------------------------------- */
+[data-theme="daylight"] .v2-disaster-banner {
+  background-color: #ffffff !important;
+  border-color: #fca5a5 !important;
+  box-shadow: 0 4px 20px rgba(239, 68, 68, 0.08) !important;
+  color: #0f172a !important;
+}
+[data-theme="daylight"] .v2-disaster-banner .disaster-badge {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+[data-theme="daylight"] .v2-disaster-banner .disaster-icon-box {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+}
+[data-theme="daylight"] .v2-disaster-banner h3 {
+  color: #0f172a !important;
+}
+[data-theme="daylight"] .v2-disaster-banner p {
+  color: #1e293b !important;
+}
+[data-theme="daylight"] .v2-disaster-banner p.italic {
+  color: #64748b !important;
+}
+[data-theme="daylight"] .v2-disaster-banner .disaster-target-label {
+  color: #991b1b !important;
+}
+[data-theme="daylight"] .v2-disaster-banner .disaster-media-pill {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+
+/* --------------------------------------------------------------------------
+   天災阻斷警告標籤 (PACE 卡片與市場卡片上方警示條)
+   -------------------------------------------------------------------------- */
+[data-theme="daylight"] .slot-disaster-alert,
+[data-theme="daylight"] .market-disaster-alert {
+  background-color: #fee2e2 !important;
+  border-color: #fca5a5 !important;
+  color: #991b1b !important;
+}
+[data-theme="daylight"] .slot-disaster-alert svg,
+[data-theme="daylight"] .market-disaster-alert svg {
+  color: #dc2626 !important;
+}
+[data-theme="daylight"] .slot-power-alert {
+  background-color: #fef3c7 !important;
+  border-color: #fcd34d !important;
+  color: #92400e !important;
+}
+[data-theme="daylight"] .slot-power-alert svg {
+  color: #d97706 !important;
+}
+
+/* --------------------------------------------------------------------------
+   彩色徽章與標籤全面覆蓋 (全萬用字元匹配：/20, /30, /40, /50, /60, /80, /90 全通用)
+   柔和淺底 + 深濃字色 (符合 WCAG AAA 高對比規範，消除黑底暗字)
+   -------------------------------------------------------------------------- */
+
+/* 1. 藍色系 (需抗EMP / 衛星 / 抗EMP) */
+[data-theme="daylight"] [class*="bg-blue-950"],
+[data-theme="daylight"] [class*="bg-blue-900"] {
+  background-color: #dbeafe !important; /* blue-100 */
+  border-color: #93c5fd !important; /* blue-300 */
+  color: #1e40af !important; /* blue-800 */
+}
+[data-theme="daylight"] [class*="text-blue-200"],
+[data-theme="daylight"] [class*="text-blue-300"],
+[data-theme="daylight"] [class*="text-blue-400"] {
+  color: #1e40af !important;
+}
+[data-theme="daylight"] [class*="border-blue-500"] {
+  border-color: #93c5fd !important;
+}
+
+/* 2. 青藍色系 (公眾網 / 耐天候 / AP / 科技) */
+[data-theme="daylight"] [class*="bg-cyan-950"],
+[data-theme="daylight"] [class*="bg-cyan-900"],
+[data-theme="daylight"] .bg-cyan-500\/10,
+[data-theme="daylight"] .bg-cyan-500\/20 {
+  background-color: #e0f2fe !important; /* sky-100 */
+  border-color: #7dd3fc !important; /* sky-300 */
+  color: #0369a1 !important; /* sky-800 */
+}
+[data-theme="daylight"] [class*="text-cyan-200"],
+[data-theme="daylight"] [class*="text-cyan-300"],
+[data-theme="daylight"] [class*="text-cyan-400"] {
+  color: #0369a1 !important;
+}
+[data-theme="daylight"] [class*="border-cyan-500"] {
+  border-color: #38bdf8 !important;
+}
+
+/* 3. 翡翠綠色系 (地底聲學 / 實體有線 / 地底穿透 / 物資資金) */
+[data-theme="daylight"] [class*="bg-emerald-950"],
+[data-theme="daylight"] [class*="bg-emerald-900"] {
+  background-color: #d1fae5 !important; /* emerald-100 */
+  border-color: #6ee7b7 !important; /* emerald-300 */
+  color: #065f46 !important; /* emerald-800 */
+}
+[data-theme="daylight"] [class*="text-emerald-200"],
+[data-theme="daylight"] [class*="text-emerald-300"],
+[data-theme="daylight"] [class*="text-emerald-400"] {
+  color: #065f46 !important;
+}
+[data-theme="daylight"] [class*="border-emerald-500"] {
+  border-color: #34d399 !important;
+}
+
+/* 4. 琥珀金/黃色系 (光學摩斯 / 無線電 / 電力) */
+[data-theme="daylight"] [class*="bg-amber-950"],
+[data-theme="daylight"] [class*="bg-amber-900"] {
+  background-color: #fef3c7 !important; /* amber-100 */
+  border-color: #fcd34d !important; /* amber-300 */
+  color: #92400e !important; /* amber-800 */
+}
+[data-theme="daylight"] [class*="text-amber-200"],
+[data-theme="daylight"] [class*="text-amber-300"],
+[data-theme="daylight"] [class*="text-amber-400"] {
+  color: #92400e !important;
+}
+[data-theme="daylight"] [class*="border-amber-500"] {
+  border-color: #fbbf24 !important;
+}
+
+/* 5. 紫色系 (物理信差 / 手牌戰術 / 救援積分) */
+[data-theme="daylight"] [class*="bg-purple-950"],
+[data-theme="daylight"] [class*="bg-purple-900"] {
+  background-color: #f3e8ff !important; /* purple-100 */
+  border-color: #d8b4fe !important; /* purple-300 */
+  color: #6b21a8 !important; /* purple-800 */
+}
+[data-theme="daylight"] [class*="text-purple-200"],
+[data-theme="daylight"] [class*="text-purple-300"],
+[data-theme="daylight"] [class*="text-purple-400"] {
+  color: #6b21a8 !important;
+}
+[data-theme="daylight"] [class*="border-purple-500"] {
+  border-color: #c084fc !important;
+}
+
+/* 6. 紅色系 (阻斷警告 / 阻斷媒介標籤) */
+[data-theme="daylight"] [class*="bg-red-950"],
+[data-theme="daylight"] [class*="bg-red-900"] {
+  background-color: #fee2e2 !important; /* red-100 */
+  border-color: #fca5a5 !important; /* red-300 */
+  color: #991b1b !important; /* red-800 */
+}
+[data-theme="daylight"] [class*="text-red-200"],
+[data-theme="daylight"] [class*="text-red-300"],
+[data-theme="daylight"] [class*="text-red-400"] {
+  color: #991b1b !important;
+}
+[data-theme="daylight"] [class*="border-red-500"] {
+  border-color: #f87171 !important;
+}
+
+/* --------------------------------------------------------------------------
+   主選單按鈕與彈窗卡片優化 (消除漸層死黑)
+   -------------------------------------------------------------------------- */
+[data-theme="daylight"] .tutorial-launch-btn {
+  background: #faf5ff !important;
+  background-image: none !important;
+  border-color: #c084fc !important;
+  color: #6b21a8 !important;
+  box-shadow: 0 4px 12px rgba(147, 51, 234, 0.1) !important;
+}
+[data-theme="daylight"] .tutorial-launch-btn:hover {
+  background: #f3e8ff !important;
+}
+[data-theme="daylight"] .tutorial-launch-btn svg {
+  color: #7e22ce !important;
+}
+
+[data-theme="daylight"] .multiplayer-launch-btn {
+  background: #f0f9ff !important;
+  background-image: none !important;
+  border-color: #7dd3fc !important;
+  color: #0369a1 !important;
+  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.1) !important;
+}
+[data-theme="daylight"] .multiplayer-launch-btn:hover {
+  background: #e0f2fe !important;
+}
+[data-theme="daylight"] .multiplayer-launch-btn svg {
+  color: #0284c7 !important;
+}
+
+/* 演習結果結算彈窗獎勵條 */
+[data-theme="daylight"] .transmission-rewards-banner {
+  background: #f8fafc !important;
+  background-image: none !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* 教學引導浮動提示卡 */
+[data-theme="daylight"] .tutorial-dialog-callout {
+  background: #f8fafc !important;
+  background-image: none !important;
+  border-color: #d8b4fe !important;
+  color: #0f172a !important;
+}
+
+/* 一般功能按鈕調整 (避免白底上黑塊突兀) */
+[data-theme="daylight"] button.bg-slate-900,
+[data-theme="daylight"] button.bg-slate-800 {
+  background-color: #f1f5f9 !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+}
+[data-theme="daylight"] button.bg-slate-900:hover,
+[data-theme="daylight"] button.bg-slate-800:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+}
+

@@ -122,7 +122,7 @@ export function V2TransmissionResultModal({
 
         {/* Earned Rewards Summary */}
         {result.canTransmit && (
-          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/50 via-slate-900 to-cyan-950/50 border border-purple-500/30 flex items-center justify-around text-center">
+          <div className="transmission-rewards-banner p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/50 via-slate-900 to-cyan-950/50 border border-purple-500/30 flex items-center justify-around text-center">
             <div>
               <span className="text-[10px] text-slate-400 block uppercase">獲得救災積分</span>
               <span className="text-lg font-black text-purple-300 flex items-center justify-center gap-1">

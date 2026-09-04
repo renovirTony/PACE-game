@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Player, WorldviewType } from '../../types/game';
-import { Radio, Sparkles, Globe, Shield, RefreshCw, Zap, Coins, Award, Layers, BookOpen, GraduationCap, AlertTriangle, X } from 'lucide-react';
+import { FontSizeMode, ThemeMode } from '../Modals/DisplaySettingsModal';
+import { Radio, Sparkles, Globe, Shield, RefreshCw, Zap, Coins, Award, Layers, BookOpen, GraduationCap, AlertTriangle, X, Sliders, Type } from 'lucide-react';
 
 interface V2TurnHeaderProps {
   round: number;
@@ -10,6 +11,10 @@ interface V2TurnHeaderProps {
   isAI: boolean;
   worldview: WorldviewType;
   onChangeWorldview: (wv: WorldviewType) => void;
+  fontSize: FontSizeMode;
+  onChangeFontSize: (size: FontSizeMode) => void;
+  theme: ThemeMode;
+  onOpenDisplaySettings: () => void;
   onSwitchToV1?: () => void;
   onReturnToMenu: () => void;
   onOpenCompendium: () => void;
@@ -26,6 +31,10 @@ export function V2TurnHeader({
   isAI,
   worldview,
   onChangeWorldview,
+  fontSize,
+  onChangeFontSize,
+  theme,
+  onOpenDisplaySettings,
   onSwitchToV1,
   onReturnToMenu,
   onOpenCompendium,
@@ -44,6 +53,12 @@ export function V2TurnHeader({
     message: '',
     onConfirm: () => {},
   });
+
+  const handleCycleFontSize = () => {
+    if (fontSize === 'normal') onChangeFontSize('large');
+    else if (fontSize === 'large') onChangeFontSize('xlarge');
+    else onChangeFontSize('normal');
+  };
 
   const worldviewLabels: Record<WorldviewType, { label: string; icon: string }> = {
     CivilDefense: { label: '社區民防自救', icon: '🏠' },
@@ -132,8 +147,26 @@ export function V2TurnHeader({
             ))}
           </div>
 
-          {/* Quick Utility Tools: Compendium, Guide, Tutorial */}
+          {/* Quick Utility Tools: Display Settings, Compendium, Guide, Tutorial */}
           <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl">
+            <button
+              onClick={onOpenDisplaySettings}
+              className="px-2 py-1 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 flex items-center gap-1 text-[11px] font-bold transition-all shadow-sm"
+              title="調整字體大小與防疲勞配色主題"
+            >
+              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">視覺偏好</span>
+            </button>
+
+            <button
+              onClick={handleCycleFontSize}
+              className="px-2 py-1 rounded-lg hover:bg-slate-800 text-slate-300 hover:text-cyan-300 flex items-center gap-1 text-[11px] font-bold transition-all"
+              title={`點擊快速切換字體大小 (目前: ${fontSize === 'normal' ? '標準 14.5px' : fontSize === 'large' ? '放大 16.5px' : '特大 19px'})`}
+            >
+              <Type className="w-3 h-3 text-cyan-400" />
+              <span>{fontSize === 'normal' ? '標' : fontSize === 'large' ? '大' : '特大'}</span>
+            </button>
+
             <button
               onClick={onOpenCompendium}
               className="px-2 py-1 rounded-lg hover:bg-purple-950 text-purple-300 flex items-center gap-1 text-[11px] font-bold transition-all"

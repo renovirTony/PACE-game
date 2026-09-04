@@ -98,7 +98,7 @@ export function UnifiedCommsCardContent({
   return (
     <div className="flex flex-col gap-2 font-mono w-full">
       {/* Top Metadata Row: Medium Badge (Left) & Cost/Action Badge (Right) */}
-      <div className="flex items-center justify-between gap-1.5 w-full">
+      <div className="flex items-center justify-between gap-1.5 w-full flex-wrap">
         {mediumInfo && (
           <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border shrink-0 ${mediumInfo.bgColor} ${mediumInfo.borderColor} ${mediumInfo.color}`}>
             {mediumInfo.icon} {mediumInfo.label}
@@ -129,45 +129,45 @@ export function UnifiedCommsCardContent({
 
       {/* Technical Specs Attributes Matrix (MAPS Pattern) */}
       <div className="grid grid-cols-3 gap-1.5 pt-2 border-t border-white/5 text-[10px]">
-        <div className="p-1.5 rounded-lg bg-black/40 text-center">
-          <span className="text-slate-500 block text-[9px]">頻寬門檻</span>
-          <span className={`font-black ${
+        <div className="p-1.5 rounded-lg bg-black/40 text-center min-w-0 overflow-hidden">
+          <span className="text-slate-500 block text-[9px] truncate">頻寬門檻</span>
+          <span className={`font-black truncate block ${
             card.bandwidth === 'High' ? 'text-cyan-400' : card.bandwidth === 'Medium' ? 'text-amber-400' : 'text-emerald-400'
           }`}>
             {card.bandwidth}
           </span>
         </div>
 
-        <div className="p-1.5 rounded-lg bg-black/40 text-center">
-          <span className="text-slate-500 block text-[9px]">通訊距離</span>
+        <div className="p-1.5 rounded-lg bg-black/40 text-center min-w-0 overflow-hidden" title={`通訊距離: ${card.range}`}>
+          <span className="text-slate-500 block text-[9px] truncate">通訊距離</span>
           <span className="font-bold text-slate-200 truncate block">
-            {card.range}
+            {card.range === 'Local' ? '近程' : card.range === 'LineOfSight' ? '視距' : card.range === 'LongRange' ? '長程' : card.range === 'Penetrating' ? '穿透' : card.range === 'Global' ? '全球' : card.range}
           </span>
         </div>
 
-        <div className="p-1.5 rounded-lg bg-black/40 text-center">
-          <span className="text-slate-500 block text-[9px]">運作耗電</span>
-          <span className="font-bold text-amber-300">
-            {card.powerCost === 0 ? '0⚡ (免電)' : `${card.powerCost}⚡`}
+        <div className="p-1.5 rounded-lg bg-black/40 text-center min-w-0 overflow-hidden">
+          <span className="text-slate-500 block text-[9px] truncate">運作耗電</span>
+          <span className="font-bold text-amber-300 truncate block">
+            {card.powerCost === 0 ? '0⚡ 免電' : `${card.powerCost}⚡`}
           </span>
         </div>
       </div>
 
       {/* Resilience Badges (MAPS Minimal - Only True Resiliences) */}
       {(card.resilience.empShield || card.resilience.weatherResistant || card.resilience.subterranean) && (
-        <div className="flex items-center gap-1 text-[9px] text-slate-400 flex-wrap pt-0.5">
+        <div className="flex items-center gap-1.5 text-[9px] text-slate-400 flex-wrap pt-0.5">
           {card.resilience.empShield && (
-            <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold whitespace-nowrap shrink-0">
               🛡️ 抗EMP
             </span>
           )}
           {card.resilience.weatherResistant && (
-            <span className="px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-cyan-950/60 text-cyan-300 border border-cyan-500/30 font-bold whitespace-nowrap shrink-0">
               🌧️ 耐天候
             </span>
           )}
           {card.resilience.subterranean && (
-            <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold">
+            <span className="px-1.5 py-0.5 rounded bg-emerald-950/60 text-emerald-300 border border-emerald-500/30 font-bold whitespace-nowrap shrink-0">
               🕳️ 地底穿透
             </span>
           )}
