@@ -1,5 +1,6 @@
 import React from 'react';
-import { X, Sliders, Type, Palette, Check, Eye } from 'lucide-react';
+import { X, Sliders, Type, Palette, Check, Eye, Globe } from 'lucide-react';
+import { WorldviewType } from '../../types/game';
 
 export type FontSizeMode = 'normal' | 'large' | 'xlarge';
 export type ThemeMode = 'tactical-dark' | 'soft-muted' | 'daylight';
@@ -11,6 +12,8 @@ interface DisplaySettingsModalProps {
   onChangeFontSize: (size: FontSizeMode) => void;
   theme: ThemeMode;
   onChangeTheme: (theme: ThemeMode) => void;
+  worldview?: WorldviewType;
+  onChangeWorldview?: (wv: WorldviewType) => void;
 }
 
 export interface ThemeOptionDef {
@@ -27,7 +30,7 @@ export interface ThemeOptionDef {
 export const THEME_OPTIONS: ThemeOptionDef[] = [
   {
     id: 'tactical-dark',
-    name: '原本的配色 (經典戰術藍)',
+    name: '經典戰術藍',
     tag: '預設風格',
     desc: '原汁原味深空藍黑底色與青藍微光，具備現代戰術指揮儀表科技感。',
     icon: '🌌',
@@ -57,6 +60,27 @@ export const THEME_OPTIONS: ThemeOptionDef[] = [
   },
 ];
 
+export const WORLDVIEW_OPTIONS = [
+  {
+    id: 'CivilDefense' as WorldviewType,
+    name: '社區民防自救',
+    icon: '🏠',
+    desc: '平時里民巡守與互助網絡，震災與風災中的避難所通訊自救體系。',
+  },
+  {
+    id: 'IslandResilience' as WorldviewType,
+    name: '海島極端天災',
+    icon: '🌊',
+    desc: '面臨強烈颱風、土石流與孤島效應，驗證異質通訊防線的生存演習。',
+  },
+  {
+    id: 'CyberDisconnect' as WorldviewType,
+    name: '大斷網廢土',
+    icon: '⚡',
+    desc: '網際網路與衛星全域中斷後的近未來生存，探索非電化與短波通訊。',
+  },
+];
+
 export function DisplaySettingsModal({
   isOpen,
   onClose,
@@ -64,6 +88,8 @@ export function DisplaySettingsModal({
   onChangeFontSize,
   theme,
   onChangeTheme,
+  worldview,
+  onChangeWorldview,
 }: DisplaySettingsModalProps) {
   if (!isOpen) return null;
 
@@ -78,10 +104,10 @@ export function DisplaySettingsModal({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-black tracking-wide text-slate-100 flex items-center gap-2">
-                <span>視覺顯示與偏好設定</span>
+                <span>視覺偏好與文本世界觀設定</span>
               </h2>
               <p className="text-[11px] text-slate-400">
-                可隨時自訂文字大小與護眼配色，即時生效並自動儲存至本機
+                可隨時切換世界觀情境、調整文字大小與護眼配色，即時生效並自動儲存
               </p>
             </div>
           </div>
@@ -94,6 +120,48 @@ export function DisplaySettingsModal({
             <X className="w-5 h-5" />
           </button>
         </div>
+
+        {/* Section 0: Worldview Selection (if provided) */}
+        {worldview && onChangeWorldview && (
+          <div className="flex flex-col gap-2.5">
+            <div className="flex items-center justify-between">
+              <span className="text-xs sm:text-sm font-black text-slate-200 flex items-center gap-1.5">
+                <Globe className="w-4 h-4 text-cyan-400" />
+                <span>故事世界觀切換 (Worldview Narrative)</span>
+              </span>
+              <span className="text-[10px] text-slate-400">
+                即時切換所有卡牌、天災與任務的文本情境
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              {WORLDVIEW_OPTIONS.map((wv) => (
+                <button
+                  key={wv.id}
+                  onClick={() => onChangeWorldview(wv.id)}
+                  className={`p-3 rounded-2xl border text-left flex flex-col justify-between gap-1.5 transition-all relative ${
+                    worldview === wv.id
+                      ? 'border-cyan-400 bg-cyan-950/40 text-cyan-200 shadow-md shadow-cyan-500/20 ring-1 ring-cyan-400'
+                      : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xl">{wv.icon}</span>
+                    {worldview === wv.id && (
+                      <div className="p-0.5 rounded-full bg-cyan-500 text-slate-950">
+                        <Check className="w-3.5 h-3.5" />
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <span className="text-xs font-black text-slate-100 block">{wv.name}</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5 leading-relaxed">{wv.desc}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Section 1: Font Size Controls */}
         <div className="flex flex-col gap-2.5">

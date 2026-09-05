@@ -35,6 +35,8 @@ interface CustomPaceBoardProps {
   onStoreCard: (slot: PACESlot) => void;
   onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void | boolean;
   onDiscardFromInventory?: (cardId: string) => void;
+  isMobile?: boolean;
+  onGoToMarket?: () => void;
 }
 
 const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
@@ -73,6 +75,8 @@ export function CustomPaceBoard({
   onStoreCard,
   onEquipFromInventory,
   onDiscardFromInventory,
+  isMobile = false,
+  onGoToMarket,
 }: CustomPaceBoardProps) {
   const slots: PACESlot[] = ['P', 'A', 'C', 'E'];
   const board = player.paceBoard;
@@ -108,6 +112,346 @@ export function CustomPaceBoard({
 
   const hasAP = player.actionPoints > 0;
 
+  // =========================================================================
+  // 1. MOBILE VERTICAL LAYOUT (Strict 1-Column Ergonomic View)
+  // =========================================================================
+  if (isMobile) {
+    return (
+      <div data-tutorial="pace-board" className="flex flex-col gap-3 font-mono">
+        {/* Header with Diversity Metric */}
+        <div className="flex items-center justify-between px-1">
+          <span className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <Radio className="w-4 h-4 text-cyan-400" />
+            <span>PACE 四重防線配置</span>
+          </span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 ${
+            uniqueMediaCount >= 3
+              ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300'
+              : uniqueMediaCount === 2
+              ? 'bg-amber-950/80 border-amber-500/40 text-amber-300'
+              : 'bg-red-950/80 border-red-500/40 text-red-300'
+          }`}>
+            {uniqueMediaCount >= 3 ? '✓' : '⚠️'} {uniqueMediaCount}/4 獨立媒介
+          </span>
+        </div>
+
+        {/* Common Mode Failure Alert */}
+        {hasCommonModeFailure && (
+          <div className="p-2.5 rounded-2xl bg-amber-950/60 border border-amber-500/40 text-amber-300 text-[11px] leading-snug flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <span className="font-bold">⚠️ 同類設備同時失靈警示：</span>
+              [P] 與 [A] 槽皆為【{PHYSICAL_MEDIUM_META[pMedium!].label}】，一旦遭天災破壞前兩道防線將同時癱瘓！建議點擊「調換」錯開傳輸方式。
+            </div>
+          </div>
+        )}
+
+        {/* Active Swap Alert */}
+        {activeSwapSlot && (
+          <div className="p-2.5 rounded-2xl bg-cyan-950/90 border border-cyan-400 text-cyan-200 text-xs flex items-center justify-between shadow-lg">
+            <span className="font-bold">
+              🔄 正在調換 <b>[{activeSwapSlot}]</b> 防線，請點選目標槽位：
+            </span>
+            <button
+              onClick={() => setActiveSwapSlot(null)}
+              className="px-2 py-0.5 rounded-lg bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-bold"
+            >
+              取消調換
+            </button>
+          </div>
+        )}
+
+        {/* Active Inventory Equip Alert */}
+        {activeInventoryCard && (
+          <div className="p-2.5 rounded-2xl bg-purple-950/90 border border-purple-400 text-purple-200 text-xs flex items-center justify-between shadow-lg">
+            <span className="font-bold">
+              📥 正在裝備倉庫物品，請點選目標槽位：
+            </span>
+            <button
+              onClick={() => setActiveInventoryCard(null)}
+              className="px-2 py-0.5 rounded-lg bg-slate-900 text-slate-400 hover:text-slate-200 text-xs font-bold"
+            >
+              取消裝備
+            </button>
+          </div>
+        )}
+
+        {/* 4 Compact Full-Width Slots Stacked Vertically */}
+        <div className="flex flex-col gap-2.5">
+          {slots.map((slot) => {
+            const card = board[slot];
+            const meta = slotMeta[slot];
+            const mediumInfo = getCommsCardMediumInfo(card);
+            const isSwapSource = activeSwapSlot === slot;
+            const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
+            const canActionAP = player.actionPoints > 0 || isAgile;
+
+            // Disaster check
+            const isEmpImmune = Boolean(card?.resilience.empShield || player.activeBuffs?.faradayEmpArmor);
+            const isDisasterTargeted = Boolean(
+              card && activeEvent && activeEvent.targetedMedia.includes(card.medium) && !(activeEvent.id === 'evt_emp_strike' && isEmpImmune)
+            );
+
+            // Power check
+            const effectivePowerCost = (card?.powerCost || 0) + (activeEvent?.powerDrainBonus || 0);
+            const isOutOfPower = Boolean(card && player.energy < effectivePowerCost);
+            const isCardDisabled = isDisasterTargeted || isOutOfPower;
+
+            // Swap validation
+            let isSwapValidWithSource = true;
+            if (activeSwapSlot && activeSwapSlot !== slot) {
+              const checkSourceToTarget = canPlaceCardInSlot(board[activeSwapSlot], slot);
+              const checkTargetToSource = canPlaceCardInSlot(card, activeSwapSlot);
+              isSwapValidWithSource = checkSourceToTarget.valid && checkTargetToSource.valid;
+            }
+
+            // Inventory equip validation
+            let isEquipValidWithInventory = true;
+            if (activeInventoryCard) {
+              const checkEquip = canPlaceCardInSlot(activeInventoryCard, slot);
+              isEquipValidWithInventory = checkEquip.valid;
+            }
+
+            const slotBadgeColor = slot === 'P'
+              ? 'bg-cyan-950 text-cyan-300 border-cyan-500/40'
+              : slot === 'A'
+              ? 'bg-blue-950 text-blue-300 border-blue-500/40'
+              : slot === 'C'
+              ? 'bg-amber-950 text-amber-300 border-amber-500/40'
+              : 'bg-red-950 text-red-300 border-red-500/40';
+
+            const cardName = card ? (card.translations[worldview]?.name || card.id) : null;
+
+            return (
+              <div
+                key={slot}
+                className={`p-3 rounded-2xl border flex flex-col gap-2 transition-all shadow-sm ${
+                  isSwapSource
+                    ? 'border-cyan-400 bg-cyan-950/60 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400'
+                    : isCardDisabled
+                    ? 'border-red-500/50 bg-red-950/25'
+                    : card
+                    ? 'border-slate-800 bg-slate-900/90'
+                    : 'border-dashed border-slate-800 bg-slate-950/40'
+                }`}
+              >
+                {/* Row 1: Slot Badge + Name + Status */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className={`px-2 py-0.5 rounded-lg font-black text-[11px] border shrink-0 ${slotBadgeColor}`}>
+                      [{slot}] {slot === 'P' ? '主要' : slot === 'A' ? '備用' : slot === 'C' ? '應急' : '緊急'}
+                    </span>
+                    <span className="font-bold text-xs text-slate-100 truncate">
+                      {card ? cardName : '尚無裝備'}
+                    </span>
+                  </div>
+
+                  {/* Status Indicator */}
+                  {card ? (
+                    isDisasterTargeted ? (
+                      <span className="px-2 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-500/40 text-[10px] font-bold shrink-0">
+                        ❌ 天災阻斷
+                      </span>
+                    ) : isOutOfPower ? (
+                      <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 text-[10px] font-bold shrink-0">
+                        ⚡ 缺電 ({player.energy}/{effectivePowerCost}⚡)
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-[10px] font-bold shrink-0">
+                        ✓ 隨時待命
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-[10px] text-slate-500 font-bold shrink-0">
+                      未配置
+                    </span>
+                  )}
+                </div>
+
+                {/* Target Swap / Equip Action Buttons if selecting */}
+                {activeSwapSlot && activeSwapSlot !== slot && (
+                  <div className="pt-1">
+                    {isSwapValidWithSource ? (
+                      <button
+                        onClick={() => handleSwapTarget(slot)}
+                        className="w-full py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs transition-all shadow-md animate-pulse"
+                      >
+                        🔄 對調至 [{slot}] 槽位 {isAgile ? '(0 AP)' : '(1 AP)'}
+                      </button>
+                    ) : (
+                      <div className="py-1 text-center text-[10px] text-red-400 font-bold bg-red-950/60 rounded-xl border border-red-500/30">
+                        🔒 [P] 槽限制中/高傳輸量設備
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {activeInventoryCard && (
+                  <div className="pt-1">
+                    {isEquipValidWithInventory ? (
+                      <button
+                        onClick={() => handleEquipFromInv(slot)}
+                        className="w-full py-1.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-black text-xs transition-all shadow-md animate-pulse"
+                      >
+                        📥 裝備至 [{slot}] 槽位 {isAgile ? '(0 AP)' : '(1 AP)'}
+                      </button>
+                    ) : (
+                      <div className="py-1 text-center text-[10px] text-red-400 font-bold bg-red-950/60 rounded-xl border border-red-500/30">
+                        🔒 [P] 槽限制中/高傳輸量設備
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Row 2: Specs & Normal Actions */}
+                {!activeSwapSlot && !activeInventoryCard && (
+                  <div className="flex items-center justify-between text-[10px] pt-1.5 border-t border-white/5 gap-2 flex-wrap">
+                    {card ? (
+                      <>
+                        {/* Specs Badges */}
+                        <div className="flex items-center gap-1.5 text-slate-300 flex-wrap">
+                          <span className="font-bold text-slate-200">{mediumInfo?.label}</span>
+                          <span>·</span>
+                          <span className={card.bandwidth === 'High' ? 'text-cyan-400 font-bold' : card.bandwidth === 'Medium' ? 'text-amber-400 font-bold' : 'text-emerald-400 font-bold'}>
+                            {card.bandwidth} 頻寬
+                          </span>
+                          <span>·</span>
+                          <span className="text-amber-300 font-bold">{card.powerCost}⚡</span>
+                          {card.resilience.weatherResistant && (
+                            <span className="px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 text-[9px] font-bold">耐天候</span>
+                          )}
+                          {card.resilience.empShield && (
+                            <span className="px-1.5 py-0.2 rounded bg-blue-950 text-blue-300 border border-blue-500/30 text-[9px] font-bold">抗EMP</span>
+                          )}
+                          {card.resilience.subterranean && (
+                            <span className="px-1.5 py-0.2 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 text-[9px] font-bold">地底穿透</span>
+                          )}
+                        </div>
+
+                        {/* Card Actions */}
+                        {isCurrentPlayer && (
+                          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+                            <button
+                              data-tutorial={slot === 'P' ? 'slot-p' : undefined}
+                              onClick={() => setActiveSwapSlot(isSwapSource ? null : slot)}
+                              disabled={!canActionAP && !isSwapSource}
+                              className={`px-2 py-1 rounded-lg font-bold border transition-all text-[10px] flex items-center gap-1 ${
+                                isSwapSource
+                                  ? 'bg-cyan-500 text-slate-950 border-cyan-400'
+                                  : !canActionAP
+                                  ? 'bg-slate-900/40 text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
+                                  : 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700'
+                              }`}
+                            >
+                              <ArrowLeftRight className="w-3 h-3 shrink-0" />
+                              <span className="whitespace-nowrap">{isAgile ? '調換 0AP' : '調換 1AP'}</span>
+                            </button>
+
+                            <button
+                              onClick={() => onStoreCard(slot)}
+                              className="px-2 py-1 rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-amber-300 border border-slate-700 transition-all text-[10px] flex items-center gap-1 shrink-0 whitespace-nowrap"
+                            >
+                              <Archive className="w-3 h-3 shrink-0" />
+                              <span className="whitespace-nowrap">入庫 (0AP)</span>
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-slate-500 text-[10px]">
+                          {meta.subtitle}
+                        </span>
+                        {onGoToMarket && (
+                          <button
+                            onClick={onGoToMarket}
+                            className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-[10px] transition-all ml-auto"
+                          >
+                            去市場選購 ➔
+                          </button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Warehouse Section */}
+        <div className="pt-2 border-t border-slate-800 flex flex-col gap-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
+              <Archive className="w-4 h-4 text-amber-400" />
+              <span>備用裝備倉庫 ({inventory.length})</span>
+            </span>
+            {activeInventoryCard && (
+              <button
+                onClick={() => setActiveInventoryCard(null)}
+                className="text-[10px] text-slate-400 hover:text-slate-200 underline"
+              >
+                取消裝備
+              </button>
+            )}
+          </div>
+
+          {inventory.length > 0 ? (
+            <div className="flex flex-col gap-2">
+              {inventory.map((card) => {
+                const isSelected = activeInventoryCard?.id === card.id;
+                const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
+                const canEquipAP = player.actionPoints > 0 || isAgile;
+                const mediumInfo = getCommsCardMediumInfo(card);
+
+                return (
+                  <div
+                    key={card.id}
+                    className={`p-2.5 rounded-2xl border flex items-center justify-between gap-2 text-xs transition-all ${
+                      isSelected
+                        ? 'border-purple-400 bg-purple-950/60 shadow-md shadow-purple-500/20'
+                        : 'border-slate-800 bg-slate-900/80'
+                    }`}
+                  >
+                    <div className="flex flex-col gap-0.5 min-w-0">
+                      <span className="font-bold text-slate-100 truncate text-xs">
+                        {card.translations[worldview]?.name || card.id}
+                      </span>
+                      <span className="text-[10px] text-slate-400">
+                        {mediumInfo?.label} · {card.bandwidth} · {card.powerCost}⚡
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={() => setActiveInventoryCard(isSelected ? null : card)}
+                      disabled={!canEquipAP && !isSelected}
+                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                        isSelected
+                          ? 'bg-purple-500 text-slate-950 font-black'
+                          : !canEquipAP
+                          ? 'bg-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                          : 'bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-500/40'
+                      }`}
+                    >
+                      {isSelected ? '請點選槽位' : isAgile ? '裝上防線 (0 AP)' : '裝上防線 (1 AP)'}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-center text-[10px] text-slate-500">
+              倉庫目前無備用設備。防線替換下來的裝備將暫存在此。
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // =========================================================================
+  // 2. DESKTOP PANORAMIC VIEW
+  // =========================================================================
   return (
     <div
       data-tutorial="pace-board"
@@ -251,7 +595,7 @@ export function CustomPaceBoard({
                       title="卸下此設備存入備用倉庫 (0 AP 免費動作，不刪除)"
                     >
                       <Archive className="w-3 h-3 shrink-0" />
-                      <span className="whitespace-nowrap">收進倉庫</span>
+                      <span className="whitespace-nowrap">收進倉庫 (0 AP)</span>
                     </button>
                   </div>
                 )}

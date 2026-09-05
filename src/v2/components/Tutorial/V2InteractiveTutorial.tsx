@@ -176,6 +176,9 @@ export function V2InteractiveTutorial({
   };
 
   const pad = 10;
+  const isTargetInLowerHalf = Boolean(
+    targetRect && targetRect.y + targetRect.height / 2 > (typeof window !== 'undefined' ? window.innerHeight * 0.55 : 500)
+  );
 
   return (
     <>
@@ -275,8 +278,8 @@ export function V2InteractiveTutorial({
         </div>
       )}
 
-      {/* 5. Main Step-by-Step Interactive Tutorial Card (Bottom Bar) */}
-      <div className="fixed bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-[60] w-full max-w-3xl px-4 animate-slideUp font-mono">
+      {/* 5. Main Step-by-Step Interactive Tutorial Card (Adaptive Top/Bottom Placement) */}
+      <div className={`fixed ${isTargetInLowerHalf ? 'top-3 sm:top-6 animate-slideDown' : 'bottom-3 sm:bottom-6 animate-slideUp'} left-1/2 -translate-x-1/2 z-[70] w-full max-w-3xl px-3 sm:px-4 font-mono transition-all duration-300`}>
         <div className="rounded-3xl border-2 border-purple-500 bg-slate-950/95 p-4 sm:p-5 shadow-2xl backdrop-blur-xl flex flex-col gap-3 text-slate-100 relative shadow-purple-950/80">
           {/* Step Indicator & Header */}
           <div className="flex items-center justify-between">
