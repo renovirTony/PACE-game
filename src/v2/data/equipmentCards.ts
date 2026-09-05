@@ -16,8 +16,8 @@ export const V2_STARTER_CARDS: CommsCard[] = [
     translations: {
       CivilDefense: {
         name: '智慧型手機與家用 Wi-Fi',
-        desc: '日常最高速通訊，可傳視訊與大量相片，但極度依賴市電與周遭基地台。',
-        flavor: '每個人口袋裡都有的日常工具，平常最便利，大斷電時最先失效。',
+        desc: '平常用最順手，能傳影片和大量照片，但大停電或基地台倒塌時最先失效。',
+        flavor: '每個人口袋裡都有的日常工具，平常最方便，只要停電就失去作用。',
         icon: 'Smartphone',
       },
       IslandResilience: {
@@ -33,7 +33,7 @@ export const V2_STARTER_CARDS: CommsCard[] = [
         icon: 'Cpu',
       },
     },
-    tags: ['公眾網', '高頻寬', '市電依賴'],
+    tags: ['手機網路', '高速度', '停電即斷'],
   },
   {
     id: 'start_frs_walkie',
@@ -49,9 +49,9 @@ export const V2_STARTER_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '免執照對講機 (FRS 無線電)',
-        desc: '隨開即用之便攜對講機，免基地台直接對話，但距離受建築與山脈限制。',
-        flavor: '里長、巡守隊與家庭必備，電池供電，不受市電停擺影響。',
+        name: '免執照對講機 (戶外手持)',
+        desc: '不用基地台就能直接對話！隨開即用，但訊號會被大山與高樓大廈擋住。',
+        flavor: '里長、巡守隊與家庭必備，裝電池就能通，不怕大停電。',
         icon: 'Radio',
       },
       IslandResilience: {
@@ -67,7 +67,7 @@ export const V2_STARTER_CARDS: CommsCard[] = [
         icon: 'Radio',
       },
     },
-    tags: ['無線電', '免基地台', '語音通聯'],
+    tags: ['無線電', '免基地台', '語音對講'],
   },
 ];
 
@@ -88,8 +88,8 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     translations: {
       CivilDefense: {
         name: '機動應急通訊車 (自備發電機)',
-        desc: '自備柴油發電機的移動基地台，能迅速在大停電避難所展開 4G/5G 熱點。',
-        flavor: '車載升降天線緩緩升起，為漆黑的收容所重新點亮訊號。',
+        desc: '開到哪裡訊號就到哪裡！自備柴油發電機，在大停電的收容所重新提供手機上網。',
+        flavor: '車頂的天線緩緩升起，為漆黑的避難所重新點亮手機訊號。',
         icon: 'Truck',
       },
       IslandResilience: {
@@ -105,7 +105,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Truck',
       },
     },
-    tags: ['公眾網', '機動車載', '高頻寬'],
+    tags: ['行動基地台', '自備發電', '高傳輸量'],
   },
   {
     id: 'eq_fiber_hotline',
@@ -122,8 +122,8 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     translations: {
       CivilDefense: {
         name: '防災地下光纖專線',
-        desc: '走地下共同管道的直通專線，完全免疫空中電磁脈衝與暴風雨，頻寬極高。',
-        flavor: '埋設於地底一米深的專用光纜，連結公所與消防局的生命線。',
+        desc: '埋在地底下的直通線路，完全不怕強風暴雨或電磁波干擾，傳輸速度超快。',
+        flavor: '地底一米深的專用線路，連結避難所與救災指揮中心的生命線。',
         icon: 'Cable',
       },
       IslandResilience: {
@@ -139,7 +139,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Cable',
       },
     },
-    tags: ['實體有線', '抗EMP', '高頻寬', '抗天候'],
+    tags: ['實體有線', '不怕干擾', '超高速度', '不怕暴雨'],
   },
 
   // ==================== 2. 衛星通訊 (Satellite) ====================
@@ -157,9 +157,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '低軌衛星接收盤 (如 Starlink)',
-        desc: '只要能看見天空就能連上全球高速網路，無視陸地中斷，但厚重雲層暴雨會衰減。',
-        flavor: '小巧的方形天線自動轉向天際，數百顆低軌衛星提供寬頻支援。',
+        name: '低軌衛星接收盤 (如星鏈)',
+        desc: '天線只要能看見天空就能連上高速網路，無視地面基地台全毀，但遇到厚重暴雨雲層收訊會變差。',
+        flavor: '方形天線自動對準天際，透過數百顆低軌衛星提供緊急寬頻支援。',
         icon: 'Satellite',
       },
       IslandResilience: {
@@ -175,7 +175,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Satellite',
       },
     },
-    tags: ['衛星', '長距離', '高頻寬'],
+    tags: ['衛星網路', '超遠距離', '超高速度'],
   },
   {
     id: 'eq_satellite_phone',
@@ -191,9 +191,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '手持海事/銥星衛星電話',
-        desc: '單兵手持天線，全球直連同步軌道衛星，僅能通話與發送經緯座標，但極度可靠。',
-        flavor: '厚重的粗天線指向南方天空，只要人在戶外就能打通最後電話。',
+        name: '手持衛星電話 (海事/銥星)',
+        desc: '人在戶外就能直接連上外太空衛星通話，只能通話與傳送座標，但極度可靠。',
+        flavor: '拉出粗天線指向天空，在所有基地台全毀時撥出求救電話。',
         icon: 'PhoneCall',
       },
       IslandResilience: {
@@ -209,7 +209,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'PhoneCall',
       },
     },
-    tags: ['衛星', '長距離', '低功耗', '語音/座標'],
+    tags: ['衛星電話', '超遠距離', '低耗電', '語音與座標'],
   },
 
   // ==================== 3. 無線電波 / 射頻 (Radio) ====================
@@ -227,9 +227,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: 'HAM 業餘短波電台 (電離層反射)',
-        desc: '利用天頂電離層反射短波 (HF NVIS)，訊號跨越中央山脈直達數百公里外，免任何中繼站。',
-        flavor: '業餘火腿族拉起長線天線，在客廳裡與另一端的災區清晰對話。',
+        name: '業餘短波無線電台 (空中彈射)',
+        desc: '利用高空大氣層把電波反彈到數百公里外，跨過高山峻嶺直達外縣市，免任何轉播站。',
+        flavor: '拉起長長的天線，在停電的客廳裡直接連上遠方的災區。',
         icon: 'Activity',
       },
       IslandResilience: {
@@ -245,7 +245,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Activity',
       },
     },
-    tags: ['無線電', '長距離', '跨山谷', '電離層'],
+    tags: ['長程無線電', '跨越高山', '免基地台'],
   },
   {
     id: 'eq_lora_mesh_node',
@@ -261,9 +261,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: 'LoRa 社區網狀自癒節點 (Meshtastic)',
-        desc: '多個小巧的低功耗小黑盒互相轉發文字訊息，任何一台壞了網路自動換路，還能穿透地下室。',
-        flavor: '掛在各家陽台的小盒子，自動織成一張社區無死角文字網絡。',
+        name: '社區無線自癒小黑盒 (低功耗)',
+        desc: '掛在各家陽台的小盒子，能一台傳一台把文字送出去，壞了一台自動換路，還能穿透地下室。',
+        flavor: '不用插電能撐好幾天，各家陽台的小黑盒串起整座社區的求救簡訊。',
         icon: 'Network',
       },
       IslandResilience: {
@@ -279,7 +279,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Network',
       },
     },
-    tags: ['無線電', '網狀自癒', '地下穿透', '超低功耗'],
+    tags: ['無線跳接', '穿透地下室', '超省電'],
   },
 
   // ==================== 4. 實體有線 (Wired) ====================
@@ -297,9 +297,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '手搖電話機 (TA-312 雙絞銅線)',
-        desc: '零電池依賴！手搖轉柄直接發電發出鈴響，完全不怕 EMP 與任何無線電雜訊干擾。',
-        flavor: '銅線鋪到哪裡，通話就到哪裡。看似古老，卻是核防護級的終極防線。',
+        name: '手搖有線電話 (拉銅線通話)',
+        desc: '完全不用電池！手搖把手自己發電發出鈴響，拉一條銅線就能通話，完全不怕任何干擾。',
+        flavor: '銅線拉到哪就能講到哪。看似古老，卻是關鍵時刻最穩的救命電話。',
         icon: 'Phone',
       },
       IslandResilience: {
@@ -315,7 +315,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Phone',
       },
     },
-    tags: ['實體有線', '手搖發電', '完全抗EMP', '零耗能'],
+    tags: ['實體有線', '手搖發電', '完全免電池', '不怕干擾'],
   },
 
   // ==================== 5. 人力 / 光學 / 聲波 (Physical/Optical) ====================
@@ -333,9 +333,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '機車巡守隊信差 (USB隨身碟)',
-        desc: '騎乘野狼機車攜帶隨身碟穿越封鎖區，頻寬等效驚人，完全免疫所有電子脈衝與斷電！',
-        flavor: '「永遠不要低估一個載滿硬碟狂飆的機車信差的頻寬！」',
+        name: '機車巡守隊信差 (隨身碟)',
+        desc: '騎機車帶著隨身碟穿過封鎖區，能一口氣送出幾十萬張照片與資料，完全不怕斷網停電！',
+        flavor: '「不要小看一個背包裝滿隨身碟的機車信差，傳送量比光纖還驚人！」',
         icon: 'Bike',
       },
       IslandResilience: {
@@ -351,7 +351,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Bike',
       },
     },
-    tags: ['人力信差', '物理傳遞', '全免疫', '零耗電'],
+    tags: ['人力信差', '專人送達', '完全免用電', '資料量巨大'],
   },
   {
     id: 'eq_aldis_light_mirror',
@@ -367,9 +367,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '強光手電筒與哨子 (摩斯光碼)',
-        desc: '免電池手搖手電筒或高音哨，視距內閃爍 SOS 代碼，零成本、永遠不怕被干擾。',
-        flavor: '三短三長三短，刺眼的光芒在黑夜的山頭閃爍，全村都知道有人生還。',
+        name: '強光手電筒與高音哨子',
+        desc: '免電池手搖手電筒或高音哨，在看得到的地方閃爍光碼或吹哨，零成本、永遠不怕故障。',
+        flavor: '三短三長三短，刺眼的光芒在黑夜的山頭閃爍，讓對岸知道這裡有人生還。',
         icon: 'Sun',
       },
       IslandResilience: {
@@ -385,7 +385,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Sun',
       },
     },
-    tags: ['光學信號', '零耗能', '摩斯代碼', '視距'],
+    tags: ['光與聲音', '完全免電', '求救信號', '視距可見'],
   },
   {
     id: 'eq_acoustic_thumper',
@@ -401,9 +401,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '地下水管/岩壁敲擊震波儀',
-        desc: '敲擊自來水管或防空地下室水泥牆壁傳遞代碼，專門穿透崩塌掩體與瓦礫堆。',
-        flavor: '「收到請敲擊水管三聲！」大地與管道就是最堅固的導體。',
+        name: '水管與水泥牆敲擊敲聽器',
+        desc: '敲擊自來水管或防空地下室牆壁傳遞聲音，能穿透崩塌的瓦礫堆與深層地底。',
+        flavor: '「收到請敲水管三聲！」厚重的泥土與管道就是聲音的最佳導體。',
         icon: 'Volume2',
       },
       IslandResilience: {
@@ -419,6 +419,6 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Volume2',
       },
     },
-    tags: ['聲學震波', '地底穿透', '崩塌救援', '零耗能'],
+    tags: ['敲擊聲音', '穿透瓦礫堆', '地底求救', '完全免電'],
   },
 ];

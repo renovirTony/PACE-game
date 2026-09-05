@@ -40,26 +40,26 @@ interface CustomPaceBoardProps {
 const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
   P: {
     title: '[P] 主要防線 (Primary)',
-    subtitle: '日常主流通訊 (需 High/Med 頻寬)',
-    roleDesc: '平日優先啟動 · 處理大量數據與視訊 · 滿額 100% 收益 (限 High/Med)',
+    subtitle: '平時主力 (需中/高傳輸量)',
+    roleDesc: '平時優先使用 · 能傳送大量資料與影片 · 成功獲 100% 滿額分',
     defaultColor: 'border-cyan-500/40 bg-cyan-950/20 text-cyan-300',
   },
   A: {
     title: '[A] 備用防線 (Alternate)',
-    subtitle: '標準替代通訊',
-    roleDesc: '主要受阻時接手 · 功能相近但媒介應獨立 · 滿額 100% 收益',
+    subtitle: '第一後備通訊',
+    roleDesc: '主力受阻時接手 · 建議使用不同傳輸方式 · 成功獲 100% 滿額分',
     defaultColor: 'border-blue-500/40 bg-blue-950/20 text-blue-300',
   },
   C: {
     title: '[C] 應急防線 (Contingency)',
-    subtitle: '極端災難應變',
-    roleDesc: '前兩道全毀時啟用 · 具備強韌抗性 · 降級獲得 70% 止血收益',
+    subtitle: '第二後備應急通訊',
+    roleDesc: '前兩道都失效時接手 · 具備抗災耐受力 · 成功獲 70% 止血分',
     defaultColor: 'border-amber-500/40 bg-amber-950/20 text-amber-300',
   },
   E: {
     title: '[E] 緊急防線 (Emergency)',
-    subtitle: '終極保命手段',
-    roleDesc: '電磁與科技全滅時之物理/光學手段 · 降級獲得 50% 保命收益',
+    subtitle: '最後一道保命防線',
+    roleDesc: '科技全滅時的免電手段 (吹哨/光碼/信差) · 成功獲 50% 保命分',
     defaultColor: 'border-red-500/40 bg-red-950/20 text-red-300',
   },
 };
@@ -124,7 +124,7 @@ export function CustomPaceBoard({
 
         {/* Media Diversity Pill */}
         <div className="flex items-center gap-2 text-xs">
-          <span className="text-slate-400 hidden sm:inline">媒介多樣性指數:</span>
+          <span className="text-slate-400 hidden sm:inline">傳輸多樣性:</span>
           <span className={`px-2.5 py-1 rounded-xl font-bold border flex items-center gap-1.5 ${
             uniqueMediaCount >= 3
               ? 'bg-emerald-950/60 border-emerald-500/50 text-emerald-300'
@@ -133,7 +133,7 @@ export function CustomPaceBoard({
               : 'bg-red-950/60 border-red-500/50 text-red-300'
           }`}>
             {uniqueMediaCount >= 3 ? <CheckCircle className="w-3.5 h-3.5" /> : <AlertTriangle className="w-3.5 h-3.5" />}
-            獨立媒介數: {uniqueMediaCount} / 4 類
+            使用 {uniqueMediaCount} / 4 種不同傳輸方式
           </span>
         </div>
       </div>
@@ -143,8 +143,8 @@ export function CustomPaceBoard({
         <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-amber-950/50 border border-amber-500/40 text-amber-300 text-xs leading-relaxed animate-pulse">
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div>
-            <span className="font-black">共因失效警示 (Common-Mode Vulnerability)：</span>
-            你的 [P] 與 [A] 槽位皆依賴同種【{PHYSICAL_MEDIUM_META[pMedium!].label}】媒介！若遭遇對應天災，前兩道防線將同時癱瘓！可點擊下方「🔄 調換」隨時調配防線。
+            <span className="font-black">⚠️ 警示：同類設備同時失靈（別把雞蛋放在同個籃子）：</span>
+            你的 [P] 與 [A] 槽位皆使用同種【{PHYSICAL_MEDIUM_META[pMedium!].label}】！一旦該傳輸方式被天災破壞，前兩道防線將在同一時間全部癱瘓！建議點擊下方「🔄 調換」錯開傳輸方式。
           </div>
         </div>
       )}
@@ -248,10 +248,10 @@ export function CustomPaceBoard({
                     <button
                       onClick={() => onStoreCard(slot)}
                       className="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-amber-300 border border-slate-700 transition-all flex items-center gap-1 whitespace-nowrap shrink-0"
-                      title="卸下此裝備存入備用倉庫 (0 AP，不刪除)"
+                      title="卸下此設備存入備用倉庫 (0 AP 免費動作，不刪除)"
                     >
                       <Archive className="w-3 h-3 shrink-0" />
-                      <span className="whitespace-nowrap">收存</span>
+                      <span className="whitespace-nowrap">收進倉庫</span>
                     </button>
                   </div>
                 )}
@@ -287,7 +287,7 @@ export function CustomPaceBoard({
                 ) : (
                   <div className="my-2 p-2 rounded-xl bg-red-950/80 border border-red-500/60 text-center">
                     <span className="text-[11px] font-bold text-red-300 flex items-center justify-center gap-1">
-                      <Lock className="w-3 h-3" /> [P] 槽限 High/Med 頻寬
+                      <Lock className="w-3 h-3" /> [P] 槽限中/高傳輸量設備
                     </span>
                   </div>
                 )
@@ -307,7 +307,7 @@ export function CustomPaceBoard({
                 ) : (
                   <div className="my-2 p-2 rounded-xl bg-red-950/80 border border-red-500/60 text-center">
                     <span className="text-[11px] font-bold text-red-300 flex items-center justify-center gap-1">
-                      <Lock className="w-3 h-3" /> [P] 槽限 High/Med 頻寬
+                      <Lock className="w-3 h-3" /> [P] 槽限中/高傳輸量設備
                     </span>
                   </div>
                 )
@@ -384,7 +384,7 @@ export function CustomPaceBoard({
                       }`}
                       title={hasAP ? (isAgile ? "從倉庫調配裝備至防線 (敏捷協議 0 AP)" : "從倉庫調配裝備至防線 (消耗 1 AP)") : "行動點數不足 (需 1 AP)"}
                     >
-                      {isSelected ? '請選擇目標槽位' : isAgile ? '裝備 (0 AP)' : '裝備 (1 AP)'}
+                      {isSelected ? '請選擇目標槽位' : isAgile ? '裝上防線 (0 AP)' : '裝上防線 (1 AP)'}
                     </button>
                   </div>
                 </div>

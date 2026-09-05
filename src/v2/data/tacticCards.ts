@@ -113,7 +113,7 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     translations: {
       CivilDefense: {
         name: '啟動社區志願者中繼台',
-        desc: '本回合所有因 Fallback 退入 [C] 應急或 [E] 緊急防線的任務，獲得志願者中繼站全力轉發，享有 100% 滿額收益（視同 A 槽）！',
+        desc: '本回合所有由 [C] 應急或 [E] 緊急防線救回的任務，透過熱心志願者幫忙接力轉發，也能拿 100% 滿額分數！',
         flavor: '山頂熱心的業餘無線電玩家幫忙人工轉發，讓應急訊號也能滿額送達！',
         icon: 'Users',
       },
@@ -139,8 +139,8 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     translations: {
       CivilDefense: {
         name: '敏捷應急通訊協議',
-        desc: '本回合所有「防線對調」與「倉庫換裝」均為 0 AP，可自由無悔重組 PACE 四重防線！',
-        flavor: '臨機應變是應急通訊的第一原則，迅速切換頻率與防線配置 (Agile Protocol)。',
+        desc: '本回合所有「對調防線順序」與「從倉庫裝上設備」通通 0 AP 免費，可隨意重新排列你的 PACE 防線！',
+        flavor: '臨機應變是應急通訊的第一原則，迅速隨災情切換防線順序。',
         icon: 'Zap',
       },
       IslandResilience: {
@@ -165,8 +165,8 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     translations: {
       CivilDefense: {
         name: '綠色後勤通道',
-        desc: '本回合下一次「採購裝備」或「採購戰術」不消耗 AP（0 AP 快速調配）！',
-        flavor: '公所開闢綠色物資通道 (Priority Logistics)，救災器材隨到隨領，免除行政作業延遲。',
+        desc: '本回合下一次「在市場買裝備」或「買戰術卡」不花 AP（0 AP 免費調配）！',
+        flavor: '公所開闢救災物資快速通道，應急器材隨到隨領，免除等待時間。',
         icon: 'ShoppingBag',
       },
       IslandResilience: {
@@ -191,8 +191,8 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     translations: {
       CivilDefense: {
         name: '連續突發通訊令',
-        desc: '本回合下一次「發起任務通訊檢定」不消耗 AP（0 AP 突發廣播），突破單回合通訊極限！',
-        flavor: '全頻道高功率突發廣播 (Burst Transmission)，在干擾間隙中連續送出多份求救信標！',
+        desc: '本回合下一次「發起任務通訊」不花 AP（0 AP 免費通訊），爭取更多救人機會！',
+        flavor: '把握風雨漸歇的空檔全頻段齊發，一口氣送出多份求救信標！',
         icon: 'Radio',
       },
       IslandResilience: {

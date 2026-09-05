@@ -9,7 +9,7 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
     translations: {
       CivilDefense: {
         title: '全島大停電 (市電全面斷電)',
-        desc: '電網完全停擺！所有【公眾網/基地台 Cellular】因備援電池耗盡而全面中斷！所有需電設備運作耗電 +1⚡。',
+        desc: '電網完全停擺！所有【手機網路/基地台】因備用電池耗盡而全面斷訊！所有需電設備運作耗電 +1⚡。',
         flavor: '整座城市的燈火瞬間熄滅，手機信號格數歸零，黑夜降臨。',
         icon: 'BatteryLow',
       },
@@ -35,8 +35,8 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
     translations: {
       CivilDefense: {
         title: '強烈颱風登陸 (暴風雨狂襲)',
-        desc: '狂風暴雨肆虐！厚重雲層嚴重衰減【衛星通訊 Satellite】訊號，且所有【光學/信號燈】距離降為近距。',
-        flavor: '傾盆大雨模糊了一切視線，雨衰效應讓衛星天線接收不到信號。',
+        desc: '狂風暴雨肆虐！厚重暴雨雲層干擾了【衛星通訊】，且【強光/哨子】通訊距離受大雨濃霧縮短。',
+        flavor: '傾盆大雨模糊了一切視線，雨水直接阻擋了微波訊號。',
         icon: 'CloudRain',
       },
       IslandResilience: {
@@ -59,9 +59,9 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
     targetedMedia: ['Cellular', 'Radio'],
     translations: {
       CivilDefense: {
-        title: '高空電磁脈衝爆震 (EMP 襲擊)',
-        desc: '致命電磁衝擊！所有未做防護的【公眾網 Cellular】與【無線電 Radio】晶片過載失效！唯有實體有線、光學與人力手段能倖免！',
-        flavor: '天空閃過一陣刺眼白光，所有通電的手機與電台同時發出焦味。',
+        title: '高空電磁脈衝爆震 (強電磁襲擊)',
+        desc: '強烈電磁脈衝襲擊！所有沒做防護的【手機基地台】與【無線電】晶片燒毀！唯有實體有線、光學與人力手段能正常使用！',
+        flavor: '天空閃過一陣刺眼白光，所有通電的手機與電台同時冒煙跳電。',
         icon: 'ZapOff',
       },
       IslandResilience: {
@@ -85,8 +85,8 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
     translations: {
       CivilDefense: {
         title: '強烈大地震 (地下管線扯斷)',
-        desc: '劇烈地牛翻身！山區土石流與地表撕裂扯斷了【實體有線 Wired】線路！需依靠無線電或衛星通訊！',
-        flavor: '道路塌陷，深埋地下的電話銅線與光纖被巨石無情扯斷。',
+        desc: '劇烈地牛翻身！山區土石流與地表撕裂扯斷了【實體有線】線路！需依靠無線電或衛星通訊！',
+        flavor: '道路塌陷，深埋地下的電話銅線與光纖被扯斷。',
         icon: 'Layers',
       },
       IslandResilience: {
@@ -109,9 +109,9 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
     targetedMedia: ['Radio'],
     translations: {
       CivilDefense: {
-        title: '不明全頻段電子雜訊干擾',
-        desc: '全頻段白雜訊覆蓋！所有【無線電 Radio】頻道充斥強烈嘶嘶聲，語音無法辨識！',
-        flavor: '打開對講機，每個頻道都傳來震耳欲聾的雜音，無法聽清任何指令。',
+        title: '不明強烈雜訊干擾 (無線電遭蓋台)',
+        desc: '全頻道刺耳雜訊覆蓋！所有【無線電】頻道充斥嘶嘶聲，對講機無法聽清對話！',
+        flavor: '打開對講機全是刺耳雜音，無法正常收發任何語音指令。',
         icon: 'ShieldAlert',
       },
       IslandResilience: {
@@ -134,8 +134,8 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
     targetedMedia: [],
     translations: {
       CivilDefense: {
-        title: '天候晴朗與大氣穩定 (通訊黃金期)',
-        desc: '天候極佳，電離層與無線電頻譜極度純淨！本回合所有成功完成的任務額外獲得 +1 💰 救災物資獎勵。',
+        title: '天候晴朗風平浪靜 (通訊黃金期)',
+        desc: '天候極佳，大氣通訊條件極佳！本回合所有成功完成的任務額外獲得 +1 💰 救災物資獎勵。',
         flavor: '萬里無雲的晴空，所有波段的訊號清晰無比，通訊效率達到頂峰。',
         icon: 'Sparkles',
       },

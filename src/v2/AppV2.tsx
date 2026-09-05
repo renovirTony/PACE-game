@@ -232,9 +232,10 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 <button
                   onClick={() => setIsGuideOpen(true)}
                   className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-cyan-950/30"
+                  title="閱讀完整遊戲規則與玩法手冊"
                 >
                   <BookOpen className="w-4 h-4 text-cyan-400" />
-                  <span>PACE 原理手冊</span>
+                  <span>📖 遊戲玩法手冊</span>
                 </button>
               </div>
 

@@ -179,10 +179,10 @@ export function V2TurnHeader({
             <button
               onClick={onOpenGuide}
               className="px-2 py-1 rounded-lg hover:bg-cyan-950 text-cyan-300 flex items-center gap-1 text-[11px] font-bold transition-all"
-              title="查看 PACE 原理說明 (不中斷演習)"
+              title="查看完整遊戲規則與玩法手冊 (不中斷演習)"
             >
               <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">說明手冊</span>
+              <span className="hidden sm:inline">玩法手冊</span>
             </button>
 
             <button
