@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { Player, WorldviewType } from '../../types/game';
+import React, { useState, useRef, useEffect } from 'react';
+import { Player, WorldviewType, DisasterEvent } from '../../types/game';
 import { FontSizeMode, ThemeMode } from '../Modals/DisplaySettingsModal';
-import { Radio, Sparkles, Globe, Shield, RefreshCw, Zap, Coins, Award, Layers, BookOpen, GraduationCap, AlertTriangle, X, Sliders, Type, Smartphone } from 'lucide-react';
+import { Radio, Zap, Coins, Award, Layers, BookOpen, GraduationCap, AlertTriangle, Sliders, Smartphone, ChevronDown } from 'lucide-react';
 
 interface V2TurnHeaderProps {
   round: number;
@@ -23,6 +23,9 @@ interface V2TurnHeaderProps {
   roomCode?: string;
   onToggleMobileView?: () => void;
   isMobileViewForced?: boolean;
+  players?: Player[];
+  activeEvent?: DisasterEvent | null;
+  onOpenDisasterDetail?: () => void;
 }
 
 export function V2TurnHeader({
@@ -45,7 +48,13 @@ export function V2TurnHeader({
   roomCode,
   onToggleMobileView,
   isMobileViewForced,
+  players,
+  activeEvent,
+  onOpenDisasterDetail,
 }: V2TurnHeaderProps) {
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
   const [confirmDialog, setConfirmDialog] = useState<{
     isOpen: boolean;
     title: string;
@@ -58,19 +67,23 @@ export function V2TurnHeader({
     onConfirm: () => {},
   });
 
-  const handleCycleFontSize = () => {
-    if (fontSize === 'normal') onChangeFontSize('large');
-    else if (fontSize === 'large') onChangeFontSize('xlarge');
-    else onChangeFontSize('normal');
-  };
-
-  const worldviewLabels: Record<WorldviewType, { label: string; icon: string }> = {
-    CivilDefense: { label: '社區民防自救', icon: '🏠' },
-    IslandResilience: { label: '海島極端天災', icon: '🌊' },
-    CyberDisconnect: { label: '大斷網廢土', icon: '⚡' },
-  };
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setIsMenuOpen(false);
+      }
+    };
+    if (isMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isMenuOpen]);
 
   const handleSafeReturnToMenu = () => {
+    setIsMenuOpen(false);
     setConfirmDialog({
       isOpen: true,
       title: '確定返回主選單？',
@@ -83,6 +96,7 @@ export function V2TurnHeader({
   };
 
   const handleSafeSwitchToV1 = () => {
+    setIsMenuOpen(false);
     setConfirmDialog({
       isOpen: true,
       title: '切換至經典 v1.0 對照？',
@@ -95,6 +109,7 @@ export function V2TurnHeader({
   };
 
   const handleSafeStartTutorial = () => {
+    setIsMenuOpen(false);
     setConfirmDialog({
       isOpen: true,
       title: '啟動實戰新手教學？',
@@ -107,136 +122,144 @@ export function V2TurnHeader({
   };
 
   return (
-    <header className="rounded-3xl border border-cyan-500/30 bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md flex flex-col gap-3 font-mono relative">
-      {/* Top Bar: Title, Worldview Switcher, Utility Tools, Version Switcher */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-800 text-xs">
-        <div className="flex items-center gap-2.5">
-          <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-            <Radio className="w-5 h-5 animate-pulse" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black tracking-wider text-slate-100 font-orbitron">
-                PACE <span className="text-cyan-400">通訊先鋒 v2.0</span>
-              </h1>
-              <span className="px-2 py-0.5 rounded bg-purple-950 text-purple-300 border border-purple-500/40 text-[10px] font-bold">
-                自組防線 · 媒介獨立
-              </span>
-            </div>
-            <p className="text-[11px] text-slate-400 hidden sm:block">
-              真實民防應急通訊規劃 · 物理天災與 Fallback 降級演練
-            </p>
-          </div>
+    <header className="rounded-2xl border border-cyan-500/30 bg-slate-950/90 p-2 sm:p-2.5 shadow-xl backdrop-blur-md flex flex-wrap items-center justify-between gap-1.5 font-mono relative z-50 w-full max-w-full text-xs">
+      {/* 1. Left: Brand Logo & Round Badge */}
+      <div className="flex items-center gap-2 shrink-0">
+        <div className="p-1.5 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
+          <Radio className="w-4 h-4 animate-pulse" />
         </div>
-
-        {/* Action Controls */}
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Quick Utility Tools: Display Settings, Compendium, Guide, Tutorial */}
-          <div className="flex items-center gap-1 bg-slate-900 border border-slate-800 p-1 rounded-xl">
-            <button
-              onClick={onOpenDisplaySettings}
-              className="px-2.5 py-1 rounded-lg bg-cyan-950/40 hover:bg-cyan-900/60 text-cyan-300 border border-cyan-500/30 flex items-center gap-1.5 text-[11px] font-bold transition-all shadow-sm"
-              title="調整世界觀文本、字體大小與防疲勞配色主題"
-            >
-              <Sliders className="w-3.5 h-3.5 text-cyan-400" />
-              <span>視覺與偏好設定</span>
-            </button>
-
-            <button
-              onClick={onOpenCompendium}
-              className="px-2 py-1 rounded-lg hover:bg-purple-950 text-purple-300 flex items-center gap-1 text-[11px] font-bold transition-all"
-              title="查看卡牌圖鑑 (不中斷演習)"
-            >
-              <Layers className="w-3.5 h-3.5 text-purple-400" />
-              <span className="hidden sm:inline">全圖鑑</span>
-            </button>
-
-            <button
-              onClick={onOpenGuide}
-              className="px-2 py-1 rounded-lg hover:bg-cyan-950 text-cyan-300 flex items-center gap-1 text-[11px] font-bold transition-all"
-              title="查看完整遊戲規則與玩法手冊 (不中斷演習)"
-            >
-              <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
-              <span className="hidden sm:inline">玩法手冊</span>
-            </button>
-
-            <button
-              onClick={handleSafeStartTutorial}
-              className="px-2 py-1 rounded-lg hover:bg-amber-950 text-amber-300 flex items-center gap-1 text-[11px] font-bold transition-all"
-              title="啟動新手教學"
-            >
-              <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
-              <span className="hidden sm:inline">新手教學</span>
-            </button>
+        <div>
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm sm:text-base font-black tracking-wider text-slate-100 font-orbitron whitespace-nowrap">
+              PACE
+              <span className="text-cyan-400">
+                {/* 窄桌面 (1024–1279) 只留 PACE 主識別，把寬度讓給天災情資條 */}
+                <span className="hidden xl:inline"> 通訊先鋒</span>
+                <span className="hidden min-[1800px]:inline"> v2.0</span>
+              </span>
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold text-xs whitespace-nowrap">
+              第 {round}/{maxRounds} 輪
+            </span>
           </div>
-
-          {/* Switch to V1 Button */}
-          {onSwitchToV1 && (
-            <button
-              onClick={handleSafeSwitchToV1}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-700 text-xs font-bold transition-all active:scale-95"
-              title="切換回經典原版 v1.0 進行對照"
-            >
-              🏛️ 經典 v1.0 對照
-            </button>
-          )}
-
-          {/* Toggle PC Mobile Mode Simulation */}
-          {onToggleMobileView && (
-            <button
-              onClick={onToggleMobileView}
-              className="px-2.5 py-1.5 rounded-xl bg-amber-950/40 hover:bg-amber-900/60 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5"
-              title="在電腦螢幕上模擬手機直式操作佈局"
-            >
-              <Smartphone className="w-4 h-4 text-amber-400" />
-              <span>{isMobileViewForced ? '切換回桌面版' : '手機版預覽'}</span>
-            </button>
-          )}
-
-          {/* Return to Menu */}
-          <button
-            onClick={handleSafeReturnToMenu}
-            className="px-2.5 py-1.5 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 text-xs font-bold transition-all active:scale-95"
-          >
-            主選單
-          </button>
+          <div className="text-[11px] text-slate-400 hidden min-[1800px]:block whitespace-nowrap">
+            民防應急通訊規劃 · 物理天災與 Fallback 演練
+          </div>
         </div>
       </div>
 
-      {/* Bottom Bar: Active Player Stats HUD */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pt-1">
-        {/* Left: Round & Active Player */}
-        <div className="flex items-center gap-3">
-          <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-center">
-            <span className="text-[10px] text-slate-400 block uppercase">災難週期 (Round)</span>
-            <span className="text-sm sm:text-base font-black text-cyan-400">
-              第 {round} / {maxRounds} 輪
-            </span>
-          </div>
-
-          <div className="flex items-center gap-2.5 px-3.5 py-1.5 rounded-xl bg-slate-900/80 border border-slate-800">
-            <span className="text-xl">{activePlayer.avatar}</span>
-            <div>
-              <span className="text-xs sm:text-sm font-black text-slate-200 block">
-                {activePlayer.name} {isAI && <span className="text-[10px] text-purple-400 font-normal">(AI 決策中)</span>}
+      {/* 2. Center: Prominent Disaster Status Strip (Fully Clickable to Open Briefing) */}
+      {(() => {
+        if (!activeEvent) return null;
+        const isSunny = activeEvent.id === 'evt_optimal_calm' || (activeEvent.targetedMedia.length === 0 && !activeEvent.powerDrainBonus);
+        
+        if (isSunny) {
+          return (
+            <button
+              onClick={onOpenDisasterDetail}
+              className="flex-1 min-w-[220px] max-w-md px-3 py-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-950/80 border border-emerald-500/40 text-emerald-300 text-xs flex items-center justify-between shadow-sm cursor-pointer transition-all active:scale-[0.99] text-left"
+              title="點擊查看詳細天災情資"
+            >
+              <span className="font-bold flex items-center gap-1.5 truncate">
+                <span>☀️</span>
+                <span className="truncate">氣候良好 · 通訊媒介全部暢通</span>
               </span>
-              <span className="text-[10px] text-slate-400">
-                目標積分：🏆 {targetScore} 分
+              <span className="text-xs text-emerald-400 hover:text-emerald-200 font-bold underline underline-offset-2 shrink-0 ml-2">
+                情資 ➔
+              </span>
+            </button>
+          );
+        }
+
+        const eventTitle = activeEvent.translations[worldview]?.title || '天災襲擊';
+        const shortTitle = eventTitle.split(' (')[0].split('（')[0].trim();
+        const mediaNameMap: Record<string, string> = {
+          Cellular: '公眾基地台',
+          Satellite: '衛星通訊',
+          Radio: '無線電波',
+          Wired: '實體有線',
+          PhysicalOptical: '光學通訊',
+        };
+        const affectedMediaNames = activeEvent.targetedMedia.map(m => mediaNameMap[m] || m).join(' / ');
+
+        return (
+          <button
+            onClick={onOpenDisasterDetail}
+            className="flex-1 min-w-[280px] max-w-2xl px-3 py-1.5 rounded-xl bg-red-950/70 hover:bg-red-950/90 border border-red-500/50 flex items-center justify-between gap-2 shadow-inner cursor-pointer transition-all active:scale-[0.99] text-left"
+            title="點擊查看詳細天災受災情資"
+          >
+            <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
+              <span className="text-sm animate-pulse shrink-0">🌪️</span>
+              {/* 空間不足時優先截斷天災名稱，保住「阻斷哪些媒介」這項戰術關鍵資訊 */}
+              <span className="text-xs font-black text-red-200 truncate min-w-0" title={shortTitle}>
+                {shortTitle}
+              </span>
+              {affectedMediaNames ? (
+                <span className="text-xs font-black text-amber-300 bg-black/60 px-2 py-0.5 rounded border border-amber-500/40 shrink-0 whitespace-nowrap">
+                  ❌ 阻斷：【{affectedMediaNames}】
+                </span>
+              ) : null}
+            </div>
+            <div className="flex items-center gap-2 shrink-0 ml-1">
+              {activeEvent.powerDrainBonus ? (
+                <span className="text-xs font-black text-red-300 bg-red-900/60 px-1.5 py-0.5 rounded whitespace-nowrap">
+                  ⚡ 耗電+{activeEvent.powerDrainBonus}
+                </span>
+              ) : null}
+              <span className="text-xs text-red-300 font-bold underline underline-offset-2 shrink-0 whitespace-nowrap">
+                <span className="hidden min-[1800px]:inline">詳情 </span>➔
               </span>
             </div>
+          </button>
+        );
+      })()}
+
+      {/* 3. Center-Right: Integrated Real-time Leaderboard Pill
+             窄桌面 (1280–1535) 採頭像 + 積分的精簡型態，避免擠壓天災情資條；
+             寬桌面 (≥1536) 才展開完整姓名與目標分。 */}
+      {players && players.length > 0 && (
+        <div
+          className="hidden xl:flex items-center gap-1 px-1.5 py-1 rounded-xl bg-slate-900 border border-slate-800 shrink-0"
+          title="全員救援積分排行榜"
+        >
+          <span className="text-xs font-black text-purple-300 whitespace-nowrap hidden min-[1800px]:inline">
+            🏆 救援榜:
+          </span>
+          <div className="flex items-center gap-1 text-xs font-bold">
+            {players.map((p) => {
+              const isMe = p.id === activePlayer.id;
+              return (
+                <span
+                  key={p.id}
+                  title={`${isMe ? '您' : p.name}：救援積分 ${p.score}/${targetScore}`}
+                  className={`px-1 min-[1800px]:px-1.5 py-0.5 rounded text-xs font-bold whitespace-nowrap ${
+                    isMe
+                      ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-black'
+                      : 'text-slate-400'
+                  }`}
+                >
+                  {/* 版面寬度受 max-w-[1700px] 上限約束，此處固定採精簡型態（頭像 + 積分），
+                      完整姓名與目標分以 title 提示呈現，把寬度留給天災情資條 */}
+                  {p.avatar} {p.score}
+                </span>
+              );
+            })}
           </div>
         </div>
+      )}
 
-        {/* Right: Resources (AP, Energy, Credits, Score) */}
-        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+      {/* 4. Far Right: Consolidated Player Vitals & Utility Menu */}
+      <div className="flex items-center gap-2 shrink-0">
+        {/* Consolidated Telemetry Capsule */}
+        <div className="flex items-center gap-1.5 min-[1800px]:gap-2.5 px-2 min-[1800px]:px-2.5 py-1 rounded-xl bg-slate-900/90 border border-slate-700/80 text-xs font-bold shrink-0">
           {/* Action Points */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-cyan-950/40 border border-cyan-500/40 text-cyan-300">
-            <span className="text-xs font-black">行動點 (AP):</span>
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
+            <span className="text-cyan-400 font-black">AP</span>
+            <div className="flex items-center gap-0.5">
               {Array.from({ length: activePlayer.maxActionPoints }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-3 h-3 rounded-full border ${
+                  className={`w-2 h-2 rounded-full border ${
                     i < activePlayer.actionPoints
                       ? 'bg-cyan-400 border-cyan-300 shadow-sm shadow-cyan-400/50'
                       : 'bg-slate-800 border-slate-700'
@@ -244,34 +267,126 @@ export function V2TurnHeader({
                 />
               ))}
             </div>
-          </div>
-
-          {/* Energy */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-950/40 border border-amber-500/40 text-amber-300">
-            <Zap className="w-3.5 h-3.5 text-amber-400" />
-            <span className="text-xs font-black">電量:</span>
-            <span className="text-sm font-black">
-              {activePlayer.energy} / {activePlayer.maxEnergy}⚡
+            {/* 圓點已表達 AP 存量，窄桌面下省略重複的數字以讓出空間給天災情資 */}
+            <span className="text-cyan-300 text-xs hidden min-[1800px]:inline whitespace-nowrap">
+              ({activePlayer.actionPoints}/{activePlayer.maxActionPoints})
             </span>
           </div>
 
-          {/* Credits */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300">
-            <Coins className="w-3.5 h-3.5 text-emerald-400" />
-            <span className="text-xs font-black">物資:</span>
-            <span className="text-sm font-black">💰 {activePlayer.credits}</span>
+          <span className="text-slate-700 select-none hidden min-[1800px]:inline">|</span>
+
+          {/* Energy */}
+          <div className="flex items-center gap-1 text-amber-300 font-black">
+            <Zap className="w-3.5 h-3.5 text-amber-400" />
+            <span>{activePlayer.energy}/{activePlayer.maxEnergy}⚡</span>
           </div>
 
-          {/* Score */}
-          <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-950/60 border border-purple-500/50 text-purple-200">
-            <Award className="w-4 h-4 text-purple-400" />
-            <span className="text-xs font-black">救援分:</span>
-            <span className="text-sm font-black text-purple-300">🏆 {activePlayer.score}</span>
+          <span className="text-slate-700 select-none hidden min-[1800px]:inline">|</span>
+
+          {/* Credits */}
+          <div className="flex items-center gap-1 text-emerald-300 font-black">
+            <Coins className="w-3.5 h-3.5 text-emerald-400" />
+            <span>💰{activePlayer.credits}</span>
           </div>
+        </div>
+
+        {/* 5. Utility Menu Popover Dropdown */}
+        <div className="relative" ref={menuRef}>
+          <button
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
+            className="px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700 text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm active:scale-95"
+            title="開啟功能與設定選單"
+          >
+            <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+            <span className="hidden sm:inline">設定選單</span>
+            <ChevronDown className={`w-3 h-3 text-slate-400 transition-transform ${isMenuOpen ? 'rotate-180' : ''}`} />
+          </button>
+
+          {/* Dropdown Menu Modal */}
+          {isMenuOpen && (
+            <div className="absolute right-0 top-full mt-2 w-52 rounded-2xl border border-slate-700 bg-slate-950/95 p-1.5 shadow-2xl backdrop-blur-xl z-[100] flex flex-col gap-1 text-xs animate-scaleUp">
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenDisplaySettings();
+                }}
+                className="w-full px-3 py-2 rounded-xl text-left hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 font-bold flex items-center gap-2 transition-all"
+              >
+                <Sliders className="w-3.5 h-3.5 text-cyan-400" />
+                <span>偏好設定 (字體/世界觀)</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenCompendium();
+                }}
+                className="w-full px-3 py-2 rounded-xl text-left hover:bg-purple-950/60 text-slate-200 hover:text-purple-300 font-bold flex items-center gap-2 transition-all"
+              >
+                <Layers className="w-3.5 h-3.5 text-purple-400" />
+                <span>卡片全圖鑑</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false);
+                  onOpenGuide();
+                }}
+                className="w-full px-3 py-2 rounded-xl text-left hover:bg-cyan-950/60 text-slate-200 hover:text-cyan-300 font-bold flex items-center gap-2 transition-all"
+              >
+                <BookOpen className="w-3.5 h-3.5 text-cyan-400" />
+                <span>玩法手冊與通訊守則</span>
+              </button>
+
+              <button
+                onClick={handleSafeStartTutorial}
+                className="w-full px-3 py-2 rounded-xl text-left hover:bg-amber-950/60 text-slate-200 hover:text-amber-300 font-bold flex items-center gap-2 transition-all"
+              >
+                <GraduationCap className="w-3.5 h-3.5 text-amber-400" />
+                <span>啟動新手教學</span>
+              </button>
+
+              <div className="my-1 border-t border-slate-800" />
+
+              {/* Mobile View Simulation */}
+              {onToggleMobileView && (
+                <button
+                  onClick={() => {
+                    setIsMenuOpen(false);
+                    onToggleMobileView();
+                  }}
+                  className="w-full px-3 py-2 rounded-xl text-left hover:bg-amber-950/60 text-amber-300 font-bold flex items-center gap-2 transition-all"
+                >
+                  <Smartphone className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{isMobileViewForced ? '切換回電腦全景版' : '切換手機版模擬'}</span>
+                </button>
+              )}
+
+              {/* Switch to V1 */}
+              {onSwitchToV1 && (
+                <button
+                  onClick={handleSafeSwitchToV1}
+                  className="w-full px-3 py-2 rounded-xl text-left hover:bg-slate-900 text-slate-400 hover:text-slate-200 font-bold flex items-center gap-2 transition-all"
+                >
+                  <span>🏛️ 切換至經典原版 v1.0</span>
+                </button>
+              )}
+
+              <div className="my-1 border-t border-slate-800" />
+
+              {/* Return to Menu */}
+              <button
+                onClick={handleSafeReturnToMenu}
+                className="w-full px-3 py-2 rounded-xl text-left bg-red-950/40 hover:bg-red-900/60 text-red-300 font-bold flex items-center gap-2 transition-all"
+              >
+                <span>🚪 退出演習返回主選單</span>
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Safe Action Confirmation Modal */}
+      {/* Confirmation Modal */}
       {confirmDialog.isOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
           <div className="max-w-md w-full rounded-3xl border border-red-500/40 bg-slate-950 p-6 shadow-2xl flex flex-col gap-4 text-slate-100 animate-scaleUp">
