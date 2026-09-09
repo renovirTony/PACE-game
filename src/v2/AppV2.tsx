@@ -31,12 +31,34 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
   const [isGuideOpen, setIsGuideOpen] = useState(false);
   const [isDisplaySettingsOpen, setIsDisplaySettingsOpen] = useState(false);
   const [isDisasterModalOpen, setIsDisasterModalOpen] = useState(false);
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedBotCount, setSelectedBotCount] = useState(2);
 
   // Mobile Layout & Navigation State
   const [mobileTab, setMobileTab] = useState<MobileTab>('defense');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScoreboardDrawerOpen, setIsScoreboardDrawerOpen] = useState(false);
+
+  // 桌面版：防線空槽的「去市場選購 ➔」引導（捲動至市場並切回通訊裝備分頁）
+  const [marketFocusNonce, setMarketFocusNonce] = useState(0);
+  const focusDesktopMarket = () => {
+    setMarketFocusNonce((n) => n + 1);
+    if (typeof document === 'undefined') return;
+
+    const el = document.getElementById('desktop-market-area');
+    if (!el) return;
+
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // 保險機制：若瀏覽器未實際執行平滑捲動（分頁未繪製 / 偏好減少動態效果），改為立即捲動
+    window.setTimeout(() => {
+      const rect = el.getBoundingClientRect();
+      const elCenter = rect.top + rect.height / 2;
+      if (Math.abs(elCenter - window.innerHeight / 2) > window.innerHeight * 0.35) {
+        el.scrollIntoView({ behavior: 'auto', block: 'center' });
+      }
+    }, 600);
+  };
 
   // Detect Mobile View: via ?mobile=1 query parameter OR screen width < 1024px OR manual toggle
   const [isSmallScreen, setIsSmallScreen] = useState(() => {
@@ -606,55 +628,71 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
       {/* A. MOBILE ADAPTIVE VIEW (Active when screen < 1024px or ?mobile=1 forced) */}
       {/* ========================================================================= */}
       {isMobileActive ? (
-        <div className={`w-full max-w-md flex flex-col gap-3 relative pb-28 pt-2 px-3.5 ${forceMobileView && !isSmallScreen ? 'border border-slate-800 rounded-3xl bg-[#060913] shadow-2xl overflow-hidden' : ''}`}>
-          {/* 1. Mobile Sticky Top Header with ☰ Menu Button */}
-          <div className="sticky top-0 z-30 -mx-3.5 px-3 py-2 bg-[#060913]/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between shadow-md gap-2">
-            <div className="flex items-center gap-2 shrink-0">
+        <div className={`w-full max-w-md flex flex-col gap-3 relative pb-28 pt-2 px-3 overflow-x-hidden ${forceMobileView && !isSmallScreen ? 'border border-slate-800 rounded-3xl bg-[#060913] shadow-2xl' : ''}`}>
+          {/* 1. Mobile Sticky Top Header with ☰ Menu Button (Strict Anti-Overflow) */}
+          <div className="sticky top-0 z-30 -mx-3 px-3 py-2 bg-[#060913]/95 backdrop-blur-md border-b border-slate-800 flex items-center justify-between shadow-md gap-1.5 max-w-full overflow-hidden">
+            <div className="flex items-center gap-1.5 shrink min-w-0">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="px-2 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 flex items-center gap-1 text-xs font-black shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
+                className="px-2 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 flex items-center gap-1 text-xs font-black shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
                 title="展開指揮官工具選單"
               >
-                <Menu className="w-4 h-4 shrink-0" />
+                <Menu className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-[11px] whitespace-nowrap">選單</span>
               </button>
 
-              <div className="flex items-center gap-1.5 shrink-0 whitespace-nowrap">
-                <span className="text-xs font-black text-slate-100 font-orbitron whitespace-nowrap">
+              <div className="flex items-center gap-1 min-w-0">
+                <span className="text-xs font-black text-slate-100 font-orbitron truncate">
                   PACE <span className="text-cyan-400">先鋒</span>
                 </span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold whitespace-nowrap">
+                <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold shrink-0 whitespace-nowrap">
                   第 {gameState.round}/{gameState.maxRounds} 輪
                 </span>
               </div>
             </div>
 
             {/* Mini Disaster Pill with tap to view briefing */}
-            <div className="flex items-center gap-1.5 text-[10px] shrink-0">
+            <div className="flex items-center gap-1 text-[10px] shrink-0">
               {(() => {
                 const event = gameState.activeEvent;
-                const isSunny = !event || event.id === 'evt_optimal_calm' || event.targetedMedia.length === 0;
-                if (isSunny) {
-                  return (
-                    <button
-                      onClick={() => setIsDisasterModalOpen(true)}
-                      className="px-2.5 py-1 rounded-full bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40 font-bold text-[10px] flex items-center gap-1 shrink-0 whitespace-nowrap transition-all shadow-sm active:scale-95"
-                      title="點擊查看天氣情資"
-                    >
-                      <span className="whitespace-nowrap">☀️ 晴朗和平</span>
-                      <span className="text-[9px] opacity-70">ℹ️</span>
-                    </button>
-                  );
+                let pillText = '☀️ 氣候良好';
+                let isHazard = false;
+
+                if (event && event.id !== 'evt_optimal_calm') {
+                  if (event.targetedMedia.length > 0) {
+                    isHazard = true;
+                    if (event.targetedMedia.includes('Cellular') && event.targetedMedia.includes('Radio')) {
+                      pillText = '基地台/無線電失效';
+                    } else if (event.targetedMedia.includes('Cellular')) {
+                      pillText = '公眾基地台失效';
+                    } else if (event.targetedMedia.includes('Satellite')) {
+                      pillText = '衛星通訊失效';
+                    } else if (event.targetedMedia.includes('Radio')) {
+                      pillText = '無線電波失效';
+                    } else if (event.targetedMedia.includes('Wired')) {
+                      pillText = '實體有線失效';
+                    } else if (event.targetedMedia.includes('PhysicalOptical')) {
+                      pillText = '光學通訊失效';
+                    } else {
+                      pillText = '通訊媒介受阻';
+                    }
+                  } else if (event.powerDrainBonus && event.powerDrainBonus > 0) {
+                    isHazard = true;
+                    pillText = `全場耗電+${event.powerDrainBonus}⚡`;
+                  }
                 }
-                const rawTitle = event.translations[gameState.worldview]?.title || '天災襲擊';
-                const shortTitle = rawTitle.split(' (')[0].split('（')[0].trim();
+
                 return (
                   <button
                     onClick={() => setIsDisasterModalOpen(true)}
-                    className="px-2.5 py-1 rounded-full bg-red-950/90 hover:bg-red-900 text-red-300 border border-red-500/40 font-bold text-[10px] flex items-center gap-1 animate-pulse shrink-0 whitespace-nowrap transition-all shadow-sm active:scale-95"
+                    className={`px-2 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 shrink-0 whitespace-nowrap transition-all shadow-sm active:scale-95 ${
+                      isHazard
+                        ? 'bg-red-950/90 hover:bg-red-900 text-red-300 border border-red-500/50 animate-pulse'
+                        : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
+                    }`}
                     title="點擊查看天災受災詳情"
                   >
-                    <span className="whitespace-nowrap">🌪️ {shortTitle}</span>
+                    <span className="whitespace-nowrap">{pillText}</span>
                     <span className="text-[9px] opacity-70">ℹ️</span>
                   </button>
                 );
@@ -758,6 +796,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 isCurrentPlayer={!gameState.activePlayer.isAI}
                 isAI={gameState.activePlayer.isAI}
                 worldview={gameState.worldview}
+                onGoToTab={(tab) => setMobileTab(tab)}
                 onPlayTactic={(t) => {
                   const res = gameState.playTactic(t);
                   if (res && gameState.isTutorialMode && gameState.tutorialStep === 3) {
@@ -826,45 +865,13 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             onSwitchToV1={onSwitchToV1}
             onReturnToMenu={gameState.returnToMenu}
           />
-
-          {/* 7. Mobile Disaster Detail BottomSheet */}
-          {isDisasterModalOpen && (
-            <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex flex-col justify-end animate-fadeIn font-mono">
-              <div onClick={() => setIsDisasterModalOpen(false)} className="flex-1" />
-              <div className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-red-500/40 bg-slate-950 p-5 shadow-2xl flex flex-col gap-3 max-h-[85vh] overflow-y-auto animate-slideUp">
-                <div className="w-12 h-1.5 rounded-full bg-slate-700 mx-auto -mt-1" />
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <h3 className="text-sm font-black text-slate-100 flex items-center gap-2">
-                    <span className="text-red-400">🌪️</span>
-                    <span>當前全域天災環境情報</span>
-                  </h3>
-                  <button
-                    onClick={() => setIsDisasterModalOpen(false)}
-                    className="p-1 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-                <V2DisasterBanner
-                  event={gameState.activeEvent}
-                  worldview={gameState.worldview}
-                />
-                <button
-                  onClick={() => setIsDisasterModalOpen(false)}
-                  className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-all mt-1"
-                >
-                  關閉天災情報 ➔
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       ) : (
         /* ========================================================================= */
-        /* B. DESKTOP WIDE SCREEN VIEW (Command Center)                             */
+        /* B. DESKTOP WIDE SCREEN VIEW (2-Tier Zero-Scroll Command Center)          */
         /* ========================================================================= */
-        <div className="p-3 sm:p-5 flex flex-col gap-4 max-w-[1700px] w-full mx-auto relative">
-          {/* 1. Header with Worldview Switcher and Modals */}
+        <div className="p-3 sm:p-4 flex flex-col gap-3 max-w-[1700px] w-full mx-auto relative font-mono">
+          {/* 1. Header with Integrated Disaster Alert & Leaderboard Pill */}
           <V2TurnHeader
             round={gameState.round}
             maxRounds={gameState.maxRounds}
@@ -884,85 +891,222 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             onStartTutorial={gameState.startTutorial}
             onToggleMobileView={toggleMobileMode}
             isMobileViewForced={forceMobileView}
-          />
-
-          {/* 2. Disaster Environmental Hazard Banner */}
-          <V2DisasterBanner
-            event={gameState.activeEvent}
-            worldview={gameState.worldview}
-          />
-
-          {/* 3. Commander Custom PACE Defense Board */}
-          <CustomPaceBoard
-            player={gameState.activePlayer}
+            players={gameState.players}
             activeEvent={gameState.activeEvent}
-            isCurrentPlayer={!gameState.activePlayer.isAI}
-            worldview={gameState.worldview}
-            onSwapSlots={(slotA, slotB) => {
-              const res = gameState.swapSlots(slotA, slotB);
-              if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                gameState.nextTutorialStep();
-              }
-              return res;
-            }}
-            onStoreCard={(slot) => {
-              gameState.storeCard(slot);
-              if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                gameState.nextTutorialStep();
-              }
-            }}
-            onEquipFromInventory={(card, slot) => {
-              const res = gameState.equipFromInventory(card, slot);
-              if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                gameState.nextTutorialStep();
-              }
-              return res;
-            }}
-            onDiscardFromInventory={gameState.discardFromInventory}
+            onOpenDisasterDetail={() => setIsDisasterModalOpen(true)}
           />
 
-          {/* 4. Operational Area: Left (Missions + Market) / Right (Actions + Log) */}
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-4">
-            {/* Left Column (7 cols): Active Missions + Market */}
-            <div className="xl:col-span-7 flex flex-col gap-4">
-              {/* Active Crisis Missions */}
-              <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-4 sm:p-5 shadow-2xl backdrop-blur-md flex flex-col gap-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-800">
-                  <div className="flex items-center gap-2">
-                    <Radio className="w-5 h-5 text-cyan-400" />
-                    <h2 className="text-sm sm:text-base font-bold text-slate-100">
-                      當前突發危機任務 (Crisis Missions)
-                    </h2>
-                  </div>
-                  <span className="text-xs text-slate-400 hidden sm:inline">
-                    點擊發起檢驗，系統自動逐層 Fallback (常駐 3 題無限輪替)
-                  </span>
-                </div>
+          {/* 2. UPPER TIER (~220px): Horizontal PACE 4 Slots (8 cols) + Action Command Center (4 cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+            {/* Left: Horizontal PACE Defense Board */}
+            <div className="lg:col-span-8">
+              <CustomPaceBoard
+                isVertical={false}
+                onGoToMarket={focusDesktopMarket}
+                player={gameState.activePlayer}
+                activeEvent={gameState.activeEvent}
+                isCurrentPlayer={!gameState.activePlayer.isAI}
+                worldview={gameState.worldview}
+                onSwapSlots={(slotA, slotB) => {
+                  const res = gameState.swapSlots(slotA, slotB);
+                  if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
+                    gameState.nextTutorialStep();
+                  }
+                  return res;
+                }}
+                onStoreCard={(slot) => {
+                  gameState.storeCard(slot);
+                  if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
+                    gameState.nextTutorialStep();
+                  }
+                }}
+                onEquipFromInventory={(card, slot) => {
+                  const res = gameState.equipFromInventory(card, slot);
+                  if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
+                    gameState.nextTutorialStep();
+                  }
+                  return res;
+                }}
+                onDiscardFromInventory={gameState.discardFromInventory}
+              />
+            </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-                  {gameState.activeMissions.map((mission, idx) => (
-                    <V2MissionCardView
-                      key={mission.id}
-                      mission={mission}
-                      activePlayer={gameState.activePlayer}
-                      activeEvent={gameState.activeEvent}
-                      worldview={gameState.worldview}
-                      disabled={
-                        gameState.activePlayer.isAI ||
-                        (gameState.activePlayer.actionPoints <= 0 &&
-                          !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
-                      }
-                      onTransmit={(m) => {
-                        return gameState.transmitMission(m);
-                      }}
-                      dataTutorial={idx === 0 ? 'mission-card-0' : undefined}
-                    />
-                  ))}
-                </div>
+            {/* Right: Command Actions + Hand Tactics + Compact Log Strip */}
+            <div className="lg:col-span-4 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl backdrop-blur-md flex flex-col gap-2 text-xs overflow-hidden">
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+                <span className="text-sm font-black text-amber-400 whitespace-nowrap">🎮 指揮官行動區</span>
+                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-500/40 shrink-0 whitespace-nowrap">
+                  ⚡ 戰術卡使用不消耗 AP
+                </span>
               </div>
 
-              {/* Equipment & Tactic Market */}
+              {/* Hand Tactics Strip */}
+              <div className="flex flex-col gap-1.5 shrink-0">
+                <span className="text-[11px] font-bold text-slate-300">
+                  手牌戰術 ({gameState.activePlayer.handTactics.length}):
+                </span>
+                {gameState.activePlayer.handTactics.length === 0 ? (
+                  <div className="p-2.5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-slate-500 text-[11px] text-center leading-relaxed">
+                    手牌無戰術卡（可至下方市場的「🛡️ 戰術補給」分頁採購）
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-0.5">
+                    {gameState.activePlayer.handTactics.map((tactic, idx) => {
+                      const tContent = tactic.translations[gameState.worldview];
+                      return (
+                        <div
+                          key={tactic.id}
+                          data-tutorial={idx === 0 ? 'tactic-card-0' : undefined}
+                          className="p-2 rounded-xl bg-slate-900/90 border border-purple-500/30 flex items-center justify-between gap-2"
+                        >
+                          <div className="min-w-0 flex-1">
+                            <span className="text-xs font-black text-purple-300 block break-words leading-tight">
+                              ⚡ {tContent?.name}
+                            </span>
+                            <span className="text-xs text-slate-300 block break-words leading-relaxed mt-0.5">
+                              {tContent?.desc}
+                            </span>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const res = gameState.playTactic(tactic);
+                              if (res && gameState.isTutorialMode && gameState.tutorialStep === 3) {
+                                gameState.nextTutorialStep();
+                              }
+                            }}
+                            className="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] shrink-0 shadow-sm active:scale-95 transition-all"
+                          >
+                            發動 (0 AP)
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Command Buttons (Recharge & End Turn) */}
+              <div className="grid grid-cols-2 gap-2 shrink-0">
+                <button
+                  data-tutorial="recharge-btn"
+                  onClick={() => {
+                    const res = gameState.rechargeEnergy();
+                    if (res && gameState.isTutorialMode && gameState.tutorialStep === 6) {
+                      gameState.nextTutorialStep();
+                    }
+                  }}
+                  disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0 || gameState.activePlayer.energy >= gameState.activePlayer.maxEnergy}
+                  className="py-2 rounded-xl bg-amber-950/60 hover:bg-amber-900/80 disabled:opacity-50 disabled:cursor-not-allowed text-amber-300 border border-amber-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                  title="緊急野戰充電 (+2⚡ / 1 AP)"
+                >
+                  <span>⚡ 野戰充電 (+2⚡ / 1 AP)</span>
+                </button>
+                <button
+                  data-tutorial="end-turn-btn"
+                  onClick={() => {
+                    gameState.endTurn();
+                    if (gameState.isTutorialMode && gameState.tutorialStep === 7) {
+                      gameState.nextTutorialStep();
+                    }
+                  }}
+                  disabled={gameState.activePlayer.isAI}
+                  className="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                  title="結束本回合"
+                >
+                  <span>⏭️ 結束回合 (End Turn)</span>
+                </button>
+              </div>
+
+              {/* Recent Combat Log (填滿指揮區餘裕 · 點擊展開完整日誌) */}
+              <div className="flex-1 min-h-0 flex flex-col gap-1.5 pt-2 border-t border-slate-800/80">
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[11px] font-bold text-slate-300 whitespace-nowrap">
+                    📜 近期作戰日誌
+                  </span>
+                  <button
+                    onClick={() => setIsLogModalOpen(true)}
+                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-bold underline shrink-0"
+                    title="點擊展開完整作戰通訊日誌"
+                  >
+                    展開完整日誌 ➔
+                  </button>
+                </div>
+
+                {gameState.logs.length === 0 ? (
+                  <div className="p-2.5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-slate-500 text-[11px] text-center">
+                    暫無作戰日誌
+                  </div>
+                ) : (
+                  <div className="flex-1 min-h-[80px] overflow-y-auto flex flex-col gap-1 pr-0.5">
+                    {gameState.logs.slice(0, 12).map((log) => (
+                      <div
+                        key={log.id}
+                        className={`px-2 py-1.5 rounded-lg bg-slate-900/70 border text-[11px] leading-snug break-words ${
+                          log.type === 'alert'
+                            ? 'border-red-500/30 text-red-300'
+                            : log.type === 'success'
+                            ? 'border-emerald-500/30 text-emerald-300'
+                            : log.type === 'event'
+                            ? 'border-amber-500/30 text-amber-300'
+                            : 'border-slate-800 text-slate-400'
+                        }`}
+                      >
+                        <span className="font-bold opacity-70 mr-1">[R{log.round}]</span>
+                        {log.message}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* 3. LOWER TIER: Crisis Missions (Left 7 cols · 橫向任務列) + Market Area (Right 5 cols) */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
+            {/* Left: 3 Crisis Missions Stacked as Wide Rows */}
+            <div className="lg:col-span-6 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl backdrop-blur-md flex flex-col gap-2.5 text-xs">
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <h2 className="text-sm font-black text-slate-100 whitespace-nowrap">
+                    突發危機任務
+                  </h2>
+                  <span className="text-[11px] text-slate-400 truncate hidden xl:inline">
+                    · 由 P ➔ A ➔ C ➔ E 逐層 Fallback 降級判定，右側即時顯示預估接手防線
+                  </span>
+                </div>
+                <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">
+                  常駐 {gameState.activeMissions.length} 題
+                </span>
+              </div>
+
+              <div className="flex flex-col gap-2.5 flex-1">
+                {gameState.activeMissions.map((mission, idx) => (
+                  <V2MissionCardView
+                    key={mission.id}
+                    mission={mission}
+                    activePlayer={gameState.activePlayer}
+                    activeEvent={gameState.activeEvent}
+                    worldview={gameState.worldview}
+                    variant="desktopRow"
+                    disabled={
+                      gameState.activePlayer.isAI ||
+                      (gameState.activePlayer.actionPoints <= 0 &&
+                        !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
+                    }
+                    onTransmit={(m) => {
+                      return gameState.transmitMission(m);
+                    }}
+                    dataTutorial={idx === 0 ? 'mission-card-0' : undefined}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Right: Equipment & Tactic Market with Tabs */}
+            <div id="desktop-market-area" className="lg:col-span-6 scroll-mt-4">
               <V2MarketArea
+                focusEquipNonce={marketFocusNonce}
                 player={gameState.activePlayer}
                 activeEvent={gameState.activeEvent}
                 market={gameState.market}
@@ -979,46 +1123,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 onBuyTactic={gameState.buyTactic}
               />
             </div>
-
-            {/* Right Column (5 cols): Action Controls + Combat Log */}
-            <div className="xl:col-span-5 flex flex-col gap-4">
-              <V2ActionControlPanel
-                player={gameState.activePlayer}
-                isCurrentPlayer={!gameState.activePlayer.isAI}
-                isAI={gameState.activePlayer.isAI}
-                worldview={gameState.worldview}
-                onPlayTactic={(t) => {
-                  const res = gameState.playTactic(t);
-                  if (res && gameState.isTutorialMode && gameState.tutorialStep === 3) {
-                    gameState.nextTutorialStep();
-                  }
-                  return res;
-                }}
-                onRecharge={() => {
-                  const res = gameState.rechargeEnergy();
-                  if (res && gameState.isTutorialMode && gameState.tutorialStep === 6) {
-                    gameState.nextTutorialStep();
-                  }
-                  return res;
-                }}
-                onEndTurn={() => {
-                  gameState.endTurn();
-                  if (gameState.isTutorialMode && gameState.tutorialStep === 7) {
-                    gameState.nextTutorialStep();
-                  }
-                }}
-              />
-
-              <LogViewer logs={gameState.logs} />
-            </div>
           </div>
-
-          {/* 5. Bottom Leaderboard */}
-          <V2ScoreBoard
-            players={gameState.players}
-            activePlayerId={gameState.activePlayer.id}
-            targetScore={gameState.targetScore}
-          />
         </div>
       )}
 
@@ -1043,6 +1148,68 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         activePlayerId={gameState.activePlayer.id}
         targetScore={gameState.targetScore}
       />
+
+      {/* Shared Disaster Detail Modal (BottomSheet on mobile, Centered Modal on desktop) */}
+      {isDisasterModalOpen && (
+        <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex flex-col justify-end sm:justify-center sm:items-center p-0 sm:p-4 animate-fadeIn font-mono">
+          <div onClick={() => setIsDisasterModalOpen(false)} className="fixed inset-0" />
+          <div className="w-full max-w-lg mx-auto rounded-t-3xl sm:rounded-3xl border-t sm:border border-red-500/40 bg-slate-950 p-5 shadow-2xl flex flex-col gap-3 max-h-[85vh] overflow-y-auto animate-slideUp sm:animate-scaleUp relative z-10">
+            <div className="w-12 h-1.5 rounded-full bg-slate-700 mx-auto -mt-1 sm:hidden" />
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <h3 className="text-sm font-black text-slate-100 flex items-center gap-2">
+                <span className="text-red-400">🌪️</span>
+                <span>當前全域天災環境情報</span>
+              </h3>
+              <button
+                onClick={() => setIsDisasterModalOpen(false)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <V2DisasterBanner
+              event={gameState.activeEvent}
+              worldview={gameState.worldview}
+            />
+            <button
+              onClick={() => setIsDisasterModalOpen(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-all mt-1"
+            >
+              關閉天災情報
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Shared Log Modal */}
+      {isLogModalOpen && (
+        <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fadeIn font-mono">
+          <div onClick={() => setIsLogModalOpen(false)} className="fixed inset-0" />
+          <div className="w-full max-w-2xl mx-auto rounded-3xl border border-cyan-500/40 bg-slate-950 p-5 shadow-2xl flex flex-col gap-3 max-h-[85vh] relative z-10 animate-scaleUp">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
+              <h3 className="text-sm font-black text-slate-100 flex items-center gap-2">
+                <span className="text-cyan-400">📜</span>
+                <span>完整作戰指揮通訊日誌</span>
+              </h3>
+              <button
+                onClick={() => setIsLogModalOpen(false)}
+                className="p-1 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="flex-1 overflow-y-auto">
+              <LogViewer logs={gameState.logs} />
+            </div>
+            <button
+              onClick={() => setIsLogModalOpen(false)}
+              className="w-full py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs transition-all mt-1"
+            >
+              關閉日誌
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Transmission Result Modal (Adapts as BottomSheet on mobile) */}
       <V2TransmissionResultModal
