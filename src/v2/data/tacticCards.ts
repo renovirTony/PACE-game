@@ -61,19 +61,19 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     translations: {
       CivilDefense: {
         name: '架設自製八木定向天線',
-        desc: '本回合所有【無線電 Radio】設備覆蓋範圍提升一階（近距 Local ➔ 視距 LineOfSight；視距 ➔ 長距離 LongRange）。',
+        desc: '本回合所有【無線電】設備通訊距離提升一階（短距通聯 ➔ 視距通聯；視距通聯 ➔ 跨區長程）。',
         flavor: '利用鐵絲衣架與木棒自製八木天線，訊號強度立刻暴增 10 倍！',
         icon: 'Radio',
       },
       IslandResilience: {
         name: '八木高增益定向天線校準',
-        desc: '本回合所有【無線電 Radio】通訊距離提升一階。',
+        desc: '本回合所有【無線電】通訊距離提升一階。',
         flavor: '將定向天線對準遠方山頂中繼站，將信噪比推至極限。',
         icon: 'Radio',
       },
       CyberDisconnect: {
         name: '高功率射頻聚焦透鏡',
-        desc: '本回合所有【無線電 Radio】射程提升一階。',
+        desc: '本回合所有【無線電】射程提升一階。',
         flavor: '聚焦電磁波束，將微弱的射頻信號如光束般打向天際。',
         icon: 'Radio',
       },

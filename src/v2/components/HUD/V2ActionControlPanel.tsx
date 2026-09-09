@@ -10,6 +10,7 @@ interface V2ActionControlPanelProps {
   onPlayTactic: (card: TacticCard) => boolean;
   onRecharge: () => boolean;
   onEndTurn: () => void;
+  onGoToTab?: (tab: 'defense' | 'missions' | 'market' | 'tactics') => void;
 }
 
 export function V2ActionControlPanel({
@@ -20,6 +21,7 @@ export function V2ActionControlPanel({
   onPlayTactic,
   onRecharge,
   onEndTurn,
+  onGoToTab,
 }: V2ActionControlPanelProps) {
   const canActWithAP = isCurrentPlayer && !isAI && player.actionPoints > 0;
   const canPlayTactic = isCurrentPlayer && !isAI;
@@ -40,22 +42,55 @@ export function V2ActionControlPanel({
 
       {/* Active Buffs Status Banner (MAPS Applicable Principle) */}
       {player.activeBuffs && Object.values(player.activeBuffs).some(Boolean) && (
-        <div className="p-2.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center gap-1.5 flex-wrap text-[11px]">
-          <span className="text-cyan-400 font-bold">⚡ 本回合戰術增益：</span>
+        <div className="p-2.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center gap-2 flex-wrap text-[11px]">
+          <span className="text-cyan-400 font-bold shrink-0">⚡ 本回合戰術增益：</span>
           {player.activeBuffs.agileProtocolActive && (
-            <span className="px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/40 font-black animate-pulse">
-              🔄 敏捷防線 (調換 0 AP)
-            </span>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/40 font-black animate-pulse">
+                🔄 敏捷防線 (調換 0 AP)
+              </span>
+              {onGoToTab && (
+                <button
+                  onClick={() => onGoToTab('defense')}
+                  className="px-2 py-0.5 rounded-full bg-purple-900/80 hover:bg-purple-800 text-purple-200 text-[10px] font-bold border border-purple-400/40 transition-all active:scale-95 shadow-sm"
+                  title="前往防線面板執行對調"
+                >
+                  前往防線 ➔
+                </button>
+              )}
+            </div>
           )}
           {player.activeBuffs.freeMarketPurchaseActive && (
-            <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-black animate-pulse">
-              🛒 綠色後勤 (採購 0 AP)
-            </span>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-black animate-pulse">
+                🛒 綠色後勤 (採購 0 AP)
+              </span>
+              {onGoToTab && (
+                <button
+                  onClick={() => onGoToTab('market')}
+                  className="px-2 py-0.5 rounded-full bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 transition-all active:scale-95 shadow-sm"
+                  title="前往市場執行免 AP 採購"
+                >
+                  前往市場 ➔
+                </button>
+              )}
+            </div>
           )}
           {player.activeBuffs.freeTransmissionActive && (
-            <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 font-black animate-pulse">
-              📡 突發通訊令 (通訊 0 AP)
-            </span>
+            <div className="flex items-center gap-1 shrink-0">
+              <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 font-black animate-pulse">
+                📡 突發通訊令 (通訊 0 AP)
+              </span>
+              {onGoToTab && (
+                <button
+                  onClick={() => onGoToTab('missions')}
+                  className="px-2 py-0.5 rounded-full bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] font-bold border border-amber-400/40 transition-all active:scale-95 shadow-sm"
+                  title="前往危機任務發起免 AP 檢定"
+                >
+                  前往任務 ➔
+                </button>
+              )}
+            </div>
           )}
           {player.activeBuffs.communityRelayActive && (
             <span className="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-black">
@@ -111,7 +146,7 @@ export function V2ActionControlPanel({
             <Shield className="w-4 h-4 text-purple-400" /> 手牌戰術卡 ({player.handTactics.length} 張)
           </span>
           <span className="text-[10px] text-purple-400 font-bold">
-            ⚡ 手牌戰術打出為 0 AP 即時生效！
+            ⚡ 戰術卡使用不消耗AP
           </span>
         </div>
 

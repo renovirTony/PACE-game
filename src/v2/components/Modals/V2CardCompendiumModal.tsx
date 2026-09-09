@@ -4,7 +4,7 @@ import { V2_EQUIPMENT_CARDS, V2_STARTER_CARDS } from '../../data/equipmentCards'
 import { V2_DISASTER_EVENTS } from '../../data/disasterEvents';
 import { V2_CRISIS_MISSIONS } from '../../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../../data/tacticCards';
-import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
+import { UnifiedCommsCardContent, RANGE_META } from '../Cards/UnifiedCommsCardView';
 import { Layers, Shield, Radio, Sparkles, CloudRain, Package, X, Globe, Sun, ZapOff, Cable } from 'lucide-react';
 
 interface V2CardCompendiumModalProps {
@@ -40,19 +40,19 @@ export function V2CardCompendiumModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md font-mono animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[90vh] rounded-3xl border border-cyan-500/30 bg-slate-950 p-6 shadow-2xl flex flex-col gap-4 text-slate-100 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md font-mono animate-fadeIn">
+      <div className="relative w-full max-w-4xl max-h-[96vh] sm:max-h-[90vh] rounded-2xl sm:rounded-3xl border border-cyan-500/30 bg-slate-950 p-3 sm:p-6 shadow-2xl flex flex-col gap-3 sm:gap-4 text-slate-100 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              <Layers className="w-6 h-6 animate-pulse" />
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="p-1.5 sm:p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0">
+              <Layers className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
             </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-black text-slate-100">
-                PACE 通訊先鋒 · 全卡牌圖鑑 (Card Compendium)
+            <div className="min-w-0">
+              <h3 className="text-sm sm:text-lg font-black text-slate-100 truncate">
+                PACE 通訊先鋒 · 全卡牌圖鑑
               </h3>
-              <p className="text-xs text-slate-400">
+              <p className="text-[10px] sm:text-xs text-slate-400 truncate">
                 完整檢閱 5 大物理媒介裝備、極端天災、危機任務與戰術卡
               </p>
             </div>
@@ -60,19 +60,19 @@ export function V2CardCompendiumModal({
 
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all"
+            className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all shrink-0"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab & Worldview Selection Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-2 shrink-0">
           {/* Category Tabs */}
-          <div className="flex items-center gap-1.5 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-slate-900 border border-slate-800 text-xs overflow-x-auto max-w-full">
             <button
               onClick={() => setActiveTab('equipment')}
-              className={`px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1.5 ${
+              className={`px-2.5 sm:px-3 py-1.5 rounded-lg font-bold transition-all flex items-center gap-1 sm:gap-1.5 whitespace-nowrap text-[11px] sm:text-xs ${
                 activeTab === 'equipment' ? 'bg-cyan-500 text-slate-950 font-black' : 'text-slate-400 hover:text-slate-200'
               }`}
             >
@@ -260,8 +260,8 @@ export function V2CardCompendiumModal({
                     </p>
 
                     {/* Mission Physical Requirements */}
-                    <div className="flex items-center gap-1.5 text-[10px] text-slate-400 flex-wrap pt-1 border-t border-white/5">
-                      <span>距離: {mission.requiredRange.join('/')}</span>
+                    <div className="flex items-center gap-1.5 text-xs text-slate-400 flex-wrap pt-1 border-t border-white/5">
+                      <span>距離: {mission.requiredRange.map(r => RANGE_META[r]?.label || r).join('/')}</span>
                       {mission.requiresWeatherResist && (
                         <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-bold">
                           🌧️ 耐天候

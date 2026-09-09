@@ -23,7 +23,7 @@ export function canPlaceCardInSlot(
   if (slot === 'P' && card.bandwidth === 'Low') {
     return {
       valid: false,
-      reason: '⚠️ [P] 主要防線需具備日常通聯能力（最低頻寬需為 Medium 或 High），不能配置 Low 頻寬純應急工具！',
+      reason: '⚠️ [P] 槽需 Medium 或 High 頻寬 (純應急工具不可居首)',
     };
   }
   return { valid: true };
@@ -47,7 +47,7 @@ export function checkCardEligibilityV2(
   if (player.energy < effectivePowerCost) {
     return {
       eligible: false,
-      blockedReason: `⚡ 電量不足 (需 ${effectivePowerCost}⚡，目前僅有 ${player.energy}⚡)`,
+      blockedReason: `⚡ 設備缺電 (需 ${effectivePowerCost}⚡)`,
       expertDetail: `【${cardName}】需要電力驅動。在大停電或電池耗盡時，未備有發電機或備用電池將無法啟動！`,
     };
   }
@@ -72,7 +72,7 @@ export function checkCardEligibilityV2(
       };
       return {
         eligible: false,
-        blockedReason: `🌪️ 災難【${event.translations[worldview]?.title}】阻斷了【${mediumNameMap[card.medium]}】媒介！`,
+        blockedReason: `🌪️ 【${mediumNameMap[card.medium]}】媒介中斷！`,
         expertDetail: `受災事件直接摧毀了【${cardName}】所依賴的物理通道（如基地台停電、暴風雨散射衛星微波、或電磁波過載）。`,
       };
     }

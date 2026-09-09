@@ -94,20 +94,20 @@ export function DisplaySettingsModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-3 sm:p-5 bg-black/80 backdrop-blur-md animate-fadeIn font-mono">
-      <div className="max-w-2xl w-full rounded-3xl border border-cyan-500/40 bg-slate-950/95 p-5 sm:p-7 shadow-2xl flex flex-col gap-5 text-slate-100 max-h-[92vh] overflow-y-auto">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-2 sm:p-5 bg-black/80 backdrop-blur-md animate-fadeIn font-mono">
+      <div className="max-w-2xl w-full rounded-2xl sm:rounded-3xl border border-cyan-500/40 bg-slate-950/95 p-3.5 sm:p-7 shadow-2xl flex flex-col gap-4 sm:gap-5 text-slate-100 max-h-[96vh] sm:max-h-[92vh] overflow-y-auto">
         {/* Header */}
         <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              <Sliders className="w-5 h-5" />
+          <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+            <div className="p-1.5 sm:p-2 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0">
+              <Sliders className="w-4 h-4 sm:w-5 sm:h-5" />
             </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-black tracking-wide text-slate-100 flex items-center gap-2">
-                <span>視覺偏好與文本世界觀設定</span>
+            <div className="min-w-0">
+              <h2 className="text-sm sm:text-lg font-black tracking-wide text-slate-100 flex items-center gap-1.5 flex-wrap">
+                <span>視覺偏好與世界觀設定</span>
               </h2>
-              <p className="text-[11px] text-slate-400">
-                可隨時切換世界觀情境、調整文字大小與護眼配色，即時生效並自動儲存
+              <p className="text-[10px] sm:text-[11px] text-slate-400 truncate">
+                切換世界觀、調整字體大小與護眼配色，即時生效
               </p>
             </div>
           </div>
@@ -177,9 +177,9 @@ export function DisplaySettingsModal({
 
           <div className="grid grid-cols-3 gap-2.5">
             {[
-              { id: 'normal', label: '標準 (14px)', desc: '緊湊高密度佈局', scale: 'text-xs' },
-              { id: 'large', label: '放大 (16px)', desc: '推薦 · 電腦螢幕最舒適', scale: 'text-sm' },
-              { id: 'xlarge', label: '特大 (17.5px)', desc: '大字體清晰不破版', scale: 'text-base' },
+              { id: 'normal', label: '小 (15.5px)', desc: '精簡緊湊 · 視野開闊', scale: 'text-xs' },
+              { id: 'large', label: '中 (17.5px)', desc: '推薦預設 · 平衡舒適', scale: 'text-sm' },
+              { id: 'xlarge', label: '大 (19.5px)', desc: '全新特製 · 清晰大字', scale: 'text-base' },
             ].map((item) => (
               <button
                 key={item.id}

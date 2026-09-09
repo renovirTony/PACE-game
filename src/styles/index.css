@@ -21,34 +21,50 @@
 
 /* Dynamic Root Font Scaling (嚴格防折行微調) */
 html.font-scale-normal {
-  font-size: 14px !important;
+  font-size: 15.5px !important; /* 小 (原大) */
 }
 html.font-scale-large {
-  font-size: 15.5px !important;
+  font-size: 17.5px !important; /* 中 (原特大，預設推薦) */
 }
 html.font-scale-xlarge {
-  font-size: 17.5px !important;
+  font-size: 19.5px !important; /* 大 (全新特製清晰版) */
 }
 
 /* Ensure micro-spec fixed sizes scale nicely without blowing up layouts */
-html.font-scale-large .text-\[9px\] {
-  font-size: 0.65rem !important;
+html.font-scale-normal .text-\[9px\],
+html.font-scale-normal .text-\[9\.5px\] {
+  font-size: 0.70rem !important;
 }
-html.font-scale-large .text-\[10px\] {
-  font-size: 0.72rem !important;
+html.font-scale-normal .text-\[10px\],
+html.font-scale-normal .text-\[10\.5px\] {
+  font-size: 0.74rem !important;
 }
-html.font-scale-large .text-\[11px\] {
-  font-size: 0.78rem !important;
+html.font-scale-normal .text-\[11px\] {
+  font-size: 0.80rem !important;
 }
 
-html.font-scale-xlarge .text-\[9px\] {
-  font-size: 0.72rem !important;
+html.font-scale-large .text-\[9px\],
+html.font-scale-large .text-\[9\.5px\] {
+  font-size: 0.75rem !important;
 }
-html.font-scale-xlarge .text-\[10px\] {
+html.font-scale-large .text-\[10px\],
+html.font-scale-large .text-\[10\.5px\] {
   font-size: 0.78rem !important;
 }
-html.font-scale-xlarge .text-\[11px\] {
+html.font-scale-large .text-\[11px\] {
+  font-size: 0.84rem !important;
+}
+
+html.font-scale-xlarge .text-\[9px\],
+html.font-scale-xlarge .text-\[9\.5px\] {
+  font-size: 0.80rem !important;
+}
+html.font-scale-xlarge .text-\[10px\],
+html.font-scale-xlarge .text-\[10\.5px\] {
   font-size: 0.85rem !important;
+}
+html.font-scale-xlarge .text-\[11px\] {
+  font-size: 0.90rem !important;
 }
 
 /* Custom scrollbars */

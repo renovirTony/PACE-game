@@ -21,24 +21,24 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/85 backdrop-blur-md font-mono animate-fadeIn">
-      <div className="relative w-full max-w-4xl max-h-[92vh] rounded-3xl border border-cyan-500/40 bg-slate-950 p-4 sm:p-7 shadow-2xl flex flex-col gap-4 text-slate-100 overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md font-mono animate-fadeIn">
+      <div className="relative w-full max-w-4xl max-h-[96vh] sm:max-h-[92vh] rounded-2xl sm:rounded-3xl border border-cyan-500/40 bg-slate-950 p-3 sm:p-7 shadow-2xl flex flex-col gap-3 sm:gap-4 text-slate-100 overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between pb-3 border-b border-slate-800 shrink-0">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="p-2 sm:p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400">
-              <BookOpen className="w-5 h-5 sm:w-6 sm:h-6 animate-pulse" />
+        <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+            <div className="p-1.5 sm:p-2.5 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 shrink-0">
+              <BookOpen className="w-4 h-4 sm:w-6 sm:h-6 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-base sm:text-xl font-black text-slate-100 font-orbitron">
-                  《PACE 通訊先鋒》遊戲玩法說明手冊
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm sm:text-xl font-black text-slate-100 font-orbitron truncate">
+                  《PACE 通訊先鋒》遊戲手冊
                 </h3>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-bold hidden sm:inline">
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-bold hidden sm:inline shrink-0">
                   白話新手版
                 </span>
               </div>
-              <p className="text-[11px] sm:text-xs text-slate-400 mt-0.5">
+              <p className="text-[10px] sm:text-xs text-slate-400 mt-0.5 truncate">
                 從做中學：理解日常通訊為何失靈，以及如何建立四重備用防線！
               </p>
             </div>

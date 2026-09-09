@@ -143,7 +143,9 @@ export function V2InteractiveTutorial({
     const timer = setTimeout(() => {
       const el = document.querySelector(current.targetSelector!);
       if (el) {
-        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const r = el.getBoundingClientRect();
+        // If element is in upper screen, scroll so it stays visible near top, otherwise bottom
+        el.scrollIntoView({ behavior: 'smooth', block: r.top < (window.innerHeight * 0.45) ? 'start' : 'end' });
       }
       updateTargetRect();
     }, 80);
@@ -157,13 +159,9 @@ export function V2InteractiveTutorial({
     window.addEventListener('scroll', updateTargetRect, { passive: true });
     window.addEventListener('resize', updateTargetRect);
 
-    // Short RAF interval to track animated elements smoothly
-    const interval = setInterval(updateTargetRect, 250);
-
     return () => {
       window.removeEventListener('scroll', updateTargetRect);
       window.removeEventListener('resize', updateTargetRect);
-      clearInterval(interval);
     };
   }, [updateTargetRect]);
 
@@ -177,7 +175,7 @@ export function V2InteractiveTutorial({
 
   const pad = 10;
   const isTargetInLowerHalf = Boolean(
-    targetRect && targetRect.y + targetRect.height / 2 > (typeof window !== 'undefined' ? window.innerHeight * 0.55 : 500)
+    targetRect && (targetRect.y + targetRect.height / 2 > (typeof window !== 'undefined' ? window.innerHeight * 0.45 : 400))
   );
 
   return (
@@ -279,24 +277,24 @@ export function V2InteractiveTutorial({
       )}
 
       {/* 5. Main Step-by-Step Interactive Tutorial Card (Adaptive Top/Bottom Placement) */}
-      <div className={`fixed ${isTargetInLowerHalf ? 'top-3 sm:top-6 animate-slideDown' : 'bottom-3 sm:bottom-6 animate-slideUp'} left-1/2 -translate-x-1/2 z-[70] w-full max-w-3xl px-3 sm:px-4 font-mono transition-all duration-300`}>
-        <div className="rounded-3xl border-2 border-purple-500 bg-slate-950/95 p-4 sm:p-5 shadow-2xl backdrop-blur-xl flex flex-col gap-3 text-slate-100 relative shadow-purple-950/80">
+      <div className={`fixed ${isTargetInLowerHalf ? 'top-2 sm:top-5 animate-slideDown' : 'bottom-20 sm:bottom-6 animate-slideUp'} left-1/2 -translate-x-1/2 z-[70] w-full max-w-2xl px-2.5 sm:px-4 font-mono transition-all duration-300`}>
+        <div className="rounded-2xl sm:rounded-3xl border-2 border-purple-500 bg-slate-950/95 p-3 sm:p-5 shadow-2xl backdrop-blur-xl flex flex-col gap-2.5 sm:gap-3 text-slate-100 relative shadow-purple-950/80">
           {/* Step Indicator & Header */}
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="p-2 rounded-xl bg-purple-950 border border-purple-500/50 text-purple-300 shadow-md">
-                <GraduationCap className="w-5 h-5 animate-bounce" />
+            <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+              <div className="p-1.5 sm:p-2 rounded-xl bg-purple-950 border border-purple-500/50 text-purple-300 shadow-md shrink-0">
+                <GraduationCap className="w-4 h-4 sm:w-5 sm:h-5 animate-bounce" />
               </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-500/40 text-[10px] font-black text-purple-300 uppercase tracking-wider">
-                    實戰新手教學 · 步驟 {step} / {V2_TUTORIAL_STEPS.length}
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="px-2 py-0.5 rounded-full bg-purple-900/60 border border-purple-500/40 text-[9px] sm:text-[10px] font-black text-purple-300 uppercase tracking-wider">
+                    教學 · 步驟 {step} / {V2_TUTORIAL_STEPS.length}
                   </span>
-                  <span className="px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/40 text-[10px] font-black text-cyan-300">
+                  <span className="px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/40 text-[9px] sm:text-[10px] font-black text-cyan-300">
                     {current.badge}
                   </span>
                 </div>
-                <h3 className="text-sm sm:text-base font-black text-slate-100 mt-0.5">
+                <h3 className="text-xs sm:text-base font-black text-slate-100 mt-0.5 truncate">
                   {current.title}
                 </h3>
               </div>
@@ -304,26 +302,26 @@ export function V2InteractiveTutorial({
 
             <button
               onClick={() => onFinish('menu')}
-              className="p-1.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all text-xs flex items-center gap-1 font-bold"
+              className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all text-xs flex items-center gap-1 font-bold shrink-0"
               title="退出教學回到主選單"
             >
-              <span>退出教學</span>
+              <span className="hidden sm:inline">退出教學</span>
               <X className="w-4 h-4" />
             </button>
           </div>
 
           {/* Action Task Banner (High Contrast Interactive Callout) */}
-          <div className="tutorial-dialog-callout p-3 rounded-2xl bg-gradient-to-r from-purple-950/90 via-slate-900 to-cyan-950/80 border border-purple-500/50 flex flex-col gap-1.5 text-xs shadow-inner">
-            <div className="flex items-center gap-2 text-purple-200 font-black">
+          <div className="tutorial-dialog-callout p-2.5 sm:p-3 rounded-xl sm:rounded-2xl bg-gradient-to-r from-purple-950/90 via-slate-900 to-cyan-950/80 border border-purple-500/50 flex flex-col gap-1 sm:gap-1.5 text-xs shadow-inner">
+            <div className="flex items-center gap-1.5 sm:gap-2 text-purple-200 font-black">
               <Target className="w-4 h-4 text-purple-400 shrink-0 animate-pulse" />
-              <span className="text-xs sm:text-sm">{current.task}</span>
+              <span className="text-xs sm:text-sm leading-snug">{current.task}</span>
             </div>
 
-            <p className="text-slate-300 leading-relaxed text-[11px] sm:text-xs">
+            <p className="text-slate-300 leading-snug text-[10.5px] sm:text-xs">
               {current.detail}
             </p>
 
-            <div className="flex items-center gap-1.5 text-amber-300 text-[11px] font-bold pt-1 border-t border-white/5">
+            <div className="flex items-center gap-1.5 text-amber-300 text-[10px] sm:text-[11px] font-bold pt-1 border-t border-white/5">
               <Lightbulb className="w-3.5 h-3.5 text-amber-400 shrink-0" />
               <span>{current.hint}</span>
             </div>

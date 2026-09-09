@@ -261,9 +261,9 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
     },
     translations: {
       CivilDefense: {
-        name: '社區無線自癒小黑盒 (低功耗)',
-        desc: '掛在各家陽台的小盒子，能一台傳一台把文字送出去，壞了一台自動換路，還能穿透地下室。',
-        flavor: '不用插電能撐好幾天，各家陽台的小黑盒串起整座社區的求救簡訊。',
+        name: 'Meshtastic 離網網狀網路(LoRa)',
+        desc: '利用 LoRa 免執照頻段的多跳網狀通訊設備（Meshtastic 架構），免基地台即可一台傳一台互轉求救簡訊，具備自癒繞路能力且能穿透部分地底掩體。',
+        flavor: '不用插電能撐好幾天，各家陽台的 LoRa 節點串起整座社區的求救簡訊。',
         icon: 'Network',
       },
       IslandResilience: {
