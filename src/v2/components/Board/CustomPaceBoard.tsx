@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, WorldviewType } from '../../types/game';
 import { canPlaceCardInSlot } from '../../engine/rules';
-import { UnifiedCommsCardContent, getCommsCardMediumInfo, PHYSICAL_MEDIUM_META, RANGE_META } from '../Cards/UnifiedCommsCardView';
+import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
+import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, RANGE_META, getCommsCardMediumInfo } from '../../data/terminology';
 import { EquipCardSpecs } from '../Cards/EquipCardSpecs';
 import { 
   Radio, 
@@ -277,7 +278,7 @@ export function CustomPaceBoard({
                       {meta.revenueLabel}
                     </span>
                     {slot === 'P' && (
-                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0 whitespace-nowrap" title="[P] 主要防線必須具備日常通訊能力，僅允許 Medium 或 High 頻寬設備">
+                      <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0 whitespace-nowrap" title="[P] 主要防線必須具備日常通訊能力，僅允許 Medium 語音級以上頻寬設備">
                         🔒 限中/高頻寬
                       </span>
                     )}
@@ -649,7 +650,7 @@ export function CustomPaceBoard({
                     {meta.revenueLabel}
                   </span>
                   {slot === 'P' && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0 whitespace-nowrap" title="[P] 主要防線必須具備日常通訊能力，僅允許 Medium 或 High 頻寬設備">
+                    <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0 whitespace-nowrap" title="[P] 主要防線必須具備日常通訊能力，僅允許 Medium 語音級以上頻寬設備">
                       🔒 限中/高頻寬
                     </span>
                   )}
@@ -821,11 +822,7 @@ export function CustomPaceBoard({
               const itemName = item.translations[worldview]?.name || item.id;
               const medium = getCommsCardMediumInfo(item);
               const rangeLabel = RANGE_META[item.range]?.label || item.range;
-              const bandwidthLabel = item.bandwidth === 'High'
-                ? 'High 視訊級'
-                : item.bandwidth === 'Medium'
-                ? 'Med 語音級'
-                : 'Low 代碼級';
+              const bandwidthLabel = BANDWIDTH_META[item.bandwidth].compactLabel;
 
               return (
                 <div

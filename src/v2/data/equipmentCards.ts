@@ -56,13 +56,13 @@ export const V2_STARTER_CARDS: CommsCard[] = [
       },
       IslandResilience: {
         name: 'VHF 戰術手持電台',
-        desc: '點對點戰術語音鏈路，抗天候耐磨損，適合視距內小隊通聯。',
+        desc: '點對點戰術語音鏈路，耐天候耐磨損，適合視距內小隊通聯。',
         flavor: '山野巡邏小隊標準語音配備，視距通訊穩定。',
         icon: 'Radio',
       },
       CyberDisconnect: {
         name: '類比短波收發機',
-        desc: '不經由雲端節點的純類比射頻廣播，耐候防塵。',
+        desc: '不經由雲端節點的純類比射頻廣播，耐天候防塵。',
         flavor: '在荒原中轉動旋鈕，尋找同伴微弱的調頻訊號。',
         icon: 'Radio',
       },
@@ -198,7 +198,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
       },
       IslandResilience: {
         name: '海事應急衛星通話儀',
-        desc: '全球低頻寬保命語音終端，全天候防雨，適合偏鄉孤島求救。',
+        desc: '全球低頻寬保命語音終端，耐天候防雨，適合偏鄉孤島求救。',
         flavor: '跨洋遠洋漁船與搜救直升機必備的應急語音神器。',
         icon: 'PhoneCall',
       },
@@ -340,7 +340,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
       },
       IslandResilience: {
         name: '越野偵搜信差騎士',
-        desc: '人力物理傳遞，全天候全地形適應，免疫一切電磁干擾與衛星遮蔽。',
+        desc: '人力物理傳遞，耐天候全地形適應，免疫一切電磁干擾與衛星遮蔽。',
         flavor: '天崩地裂之際，只有血肉之軀與鋼鐵坐騎能將密令送達。',
         icon: 'Bike',
       },

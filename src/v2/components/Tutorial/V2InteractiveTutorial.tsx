@@ -60,7 +60,7 @@ export const V2_TUTORIAL_STEPS: TutorialStepDef[] = [
     badge: '通訊檢定',
     title: '第五步：發起第一次危機任務通訊檢定',
     task: '👉 請在左側【危機任務】點擊第一張【山區搜救通聯】上的【發起通訊檢定】！',
-    detail: '該任務需 Medium 頻寬與視距通訊，你的防線將順利連通並獲得 🏆5 積分與 💰2 物資，並彈出【專家復盤講評】！',
+    detail: '該任務需 Medium 語音級頻寬與視距通聯，你的防線將順利連通並獲得 🏆5 積分與 💰2 物資，並彈出【專家復盤講評】！',
     hint: '💡 點擊任務卡下方的【發起通訊檢定】按鈕！',
     targetSelector: '[data-tutorial="mission-card-0"]',
   },

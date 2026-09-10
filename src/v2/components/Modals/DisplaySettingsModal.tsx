@@ -296,11 +296,11 @@ export function DisplaySettingsModal({
               <div className="grid grid-cols-3 gap-1 pt-1.5 text-[9px] border-t border-white/10 text-center">
                 <div className="p-1 rounded bg-black/40">
                   <span className="text-slate-500 block">頻寬門檻</span>
-                  <span className="font-black text-amber-400">Medium</span>
+                  <span className="font-black text-amber-400">Med 語音級</span>
                 </div>
                 <div className="p-1 rounded bg-black/40">
                   <span className="text-slate-500 block">通訊距離</span>
-                  <span className="font-bold text-slate-200">視距</span>
+                  <span className="font-bold text-slate-200">視距通聯</span>
                 </div>
                 <div className="p-1 rounded bg-black/40">
                   <span className="text-slate-500 block">運作耗電</span>
@@ -324,7 +324,7 @@ export function DisplaySettingsModal({
                   受困長者醫療急救轉送
                 </span>
                 <span className="text-[10px] text-slate-300 leading-tight block mt-0.5">
-                  頻寬需求：Medium 頻寬 · 視距通聯
+                  頻寬需求：Medium 語音級 · 視距通聯
                 </span>
               </div>
               <div className="p-1.5 rounded-lg bg-cyan-950/40 border border-cyan-500/30 text-cyan-300 text-[10px] font-bold text-center">

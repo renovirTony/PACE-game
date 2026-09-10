@@ -87,7 +87,7 @@ export function computeV2AIDecision(
     }
   }
 
-  // 2. 檢驗當前看板上的任務，若有高成功率且回報佳的任務，立即發起通訊
+  // 2. 檢驗當前看板上的任務，若有高成功率且回報佳的任務，立即發起通訊檢定
   if (aiPlayer.actionPoints >= 1 || aiPlayer.activeBuffs?.freeTransmissionActive) {
     for (const mission of activeMissions) {
       // 依序檢查 P -> A -> C -> E 是否有能完成該任務的卡

@@ -303,7 +303,7 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
                     <li><b>對調防線位置 (Swap)</b>（花費 1 AP）：調換防線上任兩個設備的順序（例如預知即將大停電，提早把對講機調到最前面）。</li>
                     <li><b>從備用倉庫拿裝備裝上</b>（花費 1 AP）：把剛才收在倉庫裡的裝備重新裝回防線上。</li>
                     <li><b>緊急野戰充電</b>（花費 1 AP）：為指揮部補充 <b>⚡ 2 格電量</b>。</li>
-                    <li><b>執行任務通訊檢定</b>（花費 1 AP）：點擊場上的救災任務卡，發動通訊防線嘗試連通救人！</li>
+                    <li><b>發起通訊檢定</b>（花費 1 AP）：點擊場上的救災任務卡，發動通訊防線嘗試連通救人！</li>
                   </ol>
                 </div>
 
@@ -325,7 +325,7 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
                 <CheckCircle className="w-4 h-4 text-emerald-400" /> 六、 執行任務時，系統是怎麼判定的？（後備自動接手）
               </h4>
               <p>
-                當你對一項救援任務發起通訊時，系統會自動依照 <b>[P] ➔ [A] ➔ [C] ➔ [E]</b> 的順序幫你逐層檢查：
+                當你對一項救援任務發起通訊檢定時，系統會自動依照 <b>[P] ➔ [A] ➔ [C] ➔ [E]</b> 的順序幫你逐層檢查：
               </p>
 
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] flex flex-col gap-1.5">

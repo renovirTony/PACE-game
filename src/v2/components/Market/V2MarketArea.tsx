@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, TacticCard, WorldviewType } from '../../types/game';
 import { canPlaceCardInSlot } from '../../engine/rules';
-import { UnifiedCommsCardContent, getCommsCardMediumInfo, RANGE_META } from '../Cards/UnifiedCommsCardView';
+import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
+import { RANGE_META, getCommsCardMediumInfo } from '../../data/terminology';
 import { EquipCardSpecs } from '../Cards/EquipCardSpecs';
 import { ShoppingBag, Zap, Coins, Plus, Check, AlertTriangle, XCircle, Lock, Radio, Shield } from 'lucide-react';
 

@@ -191,19 +191,19 @@ export const V2_TACTIC_CARDS: TacticCard[] = [
     translations: {
       CivilDefense: {
         name: '連續突發通訊令',
-        desc: '本回合下一次「發起任務通訊」不花 AP（0 AP 免費通訊），爭取更多救人機會！',
+        desc: '本回合下一次「發起通訊檢定」不花 AP（0 AP 免費通訊），爭取更多救人機會！',
         flavor: '把握風雨漸歇的空檔全頻段齊發，一口氣送出多份求救信標！',
         icon: 'Radio',
       },
       IslandResilience: {
         name: '多頻段突發通訊令',
-        desc: '本回合下一次發起任務通訊檢定 0 AP。',
+        desc: '本回合下一次發起通訊檢定 0 AP。',
         flavor: '所有可用射頻瞬間齊發，實施飽和式突發通信。',
         icon: 'Radio',
       },
       CyberDisconnect: {
         name: '全頻段超載脈衝廣播',
-        desc: '本回合下一次通訊檢定 0 AP。',
+        desc: '本回合下一次發起通訊檢定 0 AP。',
         flavor: '將所有頻段推至超載極限，瞬間擊穿電磁風暴。',
         icon: 'Radio',
       },

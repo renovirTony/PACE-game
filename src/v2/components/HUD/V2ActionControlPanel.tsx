@@ -85,7 +85,7 @@ export function V2ActionControlPanel({
                 <button
                   onClick={() => onGoToTab('missions')}
                   className="px-2 py-0.5 rounded-full bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] font-bold border border-amber-400/40 transition-all active:scale-95 shadow-sm"
-                  title="前往危機任務發起免 AP 檢定"
+                  title="前往危機任務發起通訊檢定 (免 AP)"
                 >
                   前往任務 ➔
                 </button>

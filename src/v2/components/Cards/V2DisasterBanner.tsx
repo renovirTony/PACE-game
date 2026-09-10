@@ -1,19 +1,12 @@
 import React from 'react';
-import { DisasterEvent, PhysicalMedium, WorldviewType } from '../../types/game';
+import { DisasterEvent, WorldviewType } from '../../types/game';
+import { PHYSICAL_MEDIUM_META } from '../../data/terminology';
 import { CloudRain, BatteryLow, ZapOff, Layers, ShieldAlert, Sparkles, AlertTriangle } from 'lucide-react';
 
 interface V2DisasterBannerProps {
   event: DisasterEvent | null;
   worldview: WorldviewType;
 }
-
-const mediumNames: Record<PhysicalMedium, string> = {
-  Cellular: '公眾網/基地台',
-  Satellite: '衛星通訊',
-  Radio: '無線電波',
-  Wired: '實體有線',
-  PhysicalOptical: '人力/光學',
-};
 
 export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
   if (!event) return null;
@@ -85,7 +78,7 @@ export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
                 key={m}
                 className="disaster-media-pill px-2.5 py-1 rounded-xl bg-red-950 border border-red-500/60 text-red-200 text-xs font-black shadow-sm"
               >
-                🚫 {mediumNames[m]}
+                🚫 {PHYSICAL_MEDIUM_META[m].label}
               </span>
             ))}
           </div>

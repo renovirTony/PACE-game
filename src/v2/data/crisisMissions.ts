@@ -12,21 +12,21 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '災區空拍 4K 影像即時回傳',
-        desc: '無人機拍攝到堰塞湖與道路崩塌的高解析畫面，需要【高傳輸量 (High)】將大量照片與影片即時傳回指揮中心！',
+        desc: '無人機拍攝到堰塞湖與道路崩塌的高解析畫面，需要【高傳輸量 (High 視訊級)】將大量照片與影片即時傳回指揮中心！',
         flavor: '「每一張空照圖都關乎下游數千居民的撤離時機，立刻開啟高傳輸量通道！」',
         icon: 'Image',
         expertTip: '高解析度影片傳輸需要極大速度。低階對講機或哨子無法傳送大量檔案，平時必須準備好手機網路或衛星接收盤！',
       },
       IslandResilience: {
         title: '高解析戰情影像情資上傳',
-        desc: '前線偵察機需【高頻寬 (High)】上傳港口與沿岸受損巨量圖組。',
+        desc: '前線偵察機需【高頻寬 (High 視訊級)】上傳港口與沿岸受損巨量圖組。',
         flavor: '指揮幕僚緊盯螢幕，等待第一時間的戰術高清照片回傳。',
         icon: 'Image',
         expertTip: '圖資情報傳輸受限於頻寬瓶頸，若高頻寬骨幹中斷，應變中心將無法取得即時影像。',
       },
       CyberDisconnect: {
         title: '全息地圖數據庫同步',
-        desc: '向中央資料庫上傳巨量地表地形掃描數據，需【高頻寬 (High)】。',
+        desc: '向中央資料庫上傳巨量地表地形掃描數據，需【高頻寬 (High 視訊級)】。',
         flavor: '數億點雲數據在光纜中奔流，重構末日後的世界地貌。',
         icon: 'Image',
         expertTip: '點雲重構需要千兆位元通道，低頻信差只能傳送坐標文字，無法同步三維模型。',
@@ -44,14 +44,14 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '避難所緊急遠距醫療視訊',
-        desc: '野戰急救站需要大醫院專科醫師進行即時高畫質視訊手術指導，需要【高傳輸量 (High)】與長距離連線。',
+        desc: '野戰急救站需要大醫院專科醫師進行即時高畫質視訊手術指導，需要【高傳輸量 (High 視訊級)】與長距離連線。',
         flavor: '急診室螢幕上，外科名醫正在一步步指導前線護理師進行血管縫合。',
         icon: 'HeartPulse',
         expertTip: '視訊會診需要清晰流暢的網路，低速設備只能報病歷，無法做到即時動態手術指導。',
       },
       IslandResilience: {
         title: '跨島遠距醫療指揮連線',
-        desc: '外島重症傷患需跨海醫院視訊會診，需【高頻寬 (High)】。',
+        desc: '外島重症傷患需跨海醫院視訊會診，需【高頻寬 (High 視訊級)】。',
         flavor: '跨海光纖與衛星鏈路守護著偏鄉最後一線生機。',
         icon: 'HeartPulse',
         expertTip: '跨海離島醫療視訊極度仰賴海纜與衛星，平時應做好雙重備援。',
@@ -76,21 +76,21 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '全島水庫與電廠即時數據連線',
-        desc: '電力調度中心需要各大水庫與電廠的即時運作數據，需要【高傳輸量 (High)】與長距離連線。',
+        desc: '電力調度中心需要各大水庫與電廠的即時運作數據，需要【高傳輸量 (High 視訊級)】與長距離連線。',
         flavor: '螢幕上跳動的電壓曲線，決定了整座島嶼何時能重新迎來光明。',
         icon: 'Zap',
         expertTip: '電網即時監控依賴持續且穩定的高速網路，通訊中斷可能導致電網再度跳電。',
       },
       IslandResilience: {
         title: '關鍵基礎設施遙測監控',
-        desc: '能源樞紐與雷達站數據匯流，需【高頻寬 (High)】長程通道。',
+        desc: '能源樞紐與雷達站數據匯流，需【高頻寬 (High 視訊級)】長程通道。',
         flavor: '數據流匯入戰情中心，監控全島基礎設施的運作健康度。',
         icon: 'Zap',
         expertTip: '工業控制系統 (ICS) 數據通訊需高頻寬與專用加密通道，受損時應優先啟動備用衛星。',
       },
       CyberDisconnect: {
         title: '反應爐核心冷卻數據流',
-        desc: '監控各避難所微型聚變爐核心溫度，需【高頻寬 (High)】。',
+        desc: '監控各避難所微型聚變爐核心溫度，需【高頻寬 (High 視訊級)】。',
         flavor: '冷卻管路的即時傳感器數據在光纜中閃爍，防止核心熔毀。',
         icon: 'Zap',
         expertTip: '核聚變控制流不容延遲，需要高速穩定的骨幹支撐。',
@@ -108,21 +108,21 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '民防防救災記者會全區直播',
-        desc: '應變中心向全體民眾進行緊急避難指引直播，需要【高傳輸量 (High)】廣播熱點。',
+        desc: '應變中心向全體民眾進行緊急避難指引直播，需要【高傳輸量 (High 視訊級)】廣播熱點。',
         flavor: '指揮官在鏡頭前發布最新避難指示，安撫了全島數百萬民眾的焦慮。',
         icon: 'Radio',
         expertTip: '大眾即時影音直播需要高速網路，若基地台全毀，需依靠通訊車或衛星盤建立熱點。',
       },
       IslandResilience: {
         title: '全域戰術情勢簡報廣播',
-        desc: '戰略指揮部向各防衛區進行多點高解析視訊簡報，需【高頻寬 (High)】。',
+        desc: '戰略指揮部向各防衛區進行多點高解析視訊簡報，需【高頻寬 (High 視訊級)】。',
         flavor: '各大防區指揮官的視訊分割畫面出現在總部大螢幕上。',
         icon: 'Radio',
         expertTip: '多方高畫質視訊連線需強大頻寬支撐，斷網時應降級為語音廣播。',
       },
       CyberDisconnect: {
         title: '全避難所緊急全息通告',
-        desc: '向所有地下城投射全息動態避難廣播，需【高頻寬 (High)】。',
+        desc: '向所有地下城投射全息動態避難廣播，需【高頻寬 (High 視訊級)】。',
         flavor: '藍色全息投影在各收容穹頂亮起，播報著廢土安全通道。',
         icon: 'Radio',
         expertTip: '全息廣播需要高密度數據流，一旦頻寬不足將退化為純文字廣播。',
@@ -142,21 +142,21 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '全區糧食與發電機油料調度',
-        desc: '各里避難所回報物資存量與發電機用油缺口，需要【一般語音量 (Medium)】進行多方通話。',
+        desc: '各里避難所回報物資存量與發電機用油缺口，需要【一般語音量 (Medium 語音級)】進行多方通話。',
         flavor: '「第三收容所柴油只剩兩桶，請立即派卡車支援！」調度員對著麥克風急促通報。',
         icon: 'Package',
         expertTip: '物資清點透過對講機或短波電台口述即可核對，不必依賴大頻寬手機網路。',
       },
       IslandResilience: {
         title: '戰術防衛物資前推調度',
-        desc: '調配彈藥與乾電池至各外圍哨所，需【中等頻寬 (Medium)】語音網絡。',
+        desc: '調配彈藥與乾電池至各外圍哨所，需【中等頻寬 (Medium 語音級)】語音網絡。',
         flavor: '各防區依序回報存量，物資調度官在戰術地圖上記下補給路線。',
         icon: 'Package',
         expertTip: '語音通話具備高抗壓性，在手機網路斷線時，無線電是維持後勤運作的脊樑。',
       },
       CyberDisconnect: {
         title: '避難所能量塊補給清點',
-        desc: '清點各區域最後的能源與濾水芯存量，需【中等頻寬 (Medium)】。',
+        desc: '清點各區域最後的能源與濾水芯存量，需【中等頻寬 (Medium 語音級)】。',
         flavor: '調頻電台中傳來各避難穹頂的物資清單，資源正一滴滴耗盡。',
         icon: 'Package',
         expertTip: '類比短波在末日環境下最為實用，足夠傳遞關鍵存貨數據。',
@@ -175,7 +175,7 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '高山暴風雨失聯搜救',
-        desc: '登山客在深山迷路遭遇土石流，需要具備【全天候耐候】的長距離無線電或衛星引導救難隊進場。',
+        desc: '登山客在深山迷路遭遇土石流，需要具備【耐天候】的長距離無線電或衛星引導救難隊進場。',
         flavor: '風雨交加的稜線上，對講機傳來微弱的呼救聲，搜救隊正頂風前進。',
         icon: 'Compass',
         expertTip: '高山極易被山脊擋住訊號，使用能越過山脈的長程短波電台或防水對講機才能順利通聯！',
@@ -185,14 +185,14 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         desc: '引導海鷗直升機在暴雨山區進行吊掛搜救，需【耐天候】與長距離。',
         flavor: '旋翼在暴風雨中轟鳴，信號引導著鋼鐵大鳥穿過雲霧空隙。',
         icon: 'Compass',
-        expertTip: '惡劣氣候下，普通光學信號燈會被濃霧徹底遮蔽，必須使用全天候無線電通聯。',
+        expertTip: '惡劣氣候下，普通光學信號燈會被濃霧徹底遮蔽，必須使用耐天候無線電通聯。',
       },
       CyberDisconnect: {
         title: '荒原酸雨探險小隊定位',
         desc: '小隊在強酸廢墟中失聯，需【耐天候】長程射頻指引返航。',
         flavor: '裝甲車的大燈在酸霧中若隱若現，電台指引著迷途的戰士。',
         icon: 'Compass',
-        expertTip: '酸雨環境對電子天線腐蝕極大，只有加固耐候的短波設備能穿透風暴。',
+        expertTip: '酸雨環境對電子天線腐蝕極大，只有加固耐天候的短波設備能穿透風暴。',
       },
     },
     claimedBy: [],
@@ -207,21 +207,21 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '跨河大橋封閉與車流疏導',
-        desc: '主要橋樑出現龜裂需緊急封閉，現場交管人員需要【一般語音量 (Medium)】對話通訊協調改道！',
+        desc: '主要橋樑出現龜裂需緊急封閉，現場交管人員需要【一般語音量 (Medium 語音級)】對話通訊協調改道！',
         flavor: '路口義交拿著對講機不斷通話，引導車潮轉向安全替代道路。',
         icon: 'Truck',
         expertTip: '前線指揮交通用手持對講機就能通話，看得見的距離內最即時又可靠。',
       },
       IslandResilience: {
         title: '主要幹道封鎖與撤離交管',
-        desc: '協調撤離部隊跨區機動，需【中等頻寬 (Medium)】戰術語音鏈路。',
+        desc: '協調撤離部隊跨區機動，需【中等頻寬 (Medium 語音級)】戰術語音鏈路。',
         flavor: '車隊在雨夜中緩緩前行，各檢查哨透過電台核對通行口令。',
         icon: 'Truck',
         expertTip: '部隊機動交管需維持動態通話，跳頻對講機是最佳工具。',
       },
       CyberDisconnect: {
         title: '廢土峽谷閘門通行疏導',
-        desc: '引導難民裝甲車隊穿過危險峽谷，需【中等頻寬 (Medium)】。',
+        desc: '引導難民裝甲車隊穿過危險峽谷，需【中等頻寬 (Medium 語音級)】。',
         flavor: '車頭大燈照亮峽谷峭壁，無線電不斷確認前方有無伏擊。',
         icon: 'Truck',
         expertTip: '封閉峽谷中短波與超短波對講機可利用岩壁反射維持隊形通聯。',
@@ -239,21 +239,21 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '上游水庫緊急放水預警',
-        desc: '水庫即將開閘放水，需要【一般語音量 (Medium)】長距離通報下游各村里廣播疏散！',
+        desc: '水庫即將開閘放水，需要【一般語音量 (Medium 語音級)】長距離通報下游各村里廣播疏散！',
         flavor: '警報汽笛在山谷間響起，通訊員逐一與下游里長電話確認廣播啟動。',
         icon: 'Volume2',
         expertTip: '跨越山區的長距離通知，可用短波電台或衛星電話，避免基地台斷電就完全聯絡不上。',
       },
       IslandResilience: {
         title: '戰略水源設施防衛通報',
-        desc: '長距離通報沿海淨水廠啟動應急備用電源，需【中等頻寬 (Medium)】。',
+        desc: '長距離通報沿海淨水廠啟動應急備用電源，需【中等頻寬 (Medium 語音級)】。',
         flavor: '長程電台傳來淨水廠發電機順利啟動的確認聲。',
         icon: 'Volume2',
         expertTip: '遠程關鍵水電設施需具備獨立長波/短波電台，確保防線不依賴公共網路。',
       },
       CyberDisconnect: {
         title: '淨水穹頂過濾閥門調度',
-        desc: '調度地下水泵站切換過濾閥門，需【中等頻寬 (Medium)】長距通聯。',
+        desc: '調度地下水泵站切換過濾閥門，需【中等頻寬 (Medium 語音級)】長距通聯。',
         flavor: '地下深處傳來水流重新奔騰的轟鳴，水源危機暫告解除。',
         icon: 'Volume2',
         expertTip: '深山水利設施往往處於通訊死角，短波仰射天線 (NVIS) 是最佳跨山手段。',
@@ -273,21 +273,21 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
     translations: {
       CivilDefense: {
         title: '孤島受困居民 SOS 求救位置',
-        desc: '橋樑沖毀導致村落受困，只需【精簡文字量 (Low)】發送位置與人數！任何備用工具都能救命！',
+        desc: '橋樑沖毀導致村落受困，只需【精簡文字量 (Low 代碼級)】發送位置與人數！任何備用工具都能救命！',
         flavor: '「我們在活動中心頂樓，共有 42 人平安！」三短三長三短的求救信號穿透黑夜。',
         icon: 'Award',
         expertTip: '危急時刻，回報「位置與人數」只需要傳幾個字！手電筒燈號、高音哨子或衛星電話都能救全村一命！',
       },
       IslandResilience: {
         title: '外島孤島生還座標密令傳送',
-        desc: '全防線受損，只需【低頻寬 (Low)】傳遞緊急求援座標。',
+        desc: '全防線受損，只需【低頻寬 (Low 代碼級)】傳遞緊急求援座標。',
         flavor: '密碼本翻開，最後一串十六進位坐標代碼由信差成功帶出封鎖線。',
         icon: 'Award',
         expertTip: '緊急狀態下，文字坐標即是全部。這正是為什麼在 PACE 架構中必須保留 C 與 E 的物理手段。',
       },
       CyberDisconnect: {
         title: '終極保命代碼廣播',
-        desc: '避難所能源即將歸零，需【低頻寬 (Low)】向廢土發送最後求救廣播。',
+        desc: '避難所能源即將歸零，需【低頻寬 (Low 代碼級)】向廢土發送最後求救廣播。',
         flavor: '「這裡是 07 號避難所，我們依然活著……」代碼在廢土廢墟間微弱迴盪。',
         icon: 'Award',
         expertTip: '當所有光纖與衛星燒毀，唯有最古老的手搖銅線與光學信使能守住最後的生命火種。',

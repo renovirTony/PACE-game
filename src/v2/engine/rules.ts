@@ -5,14 +5,15 @@ import {
   PACESlot, 
   Player, 
   TransmissionResult,
-  WorldviewType 
+  WorldviewType
 } from '../types/game';
+import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, getRangeLabel } from '../data/terminology';
 
 const PACE_ORDER: PACESlot[] = ['P', 'A', 'C', 'E'];
 
 /**
  * 檢查裝備卡是否符合槽位規範門檻
- * [P] 主要防線：必須具備日常通訊能力，最低頻寬需為 Medium 或 High（不可放置 Low 頻寬純應急工具）
+ * [P] 主要防線：必須具備日常通訊能力，最低頻寬需為 Medium 語音級（不可放置 Low 代碼級純應急工具）
  * [A], [C], [E]：開放自由配置
  */
 export function canPlaceCardInSlot(
@@ -23,7 +24,7 @@ export function canPlaceCardInSlot(
   if (slot === 'P' && card.bandwidth === 'Low') {
     return {
       valid: false,
-      reason: '⚠️ [P] 槽需 Medium 或 High 頻寬 (純應急工具不可居首)',
+      reason: `⚠️ [P] 槽需 ${BANDWIDTH_META.Medium.label}以上頻寬 (純應急工具不可居首)`,
     };
   }
   return { valid: true };
@@ -63,16 +64,9 @@ export function checkCardEligibilityV2(
     if (event.id === 'evt_emp_strike' && hasEmpShield) {
       // 免疫 EMP
     } else {
-      const mediumNameMap: Record<string, string> = {
-        Cellular: '公眾網/基地台',
-        Satellite: '衛星通訊',
-        Radio: '無線電波',
-        Wired: '實體有線',
-        PhysicalOptical: '人力與光學',
-      };
       return {
         eligible: false,
-        blockedReason: `🌪️ 【${mediumNameMap[card.medium]}】媒介中斷！`,
+        blockedReason: `🌪️ 【${PHYSICAL_MEDIUM_META[card.medium].label}】媒介中斷！`,
         expertDetail: `受災事件直接摧毀了【${cardName}】所依賴的物理通道（如基地台停電、暴風雨散射衛星微波、或電磁波過載）。`,
       };
     }
@@ -82,14 +76,14 @@ export function checkCardEligibilityV2(
   if (mission.requiredBandwidth === 'High' && card.bandwidth !== 'High') {
     return {
       eligible: false,
-      blockedReason: `📊 頻寬不足 (任務需 High 高畫質傳輸，當前設備僅為 ${card.bandwidth})`,
+      blockedReason: `📊 頻寬不足 (任務需 ${BANDWIDTH_META.High.label}頻寬，當前設備僅為 ${BANDWIDTH_META[card.bandwidth].label})`,
       expertDetail: `【${cardName}】傳輸速率受物理限制，無法即時承載 4K 空照圖或大量視訊數據。`,
     };
   }
   if (mission.requiredBandwidth === 'Medium' && card.bandwidth === 'Low') {
     return {
       eligible: false,
-      blockedReason: `📊 頻寬不足 (任務需 Medium 語音級頻寬，當前設備僅為 Low 座標/代碼級)`,
+      blockedReason: `📊 頻寬不足 (任務需 ${BANDWIDTH_META.Medium.label}頻寬，當前設備僅為 ${BANDWIDTH_META.Low.label})`,
       expertDetail: `【${cardName}】只能傳送短文字或摩斯碼，無法支援多方連續語音通聯。`,
     };
   }
@@ -123,17 +117,17 @@ export function checkCardEligibilityV2(
   if (!meetsRange) {
     return {
       eligible: false,
-      blockedReason: `📡 通訊距離不足 (任務需 ${mission.requiredRange.join('/')}，當前為 ${effectiveRange})`,
+      blockedReason: `📡 通訊距離不足 (任務需 ${mission.requiredRange.map(getRangeLabel).join('/')}，當前為 ${getRangeLabel(effectiveRange)})`,
       expertDetail: `地形山脈阻隔或視距超出【${cardName}】的物理發射極限。`,
     };
   }
 
-  // 5. 檢查特殊抗性要求 (全天候 / 地底穿透 / EMP防護)
+  // 5. 檢查特殊抗性要求 (耐天候 / 地底穿透 / 抗 EMP)
   if (mission.requiresWeatherResist && !card.resilience.weatherResistant) {
     return {
       eligible: false,
-      blockedReason: `🌧️ 缺乏全天候耐候防護 (設備遭暴風雨或土石流浸濕受損)`,
-      expertDetail: `非耐候裝備在強風暴雨中極易短路或信號嚴重衰減。`,
+      blockedReason: `🌧️ 缺乏耐天候防護 (設備遭暴風雨或土石流浸濕受損)`,
+      expertDetail: `非耐天候裝備在強風暴雨中極易短路或信號嚴重衰減。`,
     };
   }
 
@@ -191,7 +185,7 @@ export function evaluateV2PACETransmission(
   const aCard = player.paceBoard.A;
   let commonModeWarning = '';
   if (pCard && aCard && pCard.medium === aCard.medium) {
-    commonModeWarning = `⚠️ 警告：你的 [P] 與 [A] 槽位皆依賴【${pCard.medium}】媒介！一旦該媒介遭天災破壞，前兩道防線將同時連鎖崩潰！`;
+    commonModeWarning = `⚠️ 警告：你的 [P] 與 [A] 槽位皆依賴【${PHYSICAL_MEDIUM_META[pCard.medium].label}】媒介！一旦該媒介遭天災破壞，前兩道防線將同時連鎖崩潰！`;
   }
 
   for (let i = 0; i < PACE_ORDER.length; i++) {
@@ -290,7 +284,7 @@ export function evaluateV2PACETransmission(
     earnedVP: 0,
     earnedCredits: 0,
     reason: `❌ 通訊全數中斷！所有四道 PACE 防線皆無法克服當前災難或達到任務門檻！`,
-    expertDebrief: `【通訊專家復盤報告】\n本次任務要求需「頻寬：${mission.requiredBandwidth}、距離：${mission.requiredRange.join('/')}」。\n${expertTip}\n\n建議檢視你的 PACE 槽位：是否過度依賴單一媒介（如全部依賴市電基地台），或缺乏能在極端環境下運作的低階應急工具？`,
+    expertDebrief: `【通訊專家復盤報告】\n本次任務要求需「頻寬：${BANDWIDTH_META[mission.requiredBandwidth].label}、距離：${mission.requiredRange.map(getRangeLabel).join('/')}」。\n${expertTip}\n\n建議檢視你的 PACE 槽位：是否過度依賴單一媒介（如全部依賴市電基地台），或缺乏能在極端環境下運作的低階應急工具？`,
     slotEvaluations,
   };
 }

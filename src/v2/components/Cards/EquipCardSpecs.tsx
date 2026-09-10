@@ -1,6 +1,6 @@
 import React from 'react';
 import { CommsCard } from '../../types/game';
-import { RANGE_META } from './UnifiedCommsCardView';
+import { BANDWIDTH_META, RANGE_META } from '../../data/terminology';
 
 interface EquipCardSpecsProps {
   card: CommsCard;
@@ -14,7 +14,7 @@ interface EquipCardSpecsProps {
  *  ┌──────────┬──────────┬──────────┐
  *  │ 頻寬門檻  │ 通訊距離  │ 運作耗電  │
  *  └──────────┴──────────┴──────────┘
- *  🛡️ 抗EMP  🌧️ 耐天候  🕳️ 地底穿透
+ *  🛡️ 抗 EMP  🌧️ 耐天候  🕳️ 地底穿透
  */
 export function EquipCardSpecs({ card, compact = false }: EquipCardSpecsProps) {
   const rangeInfo = RANGE_META[card.range] || { label: card.range, fullLabel: card.range, desc: '' };
@@ -29,18 +29,8 @@ export function EquipCardSpecs({ card, compact = false }: EquipCardSpecsProps) {
         {/* 頻寬門檻 */}
         <div className={`${cellPad} rounded-lg bg-black/40 text-center min-w-0`}>
           <span className={`text-slate-500 block ${labelSize} whitespace-nowrap`}>頻寬門檻</span>
-          <span className={`font-black break-words leading-tight block ${valueSize} ${
-            card.bandwidth === 'High'
-              ? 'text-cyan-400'
-              : card.bandwidth === 'Medium'
-              ? 'text-amber-400'
-              : 'text-emerald-400'
-          }`}>
-            {card.bandwidth === 'High'
-              ? 'High 視訊級'
-              : card.bandwidth === 'Medium'
-              ? 'Med 語音級'
-              : 'Low 代碼級'}
+          <span className={`font-black break-words leading-tight block ${valueSize} ${BANDWIDTH_META[card.bandwidth].color}`}>
+            {BANDWIDTH_META[card.bandwidth].compactLabel}
           </span>
         </div>
 
@@ -69,7 +59,7 @@ export function EquipCardSpecs({ card, compact = false }: EquipCardSpecsProps) {
         <div className="flex items-center gap-1.5 text-xs text-slate-400 flex-wrap pt-0.5">
           {card.resilience.empShield && (
             <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold whitespace-nowrap shrink-0">
-              🛡️ 抗EMP
+              🛡️ 抗 EMP
             </span>
           )}
           {card.resilience.weatherResistant && (

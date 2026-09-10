@@ -4,7 +4,8 @@ import { V2_EQUIPMENT_CARDS, V2_STARTER_CARDS } from '../../data/equipmentCards'
 import { V2_DISASTER_EVENTS } from '../../data/disasterEvents';
 import { V2_CRISIS_MISSIONS } from '../../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../../data/tacticCards';
-import { UnifiedCommsCardContent, RANGE_META } from '../Cards/UnifiedCommsCardView';
+import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
+import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, RANGE_META } from '../../data/terminology';
 import { Layers, Shield, Radio, Sparkles, CloudRain, Package, X, Globe, Sun, ZapOff, Cable } from 'lucide-react';
 
 interface V2CardCompendiumModalProps {
@@ -30,14 +31,6 @@ export function V2CardCompendiumModal({
   const filteredEquipments = selectedMediumFilter === 'ALL'
     ? allEquipments
     : allEquipments.filter(c => c.medium === selectedMediumFilter);
-
-  const mediumLabels: Record<PhysicalMedium, { label: string; icon: string }> = {
-    Cellular: { label: '公眾網/基地台', icon: '🏙️' },
-    Satellite: { label: '衛星通訊', icon: '🛰️' },
-    Radio: { label: '無線電波', icon: '📻' },
-    Wired: { label: '實體有線', icon: '🔌' },
-    PhysicalOptical: { label: '人力/光學/聲波', icon: '🏃' },
-  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/85 backdrop-blur-md font-mono animate-fadeIn">
@@ -138,7 +131,7 @@ export function V2CardCompendiumModal({
             >
               全部 ({allEquipments.length})
             </button>
-            {(Object.keys(mediumLabels) as PhysicalMedium[]).map((m) => (
+            {(Object.keys(PHYSICAL_MEDIUM_META) as PhysicalMedium[]).map((m) => (
               <button
                 key={m}
                 onClick={() => setSelectedMediumFilter(m)}
@@ -148,7 +141,7 @@ export function V2CardCompendiumModal({
                     : 'bg-slate-900 border-slate-800 text-slate-400'
                 }`}
               >
-                {mediumLabels[m].icon} {mediumLabels[m].label}
+                {PHYSICAL_MEDIUM_META[m].icon} {PHYSICAL_MEDIUM_META[m].label}
               </button>
             ))}
           </div>
@@ -203,7 +196,7 @@ export function V2CardCompendiumModal({
                         <span>直接阻斷媒介：</span>
                         {event.targetedMedia.map((m) => (
                           <span key={m} className="px-1.5 py-0.5 rounded bg-red-950 border border-red-500/40">
-                            {mediumLabels[m].icon} {mediumLabels[m].label}
+                            {PHYSICAL_MEDIUM_META[m].icon} {PHYSICAL_MEDIUM_META[m].label}
                           </span>
                         ))}
                       </div>
@@ -242,7 +235,7 @@ export function V2CardCompendiumModal({
                           ? 'bg-amber-950 text-amber-300 border border-amber-500/40'
                           : 'bg-emerald-950 text-emerald-300 border border-emerald-500/40'
                       }`}>
-                        需 {mission.requiredBandwidth} 頻寬
+                        需 {BANDWIDTH_META[mission.requiredBandwidth].label}頻寬
                       </span>
 
                       <div className="flex items-center gap-2 font-bold text-xs">
@@ -264,27 +257,27 @@ export function V2CardCompendiumModal({
                       <span>距離: {mission.requiredRange.map(r => RANGE_META[r]?.label || r).join('/')}</span>
                       {mission.requiresWeatherResist && (
                         <span className="px-1.5 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-bold">
-                          🌧️ 耐天候
+                          🌧️ 需耐天候
                         </span>
                       )}
                       {mission.requiresSubterranean && (
                         <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-bold">
-                          🕳️ 地底穿透
+                          🕳️ 需地底穿透
                         </span>
                       )}
                       {mission.requiresEmpShield && (
                         <span className="px-1.5 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-500/30 font-bold">
-                          🛡️ 需抗EMP
+                          🛡️ 需抗 EMP
                         </span>
                       )}
                       {mission.requiresOptical && (
                         <span className="px-1.5 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-500/30 font-bold">
-                          🔦 光學限定
+                          🔦 需光學
                         </span>
                       )}
                       {mission.requiresWired && (
                         <span className="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-500/30 font-bold">
-                          🔌 實體有線
+                          🔌 需實體有線
                         </span>
                       )}
                     </div>

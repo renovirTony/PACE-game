@@ -1,7 +1,7 @@
 import React from 'react';
 import { CrisisMission, DisasterEvent, PACESlot, Player, TransmissionResult, WorldviewType } from '../../types/game';
 import { evaluateV2PACETransmission } from '../../engine/rules';
-import { RANGE_META } from './UnifiedCommsCardView';
+import { BANDWIDTH_META, RANGE_META } from '../../data/terminology';
 import { Radio, Image, HeartPulse, Package, Compass, Award, Layers, Zap, Coins, ArrowRight, ZapOff, Sun, Cable, Truck } from 'lucide-react';
 
 interface V2MissionCardViewProps {
@@ -41,18 +41,8 @@ function MissionSpecsMatrix({
     <div className="grid grid-cols-3 gap-1.5 text-xs">
       <div className={`${cellPad} rounded-lg bg-black/40 text-center min-w-0`}>
         <span className={`text-slate-500 block ${labelSize} whitespace-nowrap`}>需求頻寬</span>
-        <span className={`font-black break-words leading-tight block text-[11px] ${
-          mission.requiredBandwidth === 'High'
-            ? 'text-cyan-400'
-            : mission.requiredBandwidth === 'Medium'
-            ? 'text-amber-400'
-            : 'text-emerald-400'
-        }`}>
-          {mission.requiredBandwidth === 'High'
-            ? 'High 視訊級'
-            : mission.requiredBandwidth === 'Medium'
-            ? 'Med 語音級'
-            : 'Low 代碼級'}
+        <span className={`font-black break-words leading-tight block text-[11px] ${BANDWIDTH_META[mission.requiredBandwidth].color}`}>
+          {BANDWIDTH_META[mission.requiredBandwidth].compactLabel}
         </span>
       </div>
 
@@ -101,7 +91,7 @@ function MissionSpecialBadges({ mission }: { mission: CrisisMission }) {
       )}
       {mission.requiresEmpShield && (
         <span className="px-1.5 py-0.5 rounded bg-blue-950/60 text-blue-300 border border-blue-500/30 font-bold whitespace-nowrap shrink-0">
-          🛡️ 需抗EMP
+          🛡️ 需抗 EMP
         </span>
       )}
       {mission.requiresOptical && (
@@ -183,7 +173,7 @@ export function V2MissionCardView({
   } else if (disasterFail && disasterFail.failReason) {
     failMsg = disasterFail.failReason;
   } else if (bwFail) {
-    failMsg = `📊 頻寬不足 (需 ${mission.requiredBandwidth === 'High' ? 'High' : 'Med'})`;
+    failMsg = `📊 頻寬不足 (需 ${BANDWIDTH_META[mission.requiredBandwidth].compactLabel})`;
   } else if (otherFail && otherFail.failReason) {
     failMsg = otherFail.failReason;
   }
@@ -337,7 +327,7 @@ export function V2MissionCardView({
               } else if (disasterFail && disasterFail.failReason) {
                 failMsg = disasterFail.failReason;
               } else if (bwFail) {
-                failMsg = `📊 頻寬不足 (任務需 ${mission.requiredBandwidth === 'High' ? 'High 視訊級' : 'Medium 語音級'} 頻寬)`;
+                failMsg = `📊 頻寬不足 (任務需 ${BANDWIDTH_META[mission.requiredBandwidth].label}頻寬)`;
               } else if (otherFail && otherFail.failReason) {
                 failMsg = otherFail.failReason;
               }

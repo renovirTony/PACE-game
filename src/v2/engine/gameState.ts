@@ -776,7 +776,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     return true;
   }, [players, activePlayerIndex, addLog]);
 
-  // 發起任務通訊檢定 (若有突發通訊令則 0 AP)
+  // 發起通訊檢定 (若有突發通訊令則 0 AP)
   const transmitMission = useCallback((mission: CrisisMission): TransmissionResult => {
     const curPlayer = players[activePlayerIndex];
     const isFreeTrans = Boolean(curPlayer?.activeBuffs?.freeTransmissionActive);
@@ -789,8 +789,8 @@ export function useV2GameState(): UseV2GameStateReturn {
         degradationRate: 0,
         earnedVP: 0,
         earnedCredits: 0,
-        reason: '行動點數不足，無法發起任務通訊！',
-        expertDebrief: '發起任務通訊需要消耗 1 AP 或使用【連續突發通訊令】戰術卡。',
+        reason: '行動點數不足，無法發起通訊檢定！',
+        expertDebrief: '發起通訊檢定需要消耗 1 AP 或使用【連續突發通訊令】戰術卡。',
         slotEvaluations: [],
       };
     }

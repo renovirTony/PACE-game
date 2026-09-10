@@ -35,7 +35,7 @@ export interface CommsCard {
   powerCost: number;   // 運作耗電 (Energy)
   resilience: {
     empShield: boolean;        // 具備抗 EMP 加固
-    weatherResistant: boolean; // 具備全天候防風雨耐受
+    weatherResistant: boolean; // 具備耐天候防風雨耐受
     subterranean: boolean;     // 具備地底/掩體穿透力
   };
   translations: Record<WorldviewType, LocalizedContent>;
@@ -104,7 +104,7 @@ export interface PlayerBuffs {
   communityRelayActive?: boolean;     // 社區中繼站：本回合 C/E 通訊視同 A 槽（100% 滿額收益）
   agileProtocolActive?: boolean;      // 敏捷協議：本回合防線對調與倉庫調配 0 AP
   freeMarketPurchaseActive?: boolean; // 綠色後勤通道：本回合下一次市場採購 0 AP
-  freeTransmissionActive?: boolean;   // 連續突發通訊令：本回合下一次任務通訊檢定 0 AP
+  freeTransmissionActive?: boolean;   // 連續突發通訊令：本回合下一次發起通訊檢定 0 AP
 }
 
 export interface Player {
