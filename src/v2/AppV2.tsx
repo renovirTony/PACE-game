@@ -104,6 +104,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         setMobileTab('tactics');
       } else if (gameState.tutorialStep === 5) {
         setMobileTab('missions');
+      } else if (gameState.tutorialStep === 6) {
+        // 野戰充電按鈕已收斂至戰術分頁，必須切過去教學高亮才找得到目標
+        setMobileTab('tactics');
       }
     }
   }, [gameState.isTutorialMode, gameState.tutorialStep]);
@@ -730,6 +733,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 return res;
               }}
               onDiscardFromInventory={gameState.discardFromInventory}
+              onRecycleInventoryCard={gameState.recycleInventoryCard}
             />
           )}
 
@@ -746,6 +750,21 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   自動階梯 Fallback 檢驗
                 </span>
               </div>
+
+              {/* 破局機制：重抽任務 */}
+              <button
+                onClick={() => gameState.refreshMissions()}
+                disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                className={`w-full py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2 ${
+                  !gameState.activePlayer.isAI && gameState.activePlayer.actionPoints > 0
+                    ? 'bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40'
+                    : 'bg-slate-900 border border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                }`}
+                title="三題都打不下來時，消耗 1 AP 汰換全場危機任務"
+              >
+                🔄 重抽任務 (1 AP)
+              </button>
+
               <div className="grid grid-cols-1 gap-3">
                 {gameState.activeMissions.map((mission, idx) => (
                   <V2MissionCardView
@@ -811,6 +830,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   }
                   return res;
                 }}
+                onRequisition={gameState.requestEmergencyRequisition}
                 onEndTurn={() => {
                   gameState.endTurn();
                   if (gameState.isTutorialMode && gameState.tutorialStep === 7) {
@@ -831,13 +851,6 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             energy={gameState.activePlayer.energy}
             maxEnergy={gameState.activePlayer.maxEnergy}
             credits={gameState.activePlayer.credits}
-            canRecharge={gameState.activePlayer.actionPoints > 0 && gameState.activePlayer.energy < gameState.activePlayer.maxEnergy}
-            onRecharge={() => {
-              const res = gameState.rechargeEnergy();
-              if (res && gameState.isTutorialMode && gameState.tutorialStep === 6) {
-                gameState.nextTutorialStep();
-              }
-            }}
             onEndTurn={() => {
               gameState.endTurn();
               if (gameState.isTutorialMode && gameState.tutorialStep === 7) {
@@ -929,6 +942,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   return res;
                 }}
                 onDiscardFromInventory={gameState.discardFromInventory}
+                onRecycleInventoryCard={gameState.recycleInventoryCard}
               />
             </div>
 
@@ -986,22 +1000,33 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 )}
               </div>
 
-              {/* Command Buttons (Recharge & End Turn) */}
-              <div className="grid grid-cols-2 gap-2 shrink-0">
-                <button
-                  data-tutorial="recharge-btn"
-                  onClick={() => {
-                    const res = gameState.rechargeEnergy();
-                    if (res && gameState.isTutorialMode && gameState.tutorialStep === 6) {
-                      gameState.nextTutorialStep();
-                    }
-                  }}
-                  disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0 || gameState.activePlayer.energy >= gameState.activePlayer.maxEnergy}
-                  className="py-2 rounded-xl bg-amber-950/60 hover:bg-amber-900/80 disabled:opacity-50 disabled:cursor-not-allowed text-amber-300 border border-amber-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
-                  title="緊急野戰充電 (+2⚡ / 1 AP)"
-                >
-                  <span>⚡ 野戰充電 (+2⚡ / 1 AP)</span>
-                </button>
+              {/* Command Buttons：整補雙雄同列 + 結束回合獨立整行 */}
+              <div className="flex flex-col gap-2 shrink-0">
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    data-tutorial="recharge-btn"
+                    onClick={() => {
+                      const res = gameState.rechargeEnergy();
+                      if (res && gameState.isTutorialMode && gameState.tutorialStep === 6) {
+                        gameState.nextTutorialStep();
+                      }
+                    }}
+                    disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0 || gameState.activePlayer.energy >= gameState.activePlayer.maxEnergy}
+                    className="py-2 rounded-xl bg-amber-950/60 hover:bg-amber-900/80 disabled:opacity-50 disabled:cursor-not-allowed text-amber-300 border border-amber-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                    title="緊急野戰充電 (+2⚡ / 1 AP)"
+                  >
+                    <span>⚡ 野戰充電 (+2⚡ / 1 AP)</span>
+                  </button>
+                  <button
+                    data-tutorial="requisition-btn"
+                    onClick={() => gameState.requestEmergencyRequisition()}
+                    disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                    className="py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 disabled:opacity-50 disabled:cursor-not-allowed text-emerald-300 border border-emerald-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                    title="向應變中心申請緊急後勤調撥 (+2💰 / 1 AP)"
+                  >
+                    <span>💰 後勤調撥 (+2💰 / 1 AP)</span>
+                  </button>
+                </div>
                 <button
                   data-tutorial="end-turn-btn"
                   onClick={() => {
@@ -1011,7 +1036,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                     }
                   }}
                   disabled={gameState.activePlayer.isAI}
-                  className="py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                  className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
                   title="結束本回合"
                 >
                   <span>⏭️ 結束回合 (End Turn)</span>
@@ -1066,18 +1091,31 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
             {/* Left: 3 Crisis Missions Stacked as Wide Rows */}
             <div className="lg:col-span-6 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl backdrop-blur-md flex flex-col gap-2.5 text-xs">
-              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
-                <div className="flex items-center gap-2 min-w-0">
-                  <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
-                  <h2 className="text-sm font-black text-slate-100 whitespace-nowrap">
-                    突發危機任務
-                  </h2>
-                  <span className="text-[11px] text-slate-400 truncate hidden xl:inline">
-                    · 由 P ➔ A ➔ C ➔ E 逐層 Fallback 降級判定，右側即時顯示預估接手防線
-                  </span>
+              <div className="flex flex-col gap-1 pb-2 border-b border-slate-800/80">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <h2 className="text-sm font-black text-slate-100 whitespace-nowrap">
+                      突發危機任務
+                    </h2>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[11px] text-slate-400 whitespace-nowrap">
+                      常駐 {gameState.activeMissions.length} 題
+                    </span>
+                    {/* 破局機制：重抽任務 */}
+                    <button
+                      onClick={() => gameState.refreshMissions()}
+                      disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                      className="px-2.5 py-1 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 disabled:opacity-50 disabled:cursor-not-allowed text-cyan-300 border border-cyan-500/40 text-[11px] font-black transition-all active:scale-95 shadow-sm whitespace-nowrap"
+                      title="三題都打不下來時，消耗 1 AP 汰換全場危機任務"
+                    >
+                      🔄 重抽任務 (1 AP)
+                    </button>
+                  </div>
                 </div>
-                <span className="text-[11px] text-slate-400 shrink-0 whitespace-nowrap">
-                  常駐 {gameState.activeMissions.length} 題
+                <span className="text-[11px] text-slate-400 truncate">
+                  · 由 P ➔ A ➔ C ➔ E 逐層 Fallback 降級判定，右側即時顯示預估接手防線
                 </span>
               </div>
 

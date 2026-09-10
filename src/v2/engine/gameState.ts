@@ -82,6 +82,9 @@ export interface UseV2GameStateReturn {
   buyTactic: (card: TacticCard) => boolean;
   playTactic: (card: TacticCard) => boolean;
   rechargeEnergy: () => boolean;
+  requestEmergencyRequisition: () => boolean;
+  recycleInventoryCard: (cardId: string) => boolean;
+  refreshMissions: () => boolean;
   transmitMission: (mission: CrisisMission) => TransmissionResult;
   endTurn: () => void;
   clearLastTransmission: () => void;
@@ -776,6 +779,93 @@ export function useV2GameState(): UseV2GameStateReturn {
     return true;
   }, [players, activePlayerIndex, addLog]);
 
+  // 緊急後勤調撥：消耗 1 AP 換取 +2 物資，破解無資源可採購的死局
+  const requestEmergencyRequisition = useCallback((): boolean => {
+    const curPlayer = players[activePlayerIndex];
+    if (!curPlayer || curPlayer.actionPoints <= 0) {
+      return false;
+    }
+
+    audioManager.playClick();
+
+    setPlayers(prev => prev.map((p, idx) => {
+      if (idx !== activePlayerIndex) return p;
+      return {
+        ...p,
+        actionPoints: p.actionPoints - 1,
+        credits: p.credits + 2,
+      };
+    }));
+
+    addLog('action', `【${curPlayer.name}】消耗 1 AP 向應變中心申請緊急後勤調撥，獲得 💰2 點物資。`, curPlayer.id, curPlayer.name);
+    return true;
+  }, [players, activePlayerIndex, addLog]);
+
+  // 拆解倉庫備用設備：0 AP 即時生效，依買價動態折半回收物資
+  const recycleInventoryCard = useCallback((cardId: string): boolean => {
+    const curPlayer = players[activePlayerIndex];
+    const targetCard = curPlayer?.inventory.find(c => c.id === cardId);
+    if (!curPlayer || !targetCard) {
+      return false;
+    }
+
+    const refund = Math.max(1, Math.ceil(targetCard.cost / 2));
+
+    audioManager.playClick();
+
+    setPlayers(prev => prev.map((p, idx) => {
+      if (idx !== activePlayerIndex) return p;
+      return {
+        ...p,
+        credits: p.credits + refund,
+        inventory: p.inventory.filter(c => c.id !== cardId),
+      };
+    }));
+
+    const cardName = targetCard.translations[worldview]?.name || targetCard.id;
+    addLog('action', `【${curPlayer.name}】拆解了倉庫備用設備【${cardName}】，回收獲得 💰${refund} 點物資。`, curPlayer.id, curPlayer.name);
+    return true;
+  }, [players, activePlayerIndex, worldview, addLog]);
+
+  // 重新偵察災情：消耗 1 AP 汰換全場危機任務，破解任務全數無解的死局
+  const refreshMissions = useCallback((): boolean => {
+    const curPlayer = players[activePlayerIndex];
+    if (!curPlayer || curPlayer.actionPoints <= 0 || activeMissions.length === 0) {
+      return false;
+    }
+
+    const retired = activeMissions;
+    const drawn: CrisisMission[] = [];
+    let pool = [...missionDeck];
+
+    while (drawn.length < retired.length) {
+      if (pool.length === 0) {
+        // 牌庫抽空自動重洗，並排除剛汰換掉的任務避免原地復活
+        const excludeIds = [...retired.map(m => m.id), ...drawn.map(m => m.id)];
+        pool = shuffleArray(V2_CRISIS_MISSIONS.filter(m => !excludeIds.includes(m.id)));
+        if (pool.length === 0) break;
+      }
+      drawn.push(pool.shift()!);
+    }
+
+    audioManager.playClick();
+
+    setPlayers(prev => prev.map((p, idx) => {
+      if (idx !== activePlayerIndex) return p;
+      return {
+        ...p,
+        actionPoints: p.actionPoints - 1,
+      };
+    }));
+
+    setActiveMissions(drawn);
+    // 汰換掉的任務洗回牌庫底部，題庫內容不流失
+    setMissionDeck([...pool, ...shuffleArray(retired)]);
+
+    addLog('action', `【${curPlayer.name}】消耗 1 AP 重新定向天線偵察災情，刷新了全場求救訊號！`, curPlayer.id, curPlayer.name);
+    return true;
+  }, [players, activePlayerIndex, activeMissions, missionDeck, addLog]);
+
   // 發起通訊檢定 (若有突發通訊令則 0 AP)
   const transmitMission = useCallback((mission: CrisisMission): TransmissionResult => {
     const curPlayer = players[activePlayerIndex];
@@ -1151,6 +1241,9 @@ export function useV2GameState(): UseV2GameStateReturn {
     buyTactic,
     playTactic,
     rechargeEnergy,
+    requestEmergencyRequisition,
+    recycleInventoryCard,
+    refreshMissions,
     transmitMission,
     endTurn,
     clearLastTransmission,

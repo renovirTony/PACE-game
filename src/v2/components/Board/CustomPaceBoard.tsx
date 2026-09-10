@@ -37,6 +37,7 @@ interface CustomPaceBoardProps {
   onStoreCard: (slot: PACESlot) => void;
   onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void | boolean;
   onDiscardFromInventory?: (cardId: string) => void;
+  onRecycleInventoryCard?: (cardId: string) => boolean;
   isMobile?: boolean;
   isVertical?: boolean;
   onGoToMarket?: () => void;
@@ -81,6 +82,9 @@ const SLOT_SHORT_LABEL: Record<PACESlot, string> = {
   E: '緊急',
 };
 
+/** 倉庫拆解回收值：依買價動態折半（與引擎 recycleInventoryCard 同公式） */
+const getRecycleRefund = (cost: number): number => Math.max(1, Math.ceil(cost / 2));
+
 /** 槽位徽章配色（雙端共用，[E] 統一為紅色系） */
 const SLOT_BADGE_CLASS: Record<PACESlot, string> = {
   P: 'bg-cyan-950 text-cyan-300 border-cyan-500/40',
@@ -98,6 +102,7 @@ export function CustomPaceBoard({
   onStoreCard,
   onEquipFromInventory,
   onDiscardFromInventory,
+  onRecycleInventoryCard,
   isMobile = false,
   isVertical = false,
   onGoToMarket,
@@ -472,19 +477,39 @@ export function CustomPaceBoard({
                       </span>
                     </div>
 
-                    <button
-                      onClick={() => setActiveInventoryCard(isSelected ? null : card)}
-                      disabled={!canEquipAP && !isSelected}
-                      className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                        isSelected
-                          ? 'bg-purple-500 text-slate-950 font-black'
-                          : !canEquipAP
-                          ? 'bg-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
-                          : 'bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-500/40'
-                      }`}
-                    >
-                      {isSelected ? '請點選槽位' : isAgile ? '裝上防線 (0 AP)' : '裝上防線 (1 AP)'}
-                    </button>
+                    <div className="flex flex-col gap-1 shrink-0">
+                      <button
+                        onClick={() => setActiveInventoryCard(isSelected ? null : card)}
+                        disabled={!canEquipAP && !isSelected}
+                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                          isSelected
+                            ? 'bg-purple-500 text-slate-950 font-black'
+                            : !canEquipAP
+                            ? 'bg-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                            : 'bg-purple-950 hover:bg-purple-900 text-purple-300 border border-purple-500/40'
+                        }`}
+                      >
+                        {isSelected ? '請點選槽位' : isAgile ? '裝上防線 (0 AP)' : '裝上防線 (1 AP)'}
+                      </button>
+
+                      {onRecycleInventoryCard && (
+                        <button
+                          onClick={() => {
+                            if (isSelected) setActiveInventoryCard(null);
+                            onRecycleInventoryCard(card.id);
+                          }}
+                          disabled={!isCurrentPlayer}
+                          className={`px-3 py-1 rounded-xl text-[10px] font-bold transition-all whitespace-nowrap ${
+                            isCurrentPlayer
+                              ? 'bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
+                              : 'bg-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                          }`}
+                          title={`徹底拆解此設備，回收 💰${getRecycleRefund(card.cost)} 點物資（不消耗行動點數）`}
+                        >
+                          🔧 拆解回收 (+{getRecycleRefund(card.cost)} 💰)
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}
@@ -861,6 +886,24 @@ export function CustomPaceBoard({
                   >
                     {isSelected ? '👆 請點選上方槽位' : isAgile ? '裝上防線 (0 AP)' : '裝上防線 (1 AP)'}
                   </button>
+
+                  {onRecycleInventoryCard && (
+                    <button
+                      onClick={() => {
+                        if (isSelected) setActiveInventoryCard(null);
+                        onRecycleInventoryCard(item.id);
+                      }}
+                      disabled={!isCurrentPlayer}
+                      className={`w-full py-1.5 rounded-lg text-[11px] font-bold transition-all active:scale-95 ${
+                        isCurrentPlayer
+                          ? 'bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
+                          : 'bg-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                      }`}
+                      title={`徹底拆解此設備，回收 💰${getRecycleRefund(item.cost)} 點物資（不消耗行動點數）`}
+                    >
+                      🔧 拆解回收 (+{getRecycleRefund(item.cost)} 💰)
+                    </button>
+                  )}
                 </div>
               );
             })}

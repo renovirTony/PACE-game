@@ -1,5 +1,5 @@
 import React from 'react';
-import { Zap, Shield, Radio, ShoppingBag, Layers } from 'lucide-react';
+import { Shield, Radio, ShoppingBag, Layers } from 'lucide-react';
 
 export type MobileTab = 'defense' | 'missions' | 'market' | 'tactics';
 
@@ -10,8 +10,6 @@ interface V2MobileDockProps {
   energy: number;
   maxEnergy: number;
   credits: number;
-  canRecharge: boolean;
-  onRecharge: () => void;
   onEndTurn: () => void;
   handTacticsCount: number;
   disabled?: boolean;
@@ -30,8 +28,6 @@ export function V2MobileDock({
   energy,
   maxEnergy,
   credits,
-  canRecharge,
-  onRecharge,
   onEndTurn,
   handTacticsCount,
   disabled,
@@ -84,24 +80,8 @@ export function V2MobileDock({
           )}
         </div>
 
-        {/* Right Side: Thumb-Reach Action Buttons (固定不壓縮) */}
+        {/* Right Side: Thumb-Reach Turn Control (整補行動一律收斂至「戰術」分頁) */}
         <div className="flex items-center gap-1 shrink-0">
-          {/* Quick Recharge (+2 Energy) */}
-          <button
-            data-tutorial="recharge-btn"
-            onClick={onRecharge}
-            disabled={disabled || !canRecharge}
-            className={`px-1.5 py-1 rounded-xl text-[10px] font-bold border transition-all flex items-center gap-1 shadow-sm active:scale-95 shrink-0 whitespace-nowrap ${
-              canRecharge && !disabled
-                ? 'bg-amber-950/80 hover:bg-amber-900 border-amber-500/40 text-amber-300'
-                : 'bg-slate-900 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
-            }`}
-            title={canRecharge ? "緊急野戰充電 (+2⚡ | 消耗 1 AP)" : "電量已滿或 AP 不足"}
-          >
-            <Zap className="w-3 h-3 text-amber-400 shrink-0" />
-            <span className="whitespace-nowrap">充電</span>
-          </button>
-
           {/* End Turn */}
           <button
             data-tutorial="end-turn-btn"
