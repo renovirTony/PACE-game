@@ -28,8 +28,8 @@ export function V2MobileScoreboardDrawer({
       {/* Click backdrop to dismiss */}
       <div onClick={onClose} className="flex-1" />
 
-      {/* Slide-up BottomSheet Body */}
-      <div className="w-full max-w-lg mx-auto rounded-t-3xl border-t border-purple-500/40 bg-slate-950 p-4 shadow-2xl flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto animate-slideUp text-slate-100">
+      {/* Slide-up BottomSheet Body (手機版與桌面版共用；桌面寬螢幕放寬版面並改雙欄) */}
+      <div className="w-full max-w-lg lg:max-w-3xl mx-auto rounded-t-3xl border-t border-purple-500/40 bg-slate-950 p-4 shadow-2xl flex flex-col gap-3.5 max-h-[85vh] overflow-y-auto animate-slideUp text-slate-100">
         {/* Drag Handle Bar */}
         <div className="w-12 h-1.5 rounded-full bg-slate-700 mx-auto -mt-1" />
 
@@ -47,7 +47,7 @@ export function V2MobileScoreboardDrawer({
                 </span>
               </h3>
               <p className="text-[10px] text-slate-400">
-                點擊空白處或向下滑動關閉 · 即時同步全體戰況
+                點擊上方空白處關閉 · 即時同步全體戰況
               </p>
             </div>
           </div>
@@ -61,7 +61,7 @@ export function V2MobileScoreboardDrawer({
         </div>
 
         {/* Players Leaderboard List */}
-        <div className="flex flex-col gap-2">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
           {sorted.map((player, idx) => {
             const isActive = player.id === activePlayerId;
             const isLeader = player.score > 0 && player.score === highestScore;

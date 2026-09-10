@@ -894,6 +894,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             players={gameState.players}
             activeEvent={gameState.activeEvent}
             onOpenDisasterDetail={() => setIsDisasterModalOpen(true)}
+            onOpenScoreboard={() => setIsScoreboardDrawerOpen(true)}
           />
 
           {/* 2. UPPER TIER (~220px): Horizontal PACE 4 Slots (8 cols) + Action Command Center (4 cols) */}
@@ -1140,7 +1141,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         />
       )}
 
-      {/* Mobile Scoreboard Leaderboard BottomSheet Drawer */}
+      {/* Scoreboard Leaderboard BottomSheet Drawer (手機版底部 Dock 與桌面版 Header 救援榜共用) */}
       <V2MobileScoreboardDrawer
         isOpen={isScoreboardDrawerOpen}
         onClose={() => setIsScoreboardDrawerOpen(false)}

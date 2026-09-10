@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Player, WorldviewType, DisasterEvent } from '../../types/game';
 import { FontSizeMode, ThemeMode } from '../Modals/DisplaySettingsModal';
+import { PHYSICAL_MEDIUM_META } from '../../data/terminology';
 import { Radio, Zap, Coins, Award, Layers, BookOpen, GraduationCap, AlertTriangle, Sliders, Smartphone, ChevronDown } from 'lucide-react';
 
 interface V2TurnHeaderProps {
@@ -26,6 +27,7 @@ interface V2TurnHeaderProps {
   players?: Player[];
   activeEvent?: DisasterEvent | null;
   onOpenDisasterDetail?: () => void;
+  onOpenScoreboard?: () => void;
 }
 
 export function V2TurnHeader({
@@ -51,6 +53,7 @@ export function V2TurnHeader({
   players,
   activeEvent,
   onOpenDisasterDetail,
+  onOpenScoreboard,
 }: V2TurnHeaderProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -173,14 +176,9 @@ export function V2TurnHeader({
 
         const eventTitle = activeEvent.translations[worldview]?.title || '天災襲擊';
         const shortTitle = eventTitle.split(' (')[0].split('（')[0].trim();
-        const mediaNameMap: Record<string, string> = {
-          Cellular: '公眾基地台',
-          Satellite: '衛星通訊',
-          Radio: '無線電波',
-          Wired: '實體有線',
-          PhysicalOptical: '光學通訊',
-        };
-        const affectedMediaNames = activeEvent.targetedMedia.map(m => mediaNameMap[m] || m).join(' / ');
+        const affectedMediaNames = activeEvent.targetedMedia
+          .map(m => PHYSICAL_MEDIUM_META[m]?.label || m)
+          .join(' / ');
 
         return (
           <button
@@ -214,18 +212,26 @@ export function V2TurnHeader({
         );
       })()}
 
-      {/* 3. Center-Right: Integrated Real-time Leaderboard Pill
-             窄桌面 (1280–1535) 採頭像 + 積分的精簡型態，避免擠壓天災情資條；
-             寬桌面 (≥1536) 才展開完整姓名與目標分。 */}
+      {/* 3. Center-Right: Integrated Real-time Leaderboard Pill (點擊展開完整計分板)
+             窄桌面 (<1280) 僅留行動中指揮官的積分，避免擠壓天災情資條；
+             寬桌面 (≥1280) 才展開全員頭像 + 積分。兩種型態都可點擊開啟完整計分板。 */}
       {players && players.length > 0 && (
-        <div
-          className="hidden xl:flex items-center gap-1 px-1.5 py-1 rounded-xl bg-slate-900 border border-slate-800 shrink-0"
-          title="全員救援積分排行榜"
+        <button
+          onClick={onOpenScoreboard}
+          className="flex items-center gap-1 px-1.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-purple-500/50 shrink-0 transition-all active:scale-95"
+          title="點擊展開全員救援進度完整計分板"
         >
-          <span className="text-xs font-black text-purple-300 whitespace-nowrap hidden min-[1800px]:inline">
-            🏆 救援榜:
+          <span className="text-xs font-black text-purple-300 whitespace-nowrap">
+            🏆<span className="hidden min-[1800px]:inline"> 救援榜:</span>
           </span>
-          <div className="flex items-center gap-1 text-xs font-bold">
+
+          {/* 窄桌面精簡型態：行動中指揮官的積分／目標分 */}
+          <span className="xl:hidden px-1 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/40 text-xs font-black whitespace-nowrap">
+            {activePlayer.avatar} {activePlayer.score}
+            <span className="text-slate-400 font-bold">/{targetScore}</span>
+          </span>
+
+          <div className="hidden xl:flex items-center gap-1 text-xs font-bold">
             {players.map((p) => {
               const isMe = p.id === activePlayer.id;
               return (
@@ -239,13 +245,15 @@ export function V2TurnHeader({
                   }`}
                 >
                   {/* 版面寬度受 max-w-[1700px] 上限約束，此處固定採精簡型態（頭像 + 積分），
-                      完整姓名與目標分以 title 提示呈現，把寬度留給天災情資條 */}
+                      完整姓名、目標分與戰術細節改由點擊後的完整計分板呈現 */}
                   {p.avatar} {p.score}
                 </span>
               );
             })}
           </div>
-        </div>
+
+          <ChevronDown className="w-3 h-3 text-slate-400 shrink-0" />
+        </button>
       )}
 
       {/* 4. Far Right: Consolidated Player Vitals & Utility Menu */}
