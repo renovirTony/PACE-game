@@ -898,10 +898,57 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             onOpenScoreboard={() => setIsScoreboardDrawerOpen(true)}
           />
 
-          {/* 2. UPPER TIER (~220px): Horizontal PACE 4 Slots (8 cols) + Action Command Center (4 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-            {/* Left: Horizontal PACE Defense Board */}
-            <div className="lg:col-span-8">
+          {/* 2. FIRST SCREEN: 左＝危機任務（主要任務）· 右＝PACE 防線 + 指揮官行動列
+                 MAPS：看任務 → 看哪道防線接手 → 發起檢定 / 結束回合，全部在第一屏完成 */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-start">
+            {/* Left: 3 Crisis Missions Stacked as Wide Rows */}
+            <div className="lg:col-span-5 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl backdrop-blur-md flex flex-col gap-2.5 text-xs">
+              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
+                  <h2 className="text-sm font-black text-slate-100 whitespace-nowrap">
+                    突發危機任務
+                  </h2>
+                  <span className="text-[11px] text-slate-400 truncate hidden xl:inline">
+                    · 右側即時顯示由哪道防線接手
+                  </span>
+                </div>
+                {/* 破局機制：重抽任務 */}
+                <button
+                  onClick={() => gameState.refreshMissions()}
+                  disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                  className="px-2.5 py-1 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 disabled:opacity-50 disabled:cursor-not-allowed text-cyan-300 border border-cyan-500/40 text-[11px] font-black transition-all active:scale-95 shadow-sm whitespace-nowrap shrink-0"
+                  title="三題都打不下來時，消耗 1 AP 汰換全場危機任務"
+                >
+                  🔄 重抽任務 (1 AP)
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-2.5">
+                {gameState.activeMissions.map((mission, idx) => (
+                  <V2MissionCardView
+                    key={mission.id}
+                    mission={mission}
+                    activePlayer={gameState.activePlayer}
+                    activeEvent={gameState.activeEvent}
+                    worldview={gameState.worldview}
+                    variant="desktopRow"
+                    disabled={
+                      gameState.activePlayer.isAI ||
+                      (gameState.activePlayer.actionPoints <= 0 &&
+                        !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
+                    }
+                    onTransmit={(m) => {
+                      return gameState.transmitMission(m);
+                    }}
+                    dataTutorial={idx === 0 ? 'mission-card-0' : undefined}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Right: PACE Defense Board + Compact Command Bar */}
+            <div className="lg:col-span-7 flex flex-col gap-3 min-w-0">
               <CustomPaceBoard
                 isVertical={false}
                 onGoToMarket={focusDesktopMarket}
@@ -914,12 +961,11 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 onEquipFromInventory={handleEquipFromInventory}
                 onRecycleInventoryCard={gameState.recycleInventoryCard}
               />
-            </div>
 
-            {/* Right: Command Actions + Hand Tactics + Compact Log Strip */}
-            <div className="lg:col-span-4 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl backdrop-blur-md flex flex-col gap-2 text-xs overflow-hidden">
-              <div className="flex items-center justify-between gap-2 pb-2 border-b border-slate-800/80">
-                <span className="text-sm font-black text-amber-400 whitespace-nowrap">🎮 指揮官行動區</span>
+            {/* 指揮官行動列：手牌戰術 + 三個行動鍵 + 最新一筆日誌 */}
+            <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl backdrop-blur-md flex flex-col gap-2 text-xs">
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm font-black text-amber-400 whitespace-nowrap">🎮 指揮官行動</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-purple-950/80 text-purple-300 border border-purple-500/40 shrink-0 whitespace-nowrap">
                   ⚡ 戰術卡使用不消耗 AP
                 </span>
@@ -928,17 +974,14 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               {/* 本回合生效中的戰術增益（與手機戰術頁同一元件） */}
               <ActiveBuffsBanner player={gameState.activePlayer} />
 
-              {/* Hand Tactics Strip */}
-              <div className="flex flex-col gap-1.5 shrink-0">
-                <span className="text-[11px] font-bold text-slate-300">
-                  手牌戰術 ({gameState.activePlayer.handTactics.length}):
-                </span>
+              {/* Hand Tactics：有手牌時才佔空間 */}
+              <div className="flex flex-col gap-1.5">
                 {gameState.activePlayer.handTactics.length === 0 ? (
-                  <div className="p-2.5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-slate-500 text-[11px] text-center leading-relaxed">
-                    手牌無戰術卡（可至下方市場的「🛡️ 戰術補給」分頁採購）
-                  </div>
+                  <span className="text-[11px] text-slate-500">
+                    手牌戰術 (0)：可至下方市場的「🛡️ 戰術補給」採購
+                  </span>
                 ) : (
-                  <div className="flex flex-col gap-1.5 max-h-[220px] overflow-y-auto pr-0.5">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-1.5 max-h-[180px] overflow-y-auto pr-0.5">
                     {gameState.activePlayer.handTactics.map((tactic, idx) => {
                       const tContent = tactic.translations[gameState.worldview];
                       return (
@@ -951,7 +994,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                             <span className="text-xs font-black text-purple-300 block break-words leading-tight">
                               ⚡ {tContent?.name}
                             </span>
-                            <span className="text-xs text-slate-300 block break-words leading-relaxed mt-0.5">
+                            <span className="text-[11px] text-slate-300 block break-words leading-snug mt-0.5">
                               {tContent?.desc}
                             </span>
                           </div>
@@ -974,9 +1017,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 )}
               </div>
 
-              {/* Command Buttons：整補雙雄同列 + 結束回合獨立整行 */}
+              {/* Command Buttons：充電、調撥、結束回合同一列（結束回合為主要動作） */}
               <div className="flex flex-col gap-2 shrink-0">
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
                     data-tutorial="recharge-btn"
                     onClick={() => {
@@ -1000,124 +1043,56 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   >
                     <span>💰 後勤調撥 (+2💰 / 1 AP)</span>
                   </button>
-                </div>
-                <button
-                  data-tutorial="end-turn-btn"
-                  onClick={() => {
-                    gameState.endTurn();
-                    if (gameState.isTutorialMode && gameState.tutorialStep === 7) {
-                      gameState.nextTutorialStep();
-                    }
-                  }}
-                  disabled={gameState.activePlayer.isAI}
-                  className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
-                  title="結束本回合"
-                >
-                  <span>⏭️ 結束回合 (End Turn)</span>
-                </button>
-              </div>
-
-              {/* Recent Combat Log (填滿指揮區餘裕 · 點擊展開完整日誌) */}
-              <div className="flex-1 min-h-0 flex flex-col gap-1.5 pt-2 border-t border-slate-800/80">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-[11px] font-bold text-slate-300 whitespace-nowrap">
-                    📜 近期作戰日誌
-                  </span>
                   <button
-                    onClick={() => setIsLogModalOpen(true)}
-                    className="text-[11px] text-cyan-400 hover:text-cyan-300 font-bold underline shrink-0"
-                    title="點擊展開完整作戰通訊日誌"
+                    data-tutorial="end-turn-btn"
+                    onClick={() => {
+                      gameState.endTurn();
+                      if (gameState.isTutorialMode && gameState.tutorialStep === 7) {
+                        gameState.nextTutorialStep();
+                      }
+                    }}
+                    disabled={gameState.activePlayer.isAI}
+                    className="py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
+                    title="結束本回合"
                   >
-                    展開完整日誌 ➔
+                    <span>⏭️ 結束回合</span>
                   </button>
                 </div>
-
-                {gameState.logs.length === 0 ? (
-                  <div className="p-2.5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-slate-500 text-[11px] text-center">
-                    暫無作戰日誌
-                  </div>
-                ) : (
-                  <div className="flex-1 min-h-[80px] overflow-y-auto flex flex-col gap-1 pr-0.5">
-                    {gameState.logs.slice(0, 12).map((log) => (
-                      <div
-                        key={log.id}
-                        className={`px-2 py-1.5 rounded-lg bg-slate-900/70 border text-[11px] leading-snug break-words ${
-                          log.type === 'alert'
-                            ? 'border-red-500/30 text-red-300'
-                            : log.type === 'success'
-                            ? 'border-emerald-500/30 text-emerald-300'
-                            : log.type === 'event'
-                            ? 'border-amber-500/30 text-amber-300'
-                            : 'border-slate-800 text-slate-400'
-                        }`}
-                      >
-                        <span className="font-bold opacity-70 mr-1">[R{log.round}]</span>
-                        {log.message}
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
+
+              {/* 最新一筆作戰日誌（完整日誌點開看），讓 AI 與天災動態仍看得到但不佔版面 */}
+              <div className="flex items-center gap-2 pt-2 border-t border-slate-800/80 min-w-0">
+                <span className="text-[11px] font-bold text-slate-300 whitespace-nowrap shrink-0">📜 最新：</span>
+                <span
+                  className={`text-[11px] truncate min-w-0 flex-1 ${
+                    gameState.logs[0]?.type === 'alert'
+                      ? 'text-red-300'
+                      : gameState.logs[0]?.type === 'success'
+                      ? 'text-emerald-300'
+                      : gameState.logs[0]?.type === 'event'
+                      ? 'text-amber-300'
+                      : 'text-slate-400'
+                  }`}
+                  title={gameState.logs[0]?.message}
+                >
+                  {gameState.logs[0] ? `[第 ${gameState.logs[0].round} 輪] ${gameState.logs[0].message}` : '暫無作戰日誌'}
+                </span>
+                <button
+                  onClick={() => setIsLogModalOpen(true)}
+                  className="text-[11px] text-cyan-400 hover:text-cyan-300 font-bold underline shrink-0 whitespace-nowrap"
+                  title="點擊展開完整作戰通訊日誌"
+                >
+                  完整日誌 ➔
+                </button>
+              </div>
+            </div>
             </div>
           </div>
 
-          {/* 3. LOWER TIER: Crisis Missions (Left 7 cols · 橫向任務列) + Market Area (Right 5 cols) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-stretch">
-            {/* Left: 3 Crisis Missions Stacked as Wide Rows */}
-            <div className="lg:col-span-6 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl backdrop-blur-md flex flex-col gap-2.5 text-xs">
-              <div className="flex flex-col gap-1 pb-2 border-b border-slate-800/80">
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2 min-w-0">
-                    <Radio className="w-4 h-4 text-cyan-400 shrink-0" />
-                    <h2 className="text-sm font-black text-slate-100 whitespace-nowrap">
-                      突發危機任務
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-2 shrink-0">
-                    <span className="text-[11px] text-slate-400 whitespace-nowrap">
-                      常駐 {gameState.activeMissions.length} 題
-                    </span>
-                    {/* 破局機制：重抽任務 */}
-                    <button
-                      onClick={() => gameState.refreshMissions()}
-                      disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
-                      className="px-2.5 py-1 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 disabled:opacity-50 disabled:cursor-not-allowed text-cyan-300 border border-cyan-500/40 text-[11px] font-black transition-all active:scale-95 shadow-sm whitespace-nowrap"
-                      title="三題都打不下來時，消耗 1 AP 汰換全場危機任務"
-                    >
-                      🔄 重抽任務 (1 AP)
-                    </button>
-                  </div>
-                </div>
-                <span className="text-[11px] text-slate-400 truncate">
-                  · 由 P ➔ A ➔ C ➔ E 逐層 Fallback 降級判定，右側即時顯示預估接手防線
-                </span>
-              </div>
-
-              <div className="flex flex-col gap-2.5 flex-1">
-                {gameState.activeMissions.map((mission, idx) => (
-                  <V2MissionCardView
-                    key={mission.id}
-                    mission={mission}
-                    activePlayer={gameState.activePlayer}
-                    activeEvent={gameState.activeEvent}
-                    worldview={gameState.worldview}
-                    variant="desktopRow"
-                    disabled={
-                      gameState.activePlayer.isAI ||
-                      (gameState.activePlayer.actionPoints <= 0 &&
-                        !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
-                    }
-                    onTransmit={(m) => {
-                      return gameState.transmitMission(m);
-                    }}
-                    dataTutorial={idx === 0 ? 'mission-card-0' : undefined}
-                  />
-                ))}
-              </div>
-            </div>
-
-            {/* Right: Equipment & Tactic Market with Tabs */}
-            <div id="desktop-market-area" className="lg:col-span-6 scroll-mt-4">
+          {/* 3. SECOND SCREEN: 市場整排（需要補強防線時才往下捲） */}
+          <div className="grid grid-cols-1 gap-3">
+            {/* Equipment & Tactic Market with Tabs */}
+            <div id="desktop-market-area" className="scroll-mt-4">
               <V2MarketArea
                 focusEquipNonce={marketFocusNonce}
                 player={gameState.activePlayer}

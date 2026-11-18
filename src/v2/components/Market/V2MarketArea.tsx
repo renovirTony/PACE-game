@@ -395,9 +395,9 @@ export function V2MarketArea({
         </span>
       </div>
 
-      {/* Equipment Cards Tab View (2x2 Roomy Grid) */}
+      {/* Equipment Cards Tab View（桌面市場為整排寬：4 張並排，窄桌面 2 欄） */}
       {desktopTab === 'equip' && (
-        <div className="grid grid-cols-2 gap-2.5 flex-1 animate-fadeIn">
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-2.5 flex-1 animate-fadeIn">
           {market.map((card, idx) => {
             const content = card.translations[worldview];
             const mediumInfo = getCommsCardMediumInfo(card);
@@ -514,6 +514,7 @@ export function V2MarketArea({
             🛡️ 應急戰術補給卡 (購入後放入手牌 · 戰術卡使用不消耗AP)
           </span>
 
+          <div className="grid grid-cols-1 xl:grid-cols-3 gap-2.5">
           {tacticMarket.map((tactic) => {
             const content = tactic.translations[worldview];
             const isFreeBuy = Boolean(player.activeBuffs?.freeMarketPurchaseActive);
@@ -563,6 +564,7 @@ export function V2MarketArea({
               </div>
             );
           })}
+          </div>
         </div>
       )}
     </div>

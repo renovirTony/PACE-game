@@ -75,6 +75,49 @@ const SLOT_BADGE_CLASS: Record<PACESlot, string> = {
   E: 'bg-red-950 text-red-300 border-red-500/40',
 };
 
+/**
+ * 收合狀態用的一行規格：頻寬 · 距離 · 耗電 + 抗性圖示。
+ * 讓四道防線能在同一屏看完（M / S），完整三欄矩陣在展開「說明」後才出現。
+ */
+function CompactSpecLine({ card }: { card: CommsCard }) {
+  const bw = BANDWIDTH_META[card.bandwidth];
+  const resilience = [
+    card.resilience.empShield && { icon: '🛡️', label: '抗 EMP' },
+    card.resilience.weatherResistant && { icon: '🌧️', label: '耐天候' },
+    card.resilience.subterranean && { icon: '🕳️', label: '地底穿透' },
+  ].filter(Boolean) as { icon: string; label: string }[];
+
+  return (
+    <div className="flex items-center gap-1.5 flex-wrap text-[11px] leading-tight min-w-0">
+      <span className={`font-black whitespace-nowrap ${bw.color}`} title="可傳輸頻寬">{bw.compactLabel}</span>
+      <span className="text-slate-600">·</span>
+      <span className="font-bold text-slate-200 whitespace-nowrap" title="通訊距離">{RANGE_META[card.range]?.label || card.range}</span>
+      <span className="text-slate-600">·</span>
+      <span className="font-bold text-amber-300 whitespace-nowrap" title="運作耗電">
+        {card.powerCost === 0 ? '0⚡ 免電' : `${card.powerCost}⚡`}
+      </span>
+      {resilience.map(r => (
+        <span key={r.label} className="whitespace-nowrap" title={r.label} aria-label={r.label}>
+          {r.icon}
+        </span>
+      ))}
+    </div>
+  );
+}
+
+/** 「說明 ▾」展開鈕（收合時隱藏裝備說明與引言） */
+function DetailsToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
+  return (
+    <button
+      onClick={onToggle}
+      aria-expanded={expanded}
+      className="ml-auto px-2 py-0.5 rounded-lg text-[11px] font-bold text-slate-400 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 transition-all shrink-0 whitespace-nowrap"
+    >
+      {expanded ? '收合 ▴' : '說明 ▾'}
+    </button>
+  );
+}
+
 export function CustomPaceBoard({
   player,
   activeEvent,
@@ -95,6 +138,16 @@ export function CustomPaceBoard({
   // Active Swap selector state
   const [activeSwapSlot, setActiveSwapSlot] = useState<PACESlot | null>(null);
   const [activeInventoryCard, setActiveInventoryCard] = useState<CommsCard | null>(null);
+
+  // 各槽位是否展開「說明」（預設全收合，讓 P/A/C/E 四道防線一屏看完）
+  const [expandedSlots, setExpandedSlots] = useState<Set<PACESlot>>(() => new Set());
+  const toggleSlotDetails = (slot: PACESlot) =>
+    setExpandedSlots(prev => {
+      const next = new Set(prev);
+      if (next.has(slot)) next.delete(slot);
+      else next.add(slot);
+      return next;
+    });
 
   // 換人或輪到 AI 時清空選取狀態，避免上一位玩家的選取殘留到下一位玩家的回合
   useEffect(() => {
@@ -286,7 +339,7 @@ export function CustomPaceBoard({
                   )}
                 </div>
 
-                {/* Row 2: Equipment Name + Status Indicator */}
+                {/* Row 2: Equipment Name + Status Indicator + 說明展開鈕 */}
                 {card && (
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="font-bold text-xs sm:text-sm text-slate-100">
@@ -296,7 +349,7 @@ export function CustomPaceBoard({
                     {/* Status Indicator directly after equipment name */}
                     {isDisasterTargeted ? (
                       <span className="px-2 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-500/40 text-xs font-bold shrink-0">
-                        ❌ 天災阻斷 ({mediumInfo?.label}失效)
+                        ❌ 天災阻斷
                       </span>
                     ) : isOutOfPower ? (
                       <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 text-xs font-bold shrink-0">
@@ -304,14 +357,19 @@ export function CustomPaceBoard({
                       </span>
                     ) : (
                       <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-xs font-bold shrink-0">
-                        ✓ 暢通待命
+                        ✓ 暢通
                       </span>
                     )}
+
+                    <DetailsToggle expanded={expandedSlots.has(slot)} onToggle={() => toggleSlotDetails(slot)} />
                   </div>
                 )}
 
-                {/* Tactical Description & Flavor Text */}
-                {card && cardContent && (
+                {/* 收合時：一行規格 */}
+                {card && !expandedSlots.has(slot) && <CompactSpecLine card={card} />}
+
+                {/* 展開時：說明、引言與完整規格矩陣 */}
+                {card && cardContent && expandedSlots.has(slot) && (
                   <div className="flex flex-col gap-0.5 text-xs">
                     <p className="text-slate-300 leading-relaxed">
                       {cardContent.desc}
@@ -364,12 +422,12 @@ export function CustomPaceBoard({
                   <div className="flex items-center justify-between text-xs pt-1.5 border-t border-white/5 gap-2 flex-wrap">
                     {card ? (
                       <>
-                        {/* Unified Specs Matrix (MAPS Pattern) */}
-                        <EquipCardSpecs card={card} compact />
+                        {/* 完整規格矩陣只在展開「說明」時顯示 */}
+                        {expandedSlots.has(slot) && <EquipCardSpecs card={card} compact />}
 
                         {/* Card Actions */}
                         {isCurrentPlayer && (
-                          <div className="flex items-center gap-1.5 shrink-0 ml-auto mt-1">
+                          <div className="flex items-center gap-1.5 shrink-0 ml-auto">
                             <button
                               data-tutorial={slot === 'P' ? 'slot-p' : undefined}
                               onClick={() => setActiveSwapSlot(isSwapSource ? null : slot)}
@@ -424,6 +482,9 @@ export function CustomPaceBoard({
             <span className="text-xs font-bold text-amber-300 flex items-center gap-1.5">
               <Archive className="w-4 h-4 text-amber-400" />
               <span>備用裝備倉庫 ({inventory.length})</span>
+              {inventory.length === 0 && (
+                <span className="text-[10px] font-normal text-slate-500">· 目前是空的，被替換下來的裝備會暫存在這裡</span>
+              )}
             </span>
             {activeInventoryCard && (
               <button
@@ -435,7 +496,7 @@ export function CustomPaceBoard({
             )}
           </div>
 
-          {inventory.length > 0 ? (
+          {inventory.length > 0 && (
             <div className="flex flex-col gap-2">
               {inventory.map((card, invIdx) => {
                 const isSelected = activeInventoryCard === card;
@@ -498,10 +559,6 @@ export function CustomPaceBoard({
                   </div>
                 );
               })}
-            </div>
-          ) : (
-            <div className="p-2.5 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-center text-[10px] text-slate-500">
-              倉庫目前無備用設備。防線替換下來的裝備將暫存在此。
             </div>
           )}
         </div>
@@ -639,7 +696,7 @@ export function CustomPaceBoard({
           return (
             <div
               key={slot}
-              className={`pace-slot-card rounded-2xl border p-3 flex flex-col gap-2 transition-all shadow-sm min-h-[200px] ${slotBorder}`}
+              className={`pace-slot-card rounded-2xl border p-3 flex flex-col gap-2 transition-all shadow-sm ${slotBorder}`}
             >
               {/* Row 1: Slot Badges + Medium */}
               <div className="flex items-center justify-between gap-1.5 flex-wrap">
@@ -685,7 +742,7 @@ export function CustomPaceBoard({
 
                   {isDisasterTargeted ? (
                     <span className="px-2 py-0.5 rounded-full bg-red-950 text-red-300 border border-red-500/40 text-xs font-bold shrink-0 whitespace-nowrap animate-pulse">
-                      ❌ 天災阻斷 ({mediumInfo?.label}失效)
+                      ❌ 天災阻斷
                     </span>
                   ) : isOutOfPower ? (
                     <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 text-xs font-bold shrink-0 whitespace-nowrap">
@@ -693,14 +750,19 @@ export function CustomPaceBoard({
                     </span>
                   ) : (
                     <span className="px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-500/40 text-xs font-bold shrink-0 whitespace-nowrap">
-                      ✓ 暢通待命
+                      ✓ 暢通
                     </span>
                   )}
+
+                  <DetailsToggle expanded={expandedSlots.has(slot)} onToggle={() => toggleSlotDetails(slot)} />
                 </div>
               )}
 
-              {/* Tactical Description & Flavor Text */}
-              {card && cardContent && (
+              {/* 收合時：一行規格 */}
+              {card && !expandedSlots.has(slot) && <CompactSpecLine card={card} />}
+
+              {/* 展開時：說明與引言（完整規格矩陣在下方） */}
+              {card && cardContent && expandedSlots.has(slot) && (
                 <div className="flex flex-col gap-0.5 text-xs">
                   <p className="text-slate-300 leading-relaxed break-words" title={cardContent.desc}>
                     {cardContent.desc}
@@ -713,20 +775,19 @@ export function CustomPaceBoard({
                 </div>
               )}
 
-              {/* Unified Specs Matrix (MAPS Pattern — 桌面版採用寬適版面) */}
-              {card && <EquipCardSpecs card={card} />}
+              {/* 完整規格矩陣只在展開「說明」時顯示 */}
+              {card && expandedSlots.has(slot) && <EquipCardSpecs card={card} />}
 
-              {/* Empty Slot Guidance */}
+              {/* Empty Slot Guidance（精簡為一行說明 + 按鈕） */}
               {!card && (
-                <div className="flex-1 flex flex-col items-center justify-center gap-1.5 py-3 text-center">
-                  <span className="text-xs text-slate-500 font-bold">📭 尚未配置通訊設備</span>
-                  <span className="text-[11px] text-slate-500 leading-relaxed max-w-[90%]">
-                    {meta.roleDesc}
+                <div className="flex-1 flex items-center justify-between gap-2">
+                  <span className="text-[11px] text-slate-500 leading-snug min-w-0">
+                    📭 {meta.roleDesc}
                   </span>
                   {isCurrentPlayer && onGoToMarket && !activeSwapSlot && !activeInventoryCard && (
                     <button
                       onClick={onGoToMarket}
-                      className="mt-1 px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-xs transition-all active:scale-95"
+                      className="px-3 py-1.5 rounded-xl bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-xs transition-all active:scale-95 shrink-0 whitespace-nowrap"
                     >
                       去市場選購 ➔
                     </button>
@@ -807,8 +868,10 @@ export function CustomPaceBoard({
           <span className="text-xs font-black text-amber-300 flex items-center gap-1.5 min-w-0">
             <Archive className="w-4 h-4 text-amber-400 shrink-0" />
             <span className="whitespace-nowrap">備用裝備倉庫 ({inventory.length})</span>
-            <span className="text-[11px] font-normal text-slate-400 truncate hidden xl:inline">
-              · 從防線卸下或被替換的裝備會安全暫存於此，可隨時重新裝上
+            <span className="text-[11px] font-normal text-slate-400 truncate">
+              {inventory.length === 0
+                ? '· 目前是空的，從防線卸下或被替換的裝備會暫存在這裡'
+                : '· 可隨時重新裝上防線'}
             </span>
           </span>
           {activeInventoryCard && (
@@ -891,11 +954,7 @@ export function CustomPaceBoard({
               );
             })}
           </div>
-        ) : (
-          <div className="p-3 rounded-xl bg-slate-900/40 border border-dashed border-slate-800 text-center text-[11px] text-slate-500 leading-relaxed">
-            倉庫目前無備用設備。從防線「卸下入庫」或採購時被替換下來的裝備，都會安全暫存在此。
-          </div>
-        )}
+        ) : null}
       </div>
     </div>
   );
