@@ -20,6 +20,14 @@ import { LogViewer } from '../components/HUD/LogViewer';
 import { V2ScoreBoard } from './components/HUD/V2ScoreBoard';
 import { Radio, Bot, Users, Globe, Shield, Sparkles, Layers, BookOpen, GraduationCap, Sliders, Smartphone, Monitor, Menu, X } from 'lucide-react';
 
+/**
+ * 線上多人（WebRTC P2P）開關。
+ * 目前同步機制尚未接上（broadcastGameState / sendActionToHost 從未被呼叫，開局只會建立房主一人），
+ * 故先隱藏大廳入口與 ?room= 自動開啟大廳，避免工作坊現場有人點到壞掉的功能。
+ * 補完同步後改回 true 即可，大廳與連線程式碼皆保留。
+ */
+const ONLINE_MULTIPLAYER_ENABLED = false;
+
 interface AppV2Props {
   onSwitchToV1?: () => void;
 }
@@ -144,6 +152,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
 
   // Auto-detect room parameter from URL (?v=2&room=CODE)
   useEffect(() => {
+    if (!ONLINE_MULTIPLAYER_ENABLED) return;
     const params = new URLSearchParams(window.location.search);
     const roomParam = params.get('room');
     if (roomParam && gameState.phase === 'SETUP') {
@@ -282,13 +291,15 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 <span>實戰新手教學 (8步驟指引)</span>
               </button>
 
-              <button
-                onClick={() => setIsMultiplayerModalOpen(true)}
-                className="w-full p-3 rounded-2xl bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-500/40 text-cyan-200 font-bold text-xs flex items-center justify-center gap-2 active:scale-98"
-              >
-                <Globe className="w-4 h-4 text-cyan-400" />
-                <span>建立/加入 遠端連線 (WebRTC P2P)</span>
-              </button>
+              {ONLINE_MULTIPLAYER_ENABLED && (
+                <button
+                  onClick={() => setIsMultiplayerModalOpen(true)}
+                  className="w-full p-3 rounded-2xl bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-500/40 text-cyan-200 font-bold text-xs flex items-center justify-center gap-2 active:scale-98"
+                >
+                  <Globe className="w-4 h-4 text-cyan-400" />
+                  <span>建立/加入 遠端連線 (WebRTC P2P)</span>
+                </button>
+              )}
             </div>
 
             {/* Utilities Row */}
@@ -502,14 +513,16 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 <span>🎓 進入實戰新手教學 (8 步驟手把手引導)</span>
               </button>
 
-              {/* Online Multiplayer Lobby Button */}
-              <button
-                onClick={() => setIsMultiplayerModalOpen(true)}
-                className="multiplayer-launch-btn w-full p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 text-cyan-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-cyan-950/40"
-              >
-                <Globe className="w-5 h-5 text-cyan-400 animate-spin-slow" />
-                <span>🌐 建立/加入 遠端多人連線房間 (WebRTC P2P)</span>
-              </button>
+              {/* Online Multiplayer Lobby Button（同步機制完成前隱藏，見 ONLINE_MULTIPLAYER_ENABLED） */}
+              {ONLINE_MULTIPLAYER_ENABLED && (
+                <button
+                  onClick={() => setIsMultiplayerModalOpen(true)}
+                  className="multiplayer-launch-btn w-full p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 text-cyan-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-cyan-950/40"
+                >
+                  <Globe className="w-5 h-5 text-cyan-400 animate-spin-slow" />
+                  <span>🌐 建立/加入 遠端多人連線房間 (WebRTC P2P)</span>
+                </button>
+              )}
 
               {/* Utility Tools in Setup */}
               <div className="flex items-center justify-center gap-2.5 pt-2 border-t border-slate-800 text-xs flex-wrap">
@@ -970,7 +983,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                       const tContent = tactic.translations[gameState.worldview];
                       return (
                         <div
-                          key={tactic.id}
+                          key={`${tactic.id}-${idx}`}
                           data-tutorial={idx === 0 ? 'tactic-card-0' : undefined}
                           className="p-2 rounded-xl bg-slate-900/90 border border-purple-500/30 flex items-center justify-between gap-2"
                         >
@@ -989,7 +1002,8 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                                 gameState.nextTutorialStep();
                               }
                             }}
-                            className="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] shrink-0 shadow-sm active:scale-95 transition-all"
+                            disabled={gameState.activePlayer.isAI}
+                            className="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] shrink-0 shadow-sm active:scale-95 transition-all disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:active:scale-100"
                           >
                             發動 (0 AP)
                           </button>

@@ -155,6 +155,10 @@ export interface TransmissionResult {
     card: CommsCard | null;
     passed: boolean;
     failReason?: string;
+    /** 受阻階段代碼，見 engine/rules.ts 的 BlockCode */
+    blockCode?: 'power' | 'disaster' | 'requirement' | 'bandwidth' | 'range';
+    /** 該槽位受阻的專家解說 */
+    expertDetail?: string;
   }[];
 }
 

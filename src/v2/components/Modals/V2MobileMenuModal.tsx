@@ -1,5 +1,6 @@
-import React from 'react';
+import { useState } from 'react';
 import { Sliders, BookOpen, Layers, GraduationCap, Landmark, Home, X } from 'lucide-react';
+import { ConfirmDialog, ConfirmDialogState, DESTRUCTIVE_CONFIRM_COPY } from './ConfirmDialog';
 
 interface V2MobileMenuModalProps {
   isOpen: boolean;
@@ -22,10 +23,25 @@ export function V2MobileMenuModal({
   onSwitchToV1,
   onReturnToMenu,
 }: V2MobileMenuModalProps) {
+  // 會中斷戰局的操作需先確認（與桌面版 V2TurnHeader 一致），避免手機誤觸直接失去整局進度
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
+
   if (!isOpen) return null;
+
+  const askConfirm = (copy: (typeof DESTRUCTIVE_CONFIRM_COPY)[keyof typeof DESTRUCTIVE_CONFIRM_COPY], action: () => void) => {
+    setConfirmDialog({
+      ...copy,
+      onConfirm: () => {
+        setConfirmDialog(null);
+        onClose();
+        action();
+      },
+    });
+  };
 
   return (
     <div className="fixed inset-0 z-[110] bg-black/85 backdrop-blur-md flex flex-col justify-end animate-fadeIn font-mono">
+      <ConfirmDialog dialog={confirmDialog} onCancel={() => setConfirmDialog(null)} />
       {/* Backdrop click */}
       <div onClick={onClose} className="flex-1" />
 
@@ -96,10 +112,7 @@ export function V2MobileMenuModal({
 
           {/* 4. Tutorial */}
           <button
-            onClick={() => {
-              onClose();
-              onStartTutorial();
-            }}
+            onClick={() => askConfirm(DESTRUCTIVE_CONFIRM_COPY.startTutorial, onStartTutorial)}
             className="w-full p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-amber-300 font-black flex items-center justify-between transition-all active:scale-[0.98]"
           >
             <div className="flex items-center gap-3">
@@ -112,10 +125,7 @@ export function V2MobileMenuModal({
           {/* 5. Switch to V1 */}
           {onSwitchToV1 && (
             <button
-              onClick={() => {
-                onClose();
-                onSwitchToV1();
-              }}
+              onClick={() => askConfirm(DESTRUCTIVE_CONFIRM_COPY.switchToV1, onSwitchToV1)}
               className="w-full p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 font-black flex items-center justify-between transition-all active:scale-[0.98]"
             >
               <div className="flex items-center gap-3">
@@ -128,10 +138,7 @@ export function V2MobileMenuModal({
 
           {/* 6. Return to Menu */}
           <button
-            onClick={() => {
-              onClose();
-              onReturnToMenu();
-            }}
+            onClick={() => askConfirm(DESTRUCTIVE_CONFIRM_COPY.returnToMenu, onReturnToMenu)}
             className="w-full p-3.5 rounded-2xl bg-red-950/40 hover:bg-red-900/60 border border-red-500/40 text-red-300 font-black flex items-center justify-between transition-all active:scale-[0.98]"
           >
             <div className="flex items-center gap-3">

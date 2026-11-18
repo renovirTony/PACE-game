@@ -1,6 +1,6 @@
 import React from 'react';
 import { CrisisMission, DisasterEvent, PACESlot, Player, TransmissionResult, WorldviewType } from '../../types/game';
-import { evaluateV2PACETransmission } from '../../engine/rules';
+import { evaluateV2PACETransmission, pickPrimaryBlock } from '../../engine/rules';
 import { BANDWIDTH_META, RANGE_META } from '../../data/terminology';
 import { Radio, Image, HeartPulse, Package, Compass, Award, Layers, Zap, Coins, ArrowRight, ZapOff, Sun, Cable, Truck } from 'lucide-react';
 
@@ -158,25 +158,22 @@ export function V2MissionCardView({
   const isFreeTrans = Boolean(activePlayer.activeBuffs?.freeTransmissionActive);
   const canTransmitAP = activePlayer.actionPoints > 0 || isFreeTrans;
 
-  // Fail message analysis
-  const powerFail = preview.slotEvaluations.find(s => s.card && (s.failReason?.includes('⚡') || s.failReason?.includes('電量')));
-  const disasterFail = preview.slotEvaluations.find(s => s.card && (s.failReason?.includes('🌪️') || s.failReason?.includes('阻斷')));
-  const bwFail = preview.slotEvaluations.find(s => s.card && s.failReason?.includes('頻寬'));
-  const otherFail = preview.slotEvaluations.find(s => s.card && s.failReason && !s.failReason.includes('未配置'));
+  // 失敗原因：由引擎回傳的受阻代碼挑出「離成功最近」的槽位原因（不再用 emoji 字串猜類型）
   const allEmpty = preview.slotEvaluations.every(s => !s.card);
+  const primaryBlock = pickPrimaryBlock(preview.slotEvaluations);
 
-  let failMsg = '❌ 防線未滿足任務條件';
-  if (allEmpty) {
-    failMsg = '❌ 防線無裝備 (請先採購)';
-  } else if (powerFail && powerFail.failReason) {
-    failMsg = powerFail.failReason;
-  } else if (disasterFail && disasterFail.failReason) {
-    failMsg = disasterFail.failReason;
-  } else if (bwFail) {
-    failMsg = `📊 頻寬不足 (需 ${BANDWIDTH_META[mission.requiredBandwidth].compactLabel})`;
-  } else if (otherFail && otherFail.failReason) {
-    failMsg = otherFail.failReason;
-  }
+  /** compact = 桌面橫列用的短句；full = 直式卡用的完整句 */
+  const getFailMsg = (compact: boolean): string => {
+    if (allEmpty) return compact ? '❌ 防線無裝備 (請先採購)' : '❌ 防線無裝備 (請至市場採購通訊工具)';
+    if (!primaryBlock) return compact ? '❌ 防線未滿足任務條件' : '❌ 目前防線未滿足任務條件 (無法連通)';
+    if (primaryBlock.blockCode === 'bandwidth') {
+      return compact
+        ? `📊 頻寬不足 (需 ${BANDWIDTH_META[mission.requiredBandwidth].compactLabel})`
+        : `📊 頻寬不足 (任務需 ${BANDWIDTH_META[mission.requiredBandwidth].label}頻寬)`;
+    }
+    return primaryBlock.failReason;
+  };
+  const failMsg = getFailMsg(true);
 
   const getMissionRangeLabel = (ranges: string[]) => {
     if (ranges.length <= 1) {
@@ -311,33 +308,9 @@ export function V2MissionCardView({
               <span className="text-xs shrink-0 whitespace-nowrap font-black">➔ 🏆{preview.earnedVP}分</span>
             </>
           ) : (
-            (() => {
-              // 依優先順序分析最具體之通訊障礙原因
-              const powerFail = preview.slotEvaluations.find(s => s.card && (s.failReason?.includes('⚡') || s.failReason?.includes('電量')));
-              const disasterFail = preview.slotEvaluations.find(s => s.card && (s.failReason?.includes('🌪️') || s.failReason?.includes('阻斷')));
-              const bwFail = preview.slotEvaluations.find(s => s.card && s.failReason?.includes('頻寬'));
-              const otherFail = preview.slotEvaluations.find(s => s.card && s.failReason && !s.failReason.includes('未配置'));
-              const allEmpty = preview.slotEvaluations.every(s => !s.card);
-
-              let failMsg = '❌ 目前防線未滿足任務條件 (無法連通)';
-              if (allEmpty) {
-                failMsg = '❌ 防線無裝備 (請至市場採購通訊工具)';
-              } else if (powerFail && powerFail.failReason) {
-                failMsg = powerFail.failReason;
-              } else if (disasterFail && disasterFail.failReason) {
-                failMsg = disasterFail.failReason;
-              } else if (bwFail) {
-                failMsg = `📊 頻寬不足 (任務需 ${BANDWIDTH_META[mission.requiredBandwidth].label}頻寬)`;
-              } else if (otherFail && otherFail.failReason) {
-                failMsg = otherFail.failReason;
-              }
-
-              return (
-                <span className="w-full text-center text-xs leading-snug break-words break-keep">
-                  {failMsg}
-                </span>
-              );
-            })()
+            <span className="w-full text-center text-xs leading-snug break-words break-keep">
+              {getFailMsg(false)}
+            </span>
           )}
         </div>
 

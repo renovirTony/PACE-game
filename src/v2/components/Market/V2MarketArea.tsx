@@ -42,7 +42,13 @@ export function V2MarketArea({
     }
   }, [focusEquipNonce]);
 
+  // 換人或輪到 AI（disabled）時清空選取，避免殘留的選取在別人的回合下單
+  useEffect(() => {
+    setSelectedCardForSlot(null);
+  }, [player.id, disabled]);
+
   const handleSlotSelect = (slot: PACESlot) => {
+    if (disabled) return;
     if (selectedCardForSlot) {
       onBuyEquipment(selectedCardForSlot, slot);
       setSelectedCardForSlot(null);

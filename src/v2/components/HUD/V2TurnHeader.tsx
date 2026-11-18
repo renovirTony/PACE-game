@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Player, WorldviewType, DisasterEvent } from '../../types/game';
 import { FontSizeMode, ThemeMode } from '../Modals/DisplaySettingsModal';
 import { PHYSICAL_MEDIUM_META } from '../../data/terminology';
+import { ConfirmDialog, ConfirmDialogState, DESTRUCTIVE_CONFIRM_COPY } from '../Modals/ConfirmDialog';
 import { Radio, Zap, Coins, Award, Layers, BookOpen, GraduationCap, AlertTriangle, Sliders, Smartphone, ChevronDown } from 'lucide-react';
 
 interface V2TurnHeaderProps {
@@ -58,17 +59,7 @@ export function V2TurnHeader({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    onConfirm: () => {},
-  });
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState | null>(null);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -85,44 +76,20 @@ export function V2TurnHeader({
     };
   }, [isMenuOpen]);
 
-  const handleSafeReturnToMenu = () => {
+  const askConfirm = (copy: (typeof DESTRUCTIVE_CONFIRM_COPY)[keyof typeof DESTRUCTIVE_CONFIRM_COPY], action: () => void) => {
     setIsMenuOpen(false);
     setConfirmDialog({
-      isOpen: true,
-      title: '確定返回主選單？',
-      message: '返回主選單將會結束當前演習並遺失進行中的作戰進度。確定要返回嗎？',
+      ...copy,
       onConfirm: () => {
-        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-        onReturnToMenu();
+        setConfirmDialog(null);
+        action();
       },
     });
   };
 
-  const handleSafeSwitchToV1 = () => {
-    setIsMenuOpen(false);
-    setConfirmDialog({
-      isOpen: true,
-      title: '切換至經典 v1.0 對照？',
-      message: '即將切換至經典原版 v1.0。當前的 v2 演習進度將會重置。確定要切換嗎？',
-      onConfirm: () => {
-        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-        if (onSwitchToV1) onSwitchToV1();
-      },
-    });
-  };
-
-  const handleSafeStartTutorial = () => {
-    setIsMenuOpen(false);
-    setConfirmDialog({
-      isOpen: true,
-      title: '啟動實戰新手教學？',
-      message: '啟動新手教學將會重置當前戰局並開啟 8 步驟手把手引導。確定要開始教學嗎？',
-      onConfirm: () => {
-        setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-        onStartTutorial();
-      },
-    });
-  };
+  const handleSafeReturnToMenu = () => askConfirm(DESTRUCTIVE_CONFIRM_COPY.returnToMenu, onReturnToMenu);
+  const handleSafeSwitchToV1 = () => askConfirm(DESTRUCTIVE_CONFIRM_COPY.switchToV1, () => onSwitchToV1?.());
+  const handleSafeStartTutorial = () => askConfirm(DESTRUCTIVE_CONFIRM_COPY.startTutorial, onStartTutorial);
 
   return (
     <>
@@ -399,40 +366,7 @@ export function V2TurnHeader({
       {/* Confirmation Modal
           必須留在 <header> 外：header 的 backdrop-blur 會讓它成為後代 fixed 元素的
           containing block，巢狀在內時 inset-0 會相對於 header 而非整個視窗計算。 */}
-      {confirmDialog.isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/85 backdrop-blur-md animate-fadeIn">
-          <div className="max-w-md w-full rounded-3xl border border-red-500/40 bg-slate-950 p-6 shadow-2xl flex flex-col gap-4 text-slate-100 animate-scaleUp">
-            <div className="flex items-center gap-3 text-red-400">
-              <div className="p-2.5 rounded-2xl bg-red-950/60 border border-red-500/40">
-                <AlertTriangle className="w-6 h-6 animate-pulse" />
-              </div>
-              <h3 className="text-base font-black text-slate-100">
-                {confirmDialog.title}
-              </h3>
-            </div>
-
-            <p className="text-xs text-slate-300 leading-relaxed">
-              {confirmDialog.message}
-            </p>
-
-            <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
-              <button
-                onClick={() => setConfirmDialog(prev => ({ ...prev, isOpen: false }))}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 font-bold text-xs transition-all"
-              >
-                取消並繼續遊戲
-              </button>
-
-              <button
-                onClick={confirmDialog.onConfirm}
-                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-500 text-white font-black text-xs transition-all shadow-md active:scale-95"
-              >
-                確認離開
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmDialog dialog={confirmDialog} onCancel={() => setConfirmDialog(null)} />
     </>
   );
 }

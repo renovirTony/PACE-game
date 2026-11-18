@@ -17,7 +17,7 @@ import { V2_EQUIPMENT_CARDS, V2_STARTER_CARDS } from '../data/equipmentCards';
 import { V2_DISASTER_EVENTS } from '../data/disasterEvents';
 import { V2_CRISIS_MISSIONS } from '../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../data/tacticCards';
-import { evaluateV2PACETransmission, canPlaceCardInSlot } from './rules';
+import { evaluateV2PACETransmission, canPlaceCardInSlot, getEffectivePowerCost } from './rules';
 import { computeV2AIDecision } from './ai';
 import { P2PMultiplayerManager } from './multiplayer';
 import { audioManager } from '../../engine/audio';
@@ -29,6 +29,37 @@ function shuffleArray<T>(array: T[]): T[] {
     [arr[i], arr[j]] = [arr[j], arr[i]];
   }
   return arr;
+}
+
+/**
+ * 只移除陣列中的「那一張」卡。
+ * 先以物件參照比對（同 id 的複本也能精準區分），找不到才退回比對 id。
+ * 避免 filter(c => c.id !== id) 把同 id 的多張卡一次全部刪掉。
+ */
+export function removeOne<T extends { id: string }>(arr: T[], target: T): T[] {
+  let idx = arr.indexOf(target);
+  if (idx < 0) idx = arr.findIndex(c => c.id === target.id);
+  if (idx < 0) return arr;
+  return [...arr.slice(0, idx), ...arr.slice(idx + 1)];
+}
+
+/**
+ * 市場被買走一張後補牌（純函式，在 setState 之外先算好）。
+ * 牌庫用完時重洗，並排除「市場上現有的卡」與「剛被買走的卡」，市場因此不會出現兩張同 id 的卡。
+ */
+export function refillMarket<T extends { id: string }>(
+  market: T[],
+  deck: T[],
+  allCards: T[],
+  boughtId: string
+): { market: T[]; deck: T[] } {
+  if (deck.length > 0) {
+    return { market: [...market, deck[0]], deck: deck.slice(1) };
+  }
+  const excludeIds = new Set([...market.map(c => c.id), boughtId]);
+  const reshuffled = shuffleArray(allCards.filter(c => !excludeIds.has(c.id)));
+  if (reshuffled.length === 0) return { market, deck: [] };
+  return { market: [...market, reshuffled[0]], deck: reshuffled.slice(1) };
 }
 
 export interface UseV2GameStateReturn {
@@ -469,6 +500,9 @@ export function useV2GameState(): UseV2GameStateReturn {
     const curPlayer = players[activePlayerIndex];
     if (!curPlayer) return false;
 
+    // 卡片必須確實在市場上（防止過期的 UI 選取狀態買到已被買走的卡）
+    if (!market.some(c => c === card || c.id === card.id)) return false;
+
     const isFreeBuy = Boolean(curPlayer.activeBuffs?.freeMarketPurchaseActive);
     if ((!isFreeBuy && curPlayer.actionPoints <= 0) || curPlayer.credits < card.cost) {
       return false;
@@ -503,28 +537,16 @@ export function useV2GameState(): UseV2GameStateReturn {
       };
     }));
 
-    // 從市場補充新卡
-    setMarket(prev => {
-      const nextMarket = prev.filter(c => c.id !== card.id);
-      if (equipmentDeck.length > 0) {
-        nextMarket.push(equipmentDeck[0]);
-        setEquipmentDeck(d => d.slice(1));
-      } else {
-        // 牌庫耗盡時，重洗裝備牌庫
-        const reshuffled = shuffleArray(V2_EQUIPMENT_CARDS.filter(c => c.id !== card.id));
-        if (reshuffled.length > 0) {
-          nextMarket.push(reshuffled[0]);
-          setEquipmentDeck(reshuffled.slice(1));
-        }
-      }
-      return nextMarket;
-    });
+    // 從市場補充新卡（在 setState 外先算好，避免 StrictMode 重跑 updater 時重複抽牌）
+    const refilled = refillMarket(removeOne(market, card), equipmentDeck, V2_EQUIPMENT_CARDS, card.id);
+    setMarket(refilled.market);
+    setEquipmentDeck(refilled.deck);
 
     const cardName = card.translations[worldview]?.name || card.id;
     const displacedText = existingCard ? `（原裝備【${existingCard.translations[worldview]?.name || existingCard.id}】已安全收納至備用倉庫）` : '';
     addLog('action', `【${curPlayer.name}】${isFreeBuy ? '【後勤通道 0 AP】' : '消耗 1 AP '}採購裝備【${cardName}】並配置至 [${targetSlot}] 槽位。${displacedText}`, curPlayer.id, curPlayer.name);
     return true;
-  }, [players, activePlayerIndex, equipmentDeck, worldview, addLog]);
+  }, [players, activePlayerIndex, market, equipmentDeck, worldview, addLog]);
 
   // 自由調動/指派槽位
   const assignSlot = useCallback((slot: PACESlot, card: CommsCard | null) => {
@@ -619,6 +641,9 @@ export function useV2GameState(): UseV2GameStateReturn {
     const curPlayer = players[activePlayerIndex];
     if (!curPlayer) return false;
 
+    // 卡片必須確實在當前玩家的倉庫裡（防止跨回合殘留的選取狀態把別人的卡裝上、憑空複製）
+    if (!curPlayer.inventory.some(c => c === card || c.id === card.id)) return false;
+
     const isAgile = Boolean(curPlayer.activeBuffs?.agileProtocolActive);
     if (!isAgile && curPlayer.actionPoints <= 0) {
       addLog('alert', '⚡ 行動點數不足！從備用倉庫調配裝備需消耗 1 AP 戰術調度點數（或啟用敏捷通訊協議）。', curPlayer.id, curPlayer.name);
@@ -636,7 +661,7 @@ export function useV2GameState(): UseV2GameStateReturn {
 
     setPlayers(prev => prev.map((p, idx) => {
       if (idx !== activePlayerIndex) return p;
-      const remainingInventory = p.inventory.filter(c => c.id !== card.id);
+      const remainingInventory = removeOne(p.inventory, card);
       return {
         ...p,
         actionPoints: isAgile ? p.actionPoints : p.actionPoints - 1,
@@ -657,9 +682,10 @@ export function useV2GameState(): UseV2GameStateReturn {
   const discardFromInventory = useCallback((cardId: string) => {
     setPlayers(prev => prev.map((p, idx) => {
       if (idx !== activePlayerIndex) return p;
+      const target = p.inventory.find(c => c.id === cardId);
       return {
         ...p,
-        inventory: p.inventory.filter(c => c.id !== cardId),
+        inventory: target ? removeOne(p.inventory, target) : p.inventory,
       };
     }));
   }, [activePlayerIndex]);
@@ -668,6 +694,8 @@ export function useV2GameState(): UseV2GameStateReturn {
   const buyTactic = useCallback((card: TacticCard): boolean => {
     const curPlayer = players[activePlayerIndex];
     if (!curPlayer) return false;
+
+    if (!tacticMarket.some(t => t === card || t.id === card.id)) return false;
 
     const isFreeBuy = Boolean(curPlayer.activeBuffs?.freeMarketPurchaseActive);
     if ((!isFreeBuy && curPlayer.actionPoints <= 0) || curPlayer.credits < card.cost) {
@@ -690,30 +718,20 @@ export function useV2GameState(): UseV2GameStateReturn {
       };
     }));
 
-    setTacticMarket(prev => {
-      const nextMarket = prev.filter(t => t.id !== card.id);
-      if (tacticDeck.length > 0) {
-        nextMarket.push(tacticDeck[0]);
-        setTacticDeck(d => d.slice(1));
-      } else {
-        const reshuffled = shuffleArray(V2_TACTIC_CARDS.filter(t => t.id !== card.id));
-        if (reshuffled.length > 0) {
-          nextMarket.push(reshuffled[0]);
-          setTacticDeck(reshuffled.slice(1));
-        }
-      }
-      return nextMarket;
-    });
+    const refilled = refillMarket(removeOne(tacticMarket, card), tacticDeck, V2_TACTIC_CARDS, card.id);
+    setTacticMarket(refilled.market);
+    setTacticDeck(refilled.deck);
 
     const tacticName = card.translations[worldview]?.name || card.id;
     addLog('action', `【${curPlayer.name}】${isFreeBuy ? '【後勤通道 0 AP】' : '消耗 1 AP '}購入戰術卡【${tacticName}】加入手牌。`, curPlayer.id, curPlayer.name);
     return true;
-  }, [players, activePlayerIndex, tacticDeck, worldview, addLog]);
+  }, [players, activePlayerIndex, tacticMarket, tacticDeck, worldview, addLog]);
 
   // 打出戰術卡 (0 AP 即時生效 Free Action！)
   const playTactic = useCallback((card: TacticCard): boolean => {
     const curPlayer = players[activePlayerIndex];
-    if (!curPlayer) {
+    // 只能打出當前玩家手上的戰術卡
+    if (!curPlayer || !curPlayer.handTactics.some(t => t === card || t.id === card.id)) {
       return false;
     }
 
@@ -748,7 +766,7 @@ export function useV2GameState(): UseV2GameStateReturn {
         energy: Math.min(p.maxEnergy, p.energy + energyDelta),
         credits: p.credits + creditsDelta,
         activeBuffs: newBuffs,
-        handTactics: p.handTactics.filter(t => t.id !== card.id),
+        handTactics: removeOne(p.handTactics, card),
       };
     }));
 
@@ -818,7 +836,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       return {
         ...p,
         credits: p.credits + refund,
-        inventory: p.inventory.filter(c => c.id !== cardId),
+        inventory: removeOne(p.inventory, targetCard),
       };
     }));
 
@@ -890,7 +908,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     if (result.canTransmit && result.usedCard) {
       audioManager.playTransmissionSound(result.degradationRate < 1.0);
 
-      const effectivePowerCost = result.usedCard.powerCost + (activeEvent?.powerDrainBonus || 0);
+      const effectivePowerCost = getEffectivePowerCost(result.usedCard, activeEvent);
 
       setPlayers(prev => prev.map((p, idx) => {
         if (idx !== activePlayerIndex) return p;
@@ -918,24 +936,10 @@ export function useV2GameState(): UseV2GameStateReturn {
       }));
 
       // 更新任務看板：若牌庫為空，立即重洗未在場上的任務，確保場上永遠維持 3 張任務！
-      setActiveMissions(prev => {
-        const remainingOnBoard = prev.filter(m => m.id !== mission.id);
-        if (missionDeck.length > 0) {
-          const nextCard = missionDeck[0];
-          setMissionDeck(d => d.slice(1));
-          return [...remainingOnBoard, nextCard];
-        } else {
-          // 重洗無限牌庫
-          const activeIds = remainingOnBoard.map(m => m.id);
-          const poolToReshuffle = shuffleArray(V2_CRISIS_MISSIONS.filter(m => !activeIds.includes(m.id)));
-          if (poolToReshuffle.length > 0) {
-            const nextCard = poolToReshuffle[0];
-            setMissionDeck(poolToReshuffle.slice(1));
-            return [...remainingOnBoard, nextCard];
-          }
-          return remainingOnBoard;
-        }
-      });
+      //（在 setState 外先算好；牌庫重洗時排除場上任務與剛完成的任務，避免馬上抽回同一題）
+      const refilledMissions = refillMarket(removeOne(activeMissions, mission), missionDeck, V2_CRISIS_MISSIONS, mission.id);
+      setActiveMissions(refilledMissions.market);
+      setMissionDeck(refilledMissions.deck);
 
       const missionTitle = mission.translations[worldview]?.title || mission.id;
       addLog(
@@ -971,7 +975,7 @@ export function useV2GameState(): UseV2GameStateReturn {
 
     setLastTransmission({ result, mission, playerName: curPlayer.name });
     return result;
-  }, [players, activePlayerIndex, activeEvent, worldview, missionDeck, addLog]);
+  }, [players, activePlayerIndex, activeEvent, worldview, activeMissions, missionDeck, addLog]);
 
   // 結束當前回合 / 換人
   const endTurn = useCallback(() => {

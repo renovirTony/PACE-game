@@ -12,6 +12,28 @@ import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, getRangeLabel } from '../data/ter
 const PACE_ORDER: PACESlot[] = ['P', 'A', 'C', 'E'];
 
 /**
+ * 計算裝備在當前天災下的實際耗電。
+ * 大停電等事件的額外耗電只加在「需電設備」上；0⚡ 免電裝備（哨子、光碼、信差）永遠免電。
+ */
+export function getEffectivePowerCost(card: CommsCard, event: DisasterEvent | null): number {
+  if (card.powerCost <= 0) return 0;
+  return card.powerCost + (event?.powerDrainBonus || 0);
+}
+
+/**
+ * 通訊受阻原因代碼，數字為檢定階段（與 checkCardEligibilityV2 的檢查順序一致）。
+ * 階段越後面代表該裝備越接近成功。
+ */
+export type BlockCode = NonNullable<TransmissionResult['slotEvaluations'][number]['blockCode']>;
+const BLOCK_STAGE: Record<BlockCode, number> = {
+  power: 0,
+  disaster: 1,
+  requirement: 2,
+  bandwidth: 3,
+  range: 4,
+};
+
+/**
  * 檢查裝備卡是否符合槽位規範門檻
  * [P] 主要防線：必須具備日常通訊能力，最低頻寬需為 Medium 語音級（不可放置 Low 代碼級純應急工具）
  * [A], [C], [E]：開放自由配置
@@ -40,14 +62,15 @@ export function checkCardEligibilityV2(
   event: DisasterEvent | null,
   player: Player,
   worldview: WorldviewType = 'CivilDefense'
-): { eligible: boolean; blockedReason?: string; expertDetail?: string } {
+): { eligible: boolean; blockedReason?: string; blockCode?: BlockCode; expertDetail?: string } {
   const cardName = card.translations[worldview]?.name || card.id;
 
-  // 1. 檢查電量消耗 (含大停電等全域耗電增加)
-  const effectivePowerCost = card.powerCost + (event?.powerDrainBonus || 0);
+  // 1. 檢查電量消耗 (含大停電等全域耗電增加；免電裝備不受影響)
+  const effectivePowerCost = getEffectivePowerCost(card, event);
   if (player.energy < effectivePowerCost) {
     return {
       eligible: false,
+      blockCode: 'power',
       blockedReason: `⚡ 設備缺電 (需 ${effectivePowerCost}⚡)`,
       expertDetail: `【${cardName}】需要電力驅動。在大停電或電池耗盡時，未備有發電機或備用電池將無法啟動！`,
     };
@@ -66,16 +89,65 @@ export function checkCardEligibilityV2(
     } else {
       return {
         eligible: false,
+        blockCode: 'disaster',
         blockedReason: `🌪️ 【${PHYSICAL_MEDIUM_META[card.medium].label}】媒介中斷！`,
         expertDetail: `受災事件直接摧毀了【${cardName}】所依賴的物理通道（如基地台停電、暴風雨散射衛星微波、或電磁波過載）。`,
       };
     }
   }
 
-  // 3. 檢查頻寬需求 (Bandwidth Gate - 核心機制！)
+  // 3. 檢查任務的特殊抗性 / 媒介要求 (耐天候 / 地底穿透 / 抗 EMP / 光學 / 有線)
+  //    先於頻寬與距離檢查：這類要求是「換哪種工具」的根本原因，對玩家最有指導性。
+  if (mission.requiresWeatherResist && !card.resilience.weatherResistant) {
+    return {
+      eligible: false,
+      blockCode: 'requirement',
+      blockedReason: `🌧️ 缺乏耐天候防護 (設備遭暴風雨或土石流浸濕受損)`,
+      expertDetail: `非耐天候裝備在強風暴雨中極易短路或信號嚴重衰減。`,
+    };
+  }
+
+  if (mission.requiresSubterranean && !card.resilience.subterranean) {
+    return {
+      eligible: false,
+      blockCode: 'requirement',
+      blockedReason: `🕳️ 無法穿透地底掩體 (鋼筋水泥屏蔽了常規電波)`,
+      expertDetail: `地下深層掩體具備嚴密金屬遮蔽效應，常規射頻完全無法穿透，需依靠地底震波或多跳網狀節點。`,
+    };
+  }
+
+  if (mission.requiresEmpShield && !hasEmpShield) {
+    return {
+      eligible: false,
+      blockCode: 'requirement',
+      blockedReason: `⚡ 缺乏 EMP 抗性防護 (晶片遭強電磁脈衝燒毀)`,
+      expertDetail: `現代微電子晶片在 EMP 爆震下會被感應高壓瞬間擊穿，必須使用加固抗 EMP 或手搖純機械線路。`,
+    };
+  }
+
+  if (mission.requiresOptical && (card.medium !== 'PhysicalOptical' || (card.id !== 'eq_aldis_light_mirror' && !card.tags?.includes('光學信號')))) {
+    return {
+      eligible: false,
+      blockCode: 'requirement',
+      blockedReason: `🔦 此任務處於黑夜電磁靜默，必須使用【光學信號燈/摩斯光碼】（機車信差等實體載體無法發送視距光碼）！`,
+      expertDetail: `黑夜視距引導需使用強光手電筒或阿爾迪斯信號燈閃爍光碼，非光學發射手段（如機車巡守隊）無法被對岸肉眼辨識。`,
+    };
+  }
+
+  if (mission.requiresWired && card.medium !== 'Wired') {
+    return {
+      eligible: false,
+      blockCode: 'requirement',
+      blockedReason: `🔌 此任務遭全頻段射頻干擾，必須使用【實體有線】專線或手搖電話！`,
+      expertDetail: `空中無線電訊號遭到全頻段壓制，唯有地下實體雙絞銅線能傳送指令。`,
+    };
+  }
+
+  // 4. 檢查頻寬需求 (Bandwidth Gate - 核心機制！)
   if (mission.requiredBandwidth === 'High' && card.bandwidth !== 'High') {
     return {
       eligible: false,
+      blockCode: 'bandwidth',
       blockedReason: `📊 頻寬不足 (任務需 ${BANDWIDTH_META.High.label}頻寬，當前設備僅為 ${BANDWIDTH_META[card.bandwidth].label})`,
       expertDetail: `【${cardName}】傳輸速率受物理限制，無法即時承載 4K 空照圖或大量視訊數據。`,
     };
@@ -83,12 +155,13 @@ export function checkCardEligibilityV2(
   if (mission.requiredBandwidth === 'Medium' && card.bandwidth === 'Low') {
     return {
       eligible: false,
+      blockCode: 'bandwidth',
       blockedReason: `📊 頻寬不足 (任務需 ${BANDWIDTH_META.Medium.label}頻寬，當前設備僅為 ${BANDWIDTH_META.Low.label})`,
       expertDetail: `【${cardName}】只能傳送短文字或摩斯碼，無法支援多方連續語音通聯。`,
     };
   }
 
-  // 4. 檢查通訊距離 (Range)
+  // 5. 檢查通訊距離 (Range)
   let effectiveRange = card.range;
   // 若啟動八木天線增益且為無線電
   if (player.activeBuffs?.antennaBoostRange && card.medium === 'Radio') {
@@ -117,54 +190,32 @@ export function checkCardEligibilityV2(
   if (!meetsRange) {
     return {
       eligible: false,
+      blockCode: 'range',
       blockedReason: `📡 通訊距離不足 (任務需 ${mission.requiredRange.map(getRangeLabel).join('/')}，當前為 ${getRangeLabel(effectiveRange)})`,
       expertDetail: `地形山脈阻隔或視距超出【${cardName}】的物理發射極限。`,
     };
   }
 
-  // 5. 檢查特殊抗性要求 (耐天候 / 地底穿透 / 抗 EMP)
-  if (mission.requiresWeatherResist && !card.resilience.weatherResistant) {
-    return {
-      eligible: false,
-      blockedReason: `🌧️ 缺乏耐天候防護 (設備遭暴風雨或土石流浸濕受損)`,
-      expertDetail: `非耐天候裝備在強風暴雨中極易短路或信號嚴重衰減。`,
-    };
-  }
-
-  if (mission.requiresSubterranean && !card.resilience.subterranean) {
-    return {
-      eligible: false,
-      blockedReason: `🕳️ 無法穿透地底掩體 (鋼筋水泥屏蔽了常規電波)`,
-      expertDetail: `地下深層掩體具備嚴密金屬遮蔽效應，常規射頻完全無法穿透，需依靠地底震波或多跳網狀節點。`,
-    };
-  }
-
-  if (mission.requiresEmpShield && !hasEmpShield) {
-    return {
-      eligible: false,
-      blockedReason: `⚡ 缺乏 EMP 抗性防護 (晶片遭強電磁脈衝燒毀)`,
-      expertDetail: `現代微電子晶片在 EMP 爆震下會被感應高壓瞬間擊穿，必須使用加固抗 EMP 或手搖純機械線路。`,
-    };
-  }
-
-  // 6. 檢查特定物理媒介專屬要求 (例如黑夜純視距光學、全頻干擾純實體有線)
-  if (mission.requiresOptical && (card.medium !== 'PhysicalOptical' || (card.id !== 'eq_aldis_light_mirror' && !card.tags?.includes('光學信號')))) {
-    return {
-      eligible: false,
-      blockedReason: `🔦 此任務處於黑夜電磁靜默，必須使用【光學信號燈/摩斯光碼】（機車信差等實體載體無法發送視距光碼）！`,
-      expertDetail: `黑夜視距引導需使用強光手電筒或阿爾迪斯信號燈閃爍光碼，非光學發射手段（如機車巡守隊）無法被對岸肉眼辨識。`,
-    };
-  }
-
-  if (mission.requiresWired && card.medium !== 'Wired') {
-    return {
-      eligible: false,
-      blockedReason: `🔌 此任務遭全頻段射頻干擾，必須使用【實體有線】專線或手搖電話！`,
-      expertDetail: `空中無線電訊號遭到全頻段壓制，唯有地下實體雙絞銅線能傳送指令。`,
-    };
-  }
-
   return { eligible: true };
+}
+
+/**
+ * 從各槽位的檢定結果中，挑出最值得告訴玩家的單一受阻原因（供任務卡顯示）。
+ * 取「檢定走得最遠」的那個槽位：它離成功最近，它卡住的原因就是玩家最該補的那一塊。
+ * 例：黑夜光碼任務中，手機卡在「需光學」、手電筒只卡在「距離」→ 顯示距離不足。
+ * 同階段時取較前面的槽位。
+ */
+export function pickPrimaryBlock(
+  slotEvaluations: TransmissionResult['slotEvaluations']
+): { failReason: string; blockCode: BlockCode } | null {
+  let best: { failReason: string; blockCode: BlockCode } | null = null;
+  for (const s of slotEvaluations) {
+    if (!s.card || !s.blockCode || !s.failReason) continue;
+    if (!best || BLOCK_STAGE[s.blockCode] > BLOCK_STAGE[best.blockCode]) {
+      best = { failReason: s.failReason, blockCode: s.blockCode };
+    }
+  }
+  return best;
 }
 
 /**
@@ -202,7 +253,7 @@ export function evaluateV2PACETransmission(
       continue;
     }
 
-    const { eligible, blockedReason, expertDetail } = checkCardEligibilityV2(
+    const { eligible, blockedReason, blockCode, expertDetail } = checkCardEligibilityV2(
       card,
       slot,
       mission,
@@ -216,6 +267,8 @@ export function evaluateV2PACETransmission(
       card,
       passed: eligible,
       failReason: blockedReason,
+      blockCode,
+      expertDetail,
     });
 
     if (eligible) {

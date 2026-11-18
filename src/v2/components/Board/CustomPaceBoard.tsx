@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, WorldviewType } from '../../types/game';
-import { canPlaceCardInSlot } from '../../engine/rules';
+import { canPlaceCardInSlot, getEffectivePowerCost } from '../../engine/rules';
 import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
 import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, RANGE_META, getCommsCardMediumInfo } from '../../data/terminology';
 import { EquipCardSpecs } from '../Cards/EquipCardSpecs';
@@ -115,6 +115,12 @@ export function CustomPaceBoard({
   const [activeSwapSlot, setActiveSwapSlot] = useState<PACESlot | null>(null);
   const [activeInventoryCard, setActiveInventoryCard] = useState<CommsCard | null>(null);
 
+  // 換人或輪到 AI 時清空選取狀態，避免上一位玩家的選取殘留到下一位玩家的回合
+  useEffect(() => {
+    setActiveSwapSlot(null);
+    setActiveInventoryCard(null);
+  }, [player.id, isCurrentPlayer]);
+
   // 媒介獨立性檢驗 (Media Diversity Check)
   const pMedium = board.P?.medium;
   const aMedium = board.A?.medium;
@@ -126,6 +132,7 @@ export function CustomPaceBoard({
   const uniqueMediaCount = new Set(usedMedia).size;
 
   const handleSwapTarget = (targetSlot: PACESlot) => {
+    if (!isCurrentPlayer) return;
     if (activeSwapSlot && activeSwapSlot !== targetSlot) {
       onSwapSlots(activeSwapSlot, targetSlot);
       setActiveSwapSlot(null);
@@ -133,6 +140,7 @@ export function CustomPaceBoard({
   };
 
   const handleEquipFromInv = (targetSlot: PACESlot) => {
+    if (!isCurrentPlayer) return;
     if (activeInventoryCard) {
       onEquipFromInventory(activeInventoryCard, targetSlot);
       setActiveInventoryCard(null);
@@ -222,7 +230,7 @@ export function CustomPaceBoard({
             );
 
             // Power check
-            const effectivePowerCost = (card?.powerCost || 0) + (activeEvent?.powerDrainBonus || 0);
+            const effectivePowerCost = card ? getEffectivePowerCost(card, activeEvent) : 0;
             const isOutOfPower = Boolean(card && player.energy < effectivePowerCost);
             const isCardDisabled = isDisasterTargeted || isOutOfPower;
 
@@ -452,16 +460,16 @@ export function CustomPaceBoard({
 
           {inventory.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {inventory.map((card) => {
-                const isSelected = activeInventoryCard?.id === card.id;
+              {inventory.map((card, invIdx) => {
+                const isSelected = activeInventoryCard === card;
                 const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
-                const canEquipAP = player.actionPoints > 0 || isAgile;
+                const canEquipAP = isCurrentPlayer && (player.actionPoints > 0 || isAgile);
                 const mediumInfo = getCommsCardMediumInfo(card);
                 const rangeLabel = RANGE_META[card.range]?.label || card.range;
 
                 return (
                   <div
-                    key={card.id}
+                    key={`${card.id}-${invIdx}`}
                     className={`p-2.5 rounded-2xl border flex items-center justify-between gap-2 text-xs transition-all ${
                       isSelected
                         ? 'border-purple-400 bg-purple-950/60 shadow-md shadow-purple-500/20'
@@ -612,7 +620,7 @@ export function CustomPaceBoard({
           );
 
           // Power check
-          const effectivePowerCost = (card?.powerCost || 0) + (activeEvent?.powerDrainBonus || 0);
+          const effectivePowerCost = card ? getEffectivePowerCost(card, activeEvent) : 0;
           const isOutOfPower = Boolean(card && player.energy < effectivePowerCost);
           const isCardDisabled = isDisasterTargeted || isOutOfPower;
 
@@ -840,10 +848,10 @@ export function CustomPaceBoard({
 
         {inventory.length > 0 ? (
           <div className="grid grid-cols-2 xl:grid-cols-3 gap-2">
-            {inventory.map((item) => {
-              const isSelected = activeInventoryCard?.id === item.id;
+            {inventory.map((item, invIdx) => {
+              const isSelected = activeInventoryCard === item;
               const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
-              const canEquipAP = player.actionPoints > 0 || isAgile;
+              const canEquipAP = isCurrentPlayer && (player.actionPoints > 0 || isAgile);
               const itemName = item.translations[worldview]?.name || item.id;
               const medium = getCommsCardMediumInfo(item);
               const rangeLabel = RANGE_META[item.range]?.label || item.range;
@@ -851,7 +859,7 @@ export function CustomPaceBoard({
 
               return (
                 <div
-                  key={item.id}
+                  key={`${item.id}-${invIdx}`}
                   className={`p-2.5 rounded-xl border flex flex-col gap-1.5 transition-all ${
                     isSelected
                       ? 'border-purple-400 bg-purple-950/60 shadow-md shadow-purple-500/20 ring-1 ring-purple-400'

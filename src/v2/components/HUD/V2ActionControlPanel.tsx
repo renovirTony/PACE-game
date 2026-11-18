@@ -180,7 +180,7 @@ export function V2ActionControlPanel({
               const content = tactic.translations[worldview];
               return (
                 <div
-                  key={tactic.id}
+                  key={`${tactic.id}-${idx}`}
                   data-tutorial={idx === 0 ? 'tactic-card-0' : undefined}
                   className="p-3 rounded-2xl bg-slate-900/90 border border-purple-500/30 hover:border-purple-500/60 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-md"
                 >
