@@ -112,6 +112,14 @@ const AI_BOT_PROFILES:Omit<PlayerProfile, 'id' | 'isAI'>[] = [
   { name: '特戰通訊官 豪哥', avatar: '⚡', color: '#10b981', aiPersonality: 'HighTech' },
 ];
 
+/** 最近一次通訊檢定（isAI：AI 的結果以提示條呈現，不跳出要手動關閉的視窗） */
+export interface LastTransmission {
+  result: TransmissionResult;
+  mission: CrisisMission;
+  playerName: string;
+  isAI: boolean;
+}
+
 export interface UseV2GameStateReturn {
   round: number;
   maxRounds: number;
@@ -126,7 +134,7 @@ export interface UseV2GameStateReturn {
   activeEvent: DisasterEvent | null;
   logs: GameLog[];
   winner: Player | null;
-  lastTransmission: { result: TransmissionResult; mission: CrisisMission; playerName: string } | null;
+  lastTransmission: LastTransmission | null;
   isAITurn: boolean;
   gameMode: GameMode;
   botCount: number;
@@ -213,7 +221,7 @@ export function useV2GameState(): UseV2GameStateReturn {
 
   const [logs, setLogs] = useState<GameLog[]>([]);
   const [winner, setWinner] = useState<Player | null>(null);
-  const [lastTransmission, setLastTransmission] = useState<{ result: TransmissionResult; mission: CrisisMission; playerName: string } | null>(null);
+  const [lastTransmission, setLastTransmission] = useState<LastTransmission | null>(null);
 
   // Multiplayer Hook State
   const [roomCode, setRoomCode] = useState<string>('');
@@ -830,7 +838,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       );
     }
 
-    setLastTransmission({ result, mission, playerName: curPlayer.name });
+    setLastTransmission({ result, mission, playerName: curPlayer.name, isAI: curPlayer.isAI });
     return result;
   }, [players, activePlayerIndex, activeEvent, worldview, activeMissions, missionDeck, addLog]);
 

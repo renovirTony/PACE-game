@@ -11,7 +11,7 @@ interface EquipCardSpecsProps {
  * 共用裝備卡屬性矩陣 + 防護徽章列
  * 遵循圖鑑 (UnifiedCommsCardContent) 的三欄結構：
  *  ┌──────────┬──────────┬──────────┐
- *  │ 頻寬門檻  │ 通訊距離  │ 運作耗電  │
+ *  │ 可傳輸   │ 通訊距離  │ 運作耗電  │
  *  └──────────┴──────────┴──────────┘
  *  🛡️ 抗 EMP  🌧️ 耐天候  🕳️ 地底穿透
  */
@@ -25,9 +25,9 @@ export function EquipCardSpecs({ card, compact = false }: EquipCardSpecsProps) {
     <>
       {/* 三欄屬性矩陣 (MAPS Pattern — 一致模型) */}
       <div className={`grid grid-cols-3 gap-1.5 pt-1.5 border-t border-white/5 text-xs`}>
-        {/* 頻寬門檻 */}
+        {/* 可傳輸頻寬（裝備「能提供」的頻寬；任務卡用的是「需求頻寬」） */}
         <div className={`${cellPad} rounded-lg bg-black/40 text-center min-w-0`}>
-          <span className={`text-slate-500 block ${labelSize} whitespace-nowrap`}>頻寬門檻</span>
+          <span className={`text-slate-500 block ${labelSize} whitespace-nowrap`}>可傳輸</span>
           <span className={`font-black break-words leading-tight block ${valueSize} ${BANDWIDTH_META[card.bandwidth].color}`}>
             {BANDWIDTH_META[card.bandwidth].compactLabel}
           </span>

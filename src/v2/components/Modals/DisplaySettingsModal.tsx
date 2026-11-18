@@ -294,7 +294,7 @@ export function DisplaySettingsModal({
               </p>
               <div className="grid grid-cols-3 gap-1 pt-1.5 text-[9px] border-t border-white/10 text-center">
                 <div className="p-1 rounded bg-black/40">
-                  <span className="text-slate-500 block">頻寬門檻</span>
+                  <span className="text-slate-500 block">可傳輸</span>
                   <span className="font-black text-amber-400">Med 語音級</span>
                 </div>
                 <div className="p-1 rounded bg-black/40">

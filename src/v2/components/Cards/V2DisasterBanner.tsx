@@ -52,7 +52,7 @@ export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
         <div className="flex flex-col gap-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="disaster-badge text-xs font-black px-2 py-0.5 rounded uppercase border bg-black/40 border-white/10 text-amber-300">
-              全域物理災情 (Active Disaster)
+              本輪天災
             </span>
             <h3 className="text-sm sm:text-base font-black text-slate-100">
               {content?.title}

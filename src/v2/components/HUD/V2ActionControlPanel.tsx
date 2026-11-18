@@ -122,7 +122,7 @@ export function V2ActionControlPanel({
       <div className="flex items-center justify-between pb-2 border-b border-slate-800">
         <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
           <Zap className="w-4 h-4 text-amber-400" />
-          行動與手牌戰術 (Actions & Tactics)
+          行動與手牌戰術
         </h3>
         <span className="text-xs text-slate-400">
           剩餘 AP: <span className="font-bold text-cyan-400">{player.actionPoints}</span>
@@ -146,7 +146,7 @@ export function V2ActionControlPanel({
             }`}
           >
             <Zap className="w-4 h-4 text-amber-400" />
-            <span>緊急野戰充電 (+2 ⚡ | 1 AP)</span>
+            <span>野戰充電 (+2⚡ / 1 AP)</span>
           </button>
 
           {/* Emergency Requisition Action */}
@@ -162,7 +162,7 @@ export function V2ActionControlPanel({
             title="向應變中心申請緊急後勤調撥 (+2💰 | 消耗 1 AP)"
           >
             <span className="text-sm">💰</span>
-            <span>緊急後勤調撥 (+2 💰 | 1 AP)</span>
+            <span>後勤調撥 (+2💰 / 1 AP)</span>
           </button>
         </div>
 
@@ -173,7 +173,7 @@ export function V2ActionControlPanel({
           disabled={!isCurrentPlayer || isAI}
           className="w-full p-3 rounded-2xl border text-xs flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 font-bold"
         >
-          <span>結束作戰回合 (End Turn)</span>
+          <span>結束回合</span>
           <ArrowRight className="w-4 h-4 text-cyan-400" />
         </button>
       </div>

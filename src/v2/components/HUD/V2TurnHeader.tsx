@@ -101,7 +101,7 @@ export function V2TurnHeader({
               </span>
             </div>
             <div className="text-[11px] text-slate-400 hidden min-[1800px]:block whitespace-nowrap">
-              民防應急通訊規劃 · 物理天災與 Fallback 演練
+              民防應急通訊規劃 · 天災下的備援接手演練
             </div>
           </div>
         </div>

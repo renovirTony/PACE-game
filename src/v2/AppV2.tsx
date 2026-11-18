@@ -17,8 +17,10 @@ import { V2MobileDock, MobileTab } from './components/HUD/V2MobileDock';
 import { V2MobileMenuModal } from './components/Modals/V2MobileMenuModal';
 import { V2MobileScoreboardDrawer } from './components/Modals/V2MobileScoreboardDrawer';
 import { V2LogViewer } from './components/HUD/V2LogViewer';
-import { Radio, Bot, Users, Globe, Sparkles, Layers, BookOpen, GraduationCap, Sliders, Smartphone, Monitor, Menu, X } from 'lucide-react';
+import { AITransmissionToast } from './components/HUD/AITransmissionToast';
+import { Radio, Globe, Sparkles, Smartphone, Monitor, Menu, X } from 'lucide-react';
 import { safeStorage } from './utils/safeStorage';
+import { SetupModeActions, SetupMoreTools } from './components/Setup/SetupActions';
 import { CommsCard, PACESlot } from './types/game';
 import { describeDisasterEffects } from './data/terminology';
 
@@ -269,51 +271,16 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               </div>
             </div>
 
-            {/* Primary Game Mode Actions */}
+            {/* Primary Game Mode Actions（雙端共用：教學 → 單人對戰 → 雙人輪流） */}
             <div className="flex flex-col gap-2.5">
-              <button
-                onClick={() => gameState.startGame('SinglePlayer', selectedBotCount)}
-                className="w-full p-3.5 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-sm tracking-wider flex items-center justify-center gap-2 shadow-lg shadow-cyan-500/25 active:scale-98"
-              >
-                <Bot className="w-5 h-5" />
-                <span>單人作戰 vs AI</span>
-              </button>
-
-              {/* AI Bot Count Setting */}
-              <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400">
-                <span>AI 對手數量:</span>
-                <div className="flex items-center gap-1.5">
-                  {[1, 2, 3].map((count) => (
-                    <button
-                      key={count}
-                      onClick={() => setSelectedBotCount(count)}
-                      className={`px-2.5 py-0.5 rounded-lg border text-xs font-bold transition-all ${
-                        selectedBotCount === count
-                          ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-sm'
-                          : 'bg-slate-950 border-slate-800 text-slate-500'
-                      }`}
-                    >
-                      {count} 人
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <button
-                onClick={() => gameState.startGame('PassAndPlay')}
-                className="w-full p-3 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-xs flex items-center justify-center gap-2 active:scale-98"
-              >
-                <Users className="w-4 h-4" />
-                <span>同機雙人輪流作戰</span>
-              </button>
-
-              <button
-                onClick={gameState.startTutorial}
-                className="w-full p-3 rounded-2xl bg-gradient-to-r from-purple-950/80 to-slate-900 border border-purple-500/50 text-purple-200 font-bold text-xs flex items-center justify-center gap-2 active:scale-98"
-              >
-                <GraduationCap className="w-4 h-4 text-purple-400" />
-                <span>實戰新手教學 (8步驟指引)</span>
-              </button>
+              <SetupModeActions
+                size="sm"
+                botCount={selectedBotCount}
+                onChangeBotCount={setSelectedBotCount}
+                onStartSingle={() => gameState.startGame('SinglePlayer', selectedBotCount)}
+                onStartPassAndPlay={() => gameState.startGame('PassAndPlay')}
+                onStartTutorial={gameState.startTutorial}
+              />
 
               {ONLINE_MULTIPLAYER_ENABLED && (
                 <button
@@ -326,44 +293,13 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               )}
             </div>
 
-            {/* Utilities Row */}
-            <div className="flex items-center justify-center gap-2 pt-2 border-t border-slate-800 text-[11px] flex-wrap">
-              <button
-                onClick={() => setIsDisplaySettingsOpen(true)}
-                className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-bold px-2 py-1 rounded-lg hover:bg-cyan-950/30"
-              >
-                <Sliders className="w-3.5 h-3.5" />
-                <span>視覺偏好</span>
-              </button>
-              <span className="text-slate-700">|</span>
-              <button
-                onClick={() => setIsCompendiumOpen(true)}
-                className="flex items-center gap-1 text-purple-400 hover:text-purple-300 font-bold px-2 py-1 rounded-lg hover:bg-purple-950/30"
-              >
-                <Layers className="w-3.5 h-3.5" />
-                <span>卡牌圖鑑</span>
-              </button>
-              <span className="text-slate-700">|</span>
-              <button
-                onClick={() => setIsGuideOpen(true)}
-                className="flex items-center gap-1 text-cyan-400 hover:text-cyan-300 font-bold px-2 py-1 rounded-lg hover:bg-cyan-950/30"
-              >
-                <BookOpen className="w-3.5 h-3.5" />
-                <span>玩法手冊</span>
-              </button>
-            </div>
-
-            {/* Switch to V1 */}
-            {onSwitchToV1 && (
-              <div className="pt-2 border-t border-slate-800 text-center">
-                <button
-                  onClick={onSwitchToV1}
-                  className="text-[11px] text-slate-500 hover:text-cyan-400 underline"
-                >
-                  切換至 v1.0 經典原版 ➔
-                </button>
-              </div>
-            )}
+            {/* 次要工具收進「更多」 */}
+            <SetupMoreTools
+              onOpenGuide={() => setIsGuideOpen(true)}
+              onOpenCompendium={() => setIsCompendiumOpen(true)}
+              onOpenSettings={() => setIsDisplaySettingsOpen(true)}
+              onSwitchToV1={onSwitchToV1}
+            />
           </div>
 
           {/* Render Modals in Setup */}
@@ -486,56 +422,17 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             {/* Right Column: Game Modes & Multiplayer */}
             <div className="lg:col-span-6 flex flex-col gap-4 bg-slate-900/60 p-6 rounded-3xl border border-slate-800">
               <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                <Sparkles className="w-4 h-4 text-cyan-400" /> 選擇演習作戰模式
+                <Sparkles className="w-4 h-4 text-cyan-400" /> 開始演習
               </span>
 
-              {/* Mode Buttons */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <button
-                  onClick={() => gameState.startGame('SinglePlayer', selectedBotCount)}
-                  className="p-4 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-black text-sm tracking-wider flex items-center justify-center gap-2.5 shadow-lg shadow-cyan-500/25 transition-all active:scale-[0.98]"
-                >
-                  <Bot className="w-5 h-5 text-white" />
-                  <span>單人作戰 vs AI</span>
-                </button>
-
-                <button
-                  onClick={() => gameState.startGame('PassAndPlay')}
-                  className="p-4 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-200 font-bold text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98]"
-                >
-                  <Users className="w-5 h-5" />
-                  <span>同機雙人輪流</span>
-                </button>
-              </div>
-
-              {/* AI Bot Count Setting */}
-              <div className="flex items-center justify-between gap-3 text-xs text-slate-400 px-3.5 py-2.5 rounded-xl bg-black/40 border border-white/5">
-                <span>AI 對手數量:</span>
-                <div className="flex items-center gap-2">
-                  {[1, 2, 3].map((count) => (
-                    <button
-                      key={count}
-                      onClick={() => setSelectedBotCount(count)}
-                      className={`px-3 py-1 rounded-lg border text-xs font-bold transition-all ${
-                        selectedBotCount === count
-                          ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-sm'
-                          : 'bg-slate-900 border-slate-800 text-slate-500 hover:text-slate-300'
-                      }`}
-                    >
-                      {count} 人
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Interactive Tutorial Button */}
-              <button
-                onClick={gameState.startTutorial}
-                className="tutorial-launch-btn w-full p-3.5 rounded-2xl bg-gradient-to-r from-purple-950/80 via-slate-900 to-purple-950/80 hover:from-purple-900 hover:to-purple-900 border border-purple-500/50 text-purple-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-purple-950/40"
-              >
-                <GraduationCap className="w-5 h-5 text-purple-400 animate-bounce" />
-                <span>🎓 進入實戰新手教學 (8 步驟手把手引導)</span>
-              </button>
+              {/* 雙端共用：教學 → 單人對戰（先選人數）→ 雙人輪流 */}
+              <SetupModeActions
+                botCount={selectedBotCount}
+                onChangeBotCount={setSelectedBotCount}
+                onStartSingle={() => gameState.startGame('SinglePlayer', selectedBotCount)}
+                onStartPassAndPlay={() => gameState.startGame('PassAndPlay')}
+                onStartTutorial={gameState.startTutorial}
+              />
 
               {/* Online Multiplayer Lobby Button（同步機制完成前隱藏，見 ONLINE_MULTIPLAYER_ENABLED） */}
               {ONLINE_MULTIPLAYER_ENABLED && (
@@ -548,56 +445,13 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 </button>
               )}
 
-              {/* Utility Tools in Setup */}
-              <div className="flex items-center justify-center gap-2.5 pt-2 border-t border-slate-800 text-xs flex-wrap">
-                <button
-                  onClick={() => setIsDisplaySettingsOpen(true)}
-                  className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-cyan-950/40 border border-cyan-500/20"
-                  title="調整字體大小與護眼主題配色"
-                >
-                  <Sliders className="w-4 h-4 text-cyan-400" />
-                  <span>視覺與偏好設定</span>
-                </button>
-                <span className="text-slate-700">|</span>
-                <button
-                  onClick={() => setIsCompendiumOpen(true)}
-                  className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-purple-950/30"
-                >
-                  <Layers className="w-4 h-4 text-purple-400" />
-                  <span>卡牌圖鑑</span>
-                </button>
-                <span className="text-slate-700">|</span>
-                <button
-                  onClick={() => setIsGuideOpen(true)}
-                  className="flex items-center gap-1.5 text-cyan-400 hover:text-cyan-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-cyan-950/30"
-                  title="閱讀完整遊戲規則與玩法手冊"
-                >
-                  <BookOpen className="w-4 h-4 text-cyan-400" />
-                  <span>📖 遊戲玩法手冊</span>
-                </button>
-                <span className="text-slate-700">|</span>
-                <button
-                  onClick={toggleMobileMode}
-                  className="flex items-center gap-1.5 text-amber-400 hover:text-amber-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-amber-950/40 border border-amber-500/30"
-                  title="在電腦螢幕上模擬手機直式操作介面"
-                >
-                  <Smartphone className="w-4 h-4 text-amber-400" />
-                  <span>{forceMobileView ? '📱 手機模擬開啟中' : '📱 測試手機版直式'}</span>
-                </button>
-              </div>
-
-              {/* Footer Switch to V1 */}
-              {onSwitchToV1 && (
-                <div className="pt-2 border-t border-slate-800 flex items-center justify-center">
-                  <button
-                    onClick={onSwitchToV1}
-                    className="text-xs text-slate-400 hover:text-cyan-300 flex items-center gap-1.5 transition-all"
-                  >
-                    <span>想查看經典軍規原版？</span>
-                    <span className="underline font-bold text-cyan-400">切換至 v1.0 經典原版 ➔</span>
-                  </button>
-                </div>
-              )}
+              {/* 次要工具收進「更多」（手機版模擬鈕移除：網址 ?mobile=1 與遊戲內設定選單仍可切換） */}
+              <SetupMoreTools
+                onOpenGuide={() => setIsGuideOpen(true)}
+                onOpenCompendium={() => setIsCompendiumOpen(true)}
+                onOpenSettings={() => setIsDisplaySettingsOpen(true)}
+                onSwitchToV1={onSwitchToV1}
+              />
             </div>
           </div>
         </div>
@@ -735,12 +589,12 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               <div className="flex items-center justify-between pb-2 border-b border-slate-800">
                 <div className="flex items-center gap-2">
                   <Radio className="w-4 h-4 text-cyan-400" />
-                  <h2 className="text-xs sm:text-sm font-bold text-slate-100">
-                    當前突發危機任務 (常駐 3 題)
+                  <h2 className="text-xs sm:text-sm font-bold text-slate-100 whitespace-nowrap">
+                    突發危機任務
                   </h2>
                 </div>
-                <span className="text-[10px] text-slate-400">
-                  自動階梯 Fallback 檢驗
+                <span className="text-[10px] text-slate-400 whitespace-nowrap">
+                  P➔A➔C➔E 依序接手
                 </span>
               </div>
 
@@ -1119,7 +973,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
       {/* C. SHARED OVERLAYS & MODALS                                               */}
       {/* ========================================================================= */}
       {/* Interactive Step-by-Step Tutorial Overlay (Hidden when Debrief Modal is open) */}
-      {gameState.isTutorialMode && !gameState.lastTransmission && (
+      {gameState.isTutorialMode && !(gameState.lastTransmission && !gameState.lastTransmission.isAI) && (
         <V2InteractiveTutorial
           step={gameState.tutorialStep}
           onNext={gameState.nextTutorialStep}
@@ -1199,9 +1053,15 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         </div>
       )}
 
-      {/* Transmission Result Modal (Adapts as BottomSheet on mobile) */}
-      <V2TransmissionResultModal
+      {/* 自己的檢定：完整報告（手機為 BottomSheet）；AI 的檢定：自動消失的提示條 */}
+      <AITransmissionToast
         data={gameState.lastTransmission}
+        worldview={gameState.worldview}
+        isMobile={isMobileActive}
+        onDismiss={gameState.clearLastTransmission}
+      />
+      <V2TransmissionResultModal
+        data={gameState.lastTransmission?.isAI ? null : gameState.lastTransmission}
         worldview={gameState.worldview}
         isMobile={isMobileActive}
         onClose={() => {

@@ -582,7 +582,7 @@ export function CustomPaceBoard({
             PACE 四重防線配置
           </span>
           <span className="text-[11px] text-slate-400 truncate hidden xl:inline">
-            P ➔ A ➔ C ➔ E 依序 Fallback · 物理媒介互為備援
+            P ➔ A ➔ C ➔ E 依序接手 · 不同媒介互為備援
           </span>
         </div>
         <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold border flex items-center gap-1 shrink-0 whitespace-nowrap ${
