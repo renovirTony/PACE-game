@@ -32,9 +32,9 @@ export const V2_TUTORIAL_STEPS: TutorialStepDef[] = [
     step: 2,
     badge: '物資採購',
     title: '第二步：至市場採購通訊裝備並指派槽位',
-    task: '👉 請在下方【物資市場】點擊第一張【手持海事/銥星衛星電話】上的【採購裝備 (1 AP)】，並選擇放入 [C] 應急槽位！',
+    task: '👉 請在下方【物資市場】點擊第一張【手持海事/銥星衛星電話】上的【採購並裝配 (1 AP)】，並選擇放入 [C] 應急槽位！',
     detail: '手持衛星電話需 💰3 物資，具備耐天候抗性且不依賴地面基地台，是指揮官在極端天災中最可靠的第三道防線。點擊採購後選擇放入 [C] 槽即可完成！',
-    hint: '💡 點擊市場第一張卡片上的【採購裝備】按鈕並指派至 [C] 槽！',
+    hint: '💡 點擊市場第一張卡片上的【採購並裝配】按鈕並指派至 [C] 槽！',
     targetSelector: '[data-tutorial="market-card-0"]',
   },
   {
@@ -50,9 +50,9 @@ export const V2_TUTORIAL_STEPS: TutorialStepDef[] = [
     step: 4,
     badge: '戰術調度',
     title: '第四步：防線動態對調 (Swap) 與倉庫收存',
-    task: '👉 請點擊防線上 [P] 槽手機上的【🔄 調換 (0 AP)】，並選擇與 [A] 槽對調！',
+    task: '👉 請點擊防線上 [P] 槽手機上的【調換順序 (0 AP)】，並選擇與 [A] 槽對調！',
     detail: '因為《敏捷協議》生效中，防線調換完全不消耗 AP！你可以根據預期天災或任務頻寬需求，隨時調動防線的優先檢定順序。',
-    hint: '💡 點擊 [P] 槽卡片上的【🔄 調換】並點擊 [A] 槽完成對調！',
+    hint: '💡 點擊 [P] 槽卡片上的【調換順序】並點擊 [A] 槽完成對調！',
     targetSelector: '[data-tutorial="pace-board"]',
   },
   {
@@ -68,18 +68,18 @@ export const V2_TUTORIAL_STEPS: TutorialStepDef[] = [
     step: 6,
     badge: '野戰充能',
     title: '第六步：緊急野戰充電維護電力',
-    task: '👉 請在右側控制台點擊【緊急野戰充電 (+2 ⚡ | 1 AP)】！',
+    task: '👉 請在控制台點擊【野戰充電 (+2⚡ / 1 AP)】！',
     detail: '通訊設備運作消耗了設備電力。點擊緊急充電補充 ⚡2 點電量，確保高耗電設備（如高功率電台或通訊車）能正常發動！',
-    hint: '💡 點擊【緊急野戰充電】按鈕！',
+    hint: '💡 點擊【野戰充電】按鈕！',
     targetSelector: '[data-tutorial="recharge-btn"]',
   },
   {
     step: 7,
     badge: '天災迎擊',
     title: '第七步：結束回合並迎擊「全域物理天災」',
-    task: '👉 請點擊【結束作戰回合 (End Turn)】，迎擊全域物理天災！',
+    task: '👉 請點擊【結束回合】，迎擊全域物理天災！',
     detail: '回合結束後將推進至第 2 週期並爆發【大範圍電網大斷電】！所有「公眾網/基地台」設備（如手機）將直接癱瘓標註紅標，而你的「對講機 (無線電)」與「衛星電話」則安然無恙！',
-    hint: '💡 點擊【結束作戰回合 (End Turn)】按鈕！',
+    hint: '💡 點擊【結束回合】按鈕！',
     targetSelector: '[data-tutorial="end-turn-btn"]',
   },
   {
@@ -164,6 +164,13 @@ export function V2InteractiveTutorial({
       window.removeEventListener('resize', updateTargetRect);
     };
   }, [updateTargetRect]);
+
+  // 卸載時清除誤點提示計時器，避免對已卸載元件 setState
+  useEffect(() => {
+    return () => {
+      if (misclickTimerRef.current) clearTimeout(misclickTimerRef.current);
+    };
+  }, []);
 
   // Handle accidental clicks outside the spotlight cutout
   const handleBackdropClick = (e: React.MouseEvent) => {

@@ -1,9 +1,11 @@
 import { DisasterEvent } from '../types/game';
 
+/** EMP 事件 id（引擎與 AI 判斷抗 EMP 豁免時共用，避免各處寫死字串） */
+export const EMP_EVENT_ID = 'evt_emp_strike';
+
 export const V2_DISASTER_EVENTS: DisasterEvent[] = [
   {
     id: 'evt_grid_blackout',
-    duration: 1,
     targetedMedia: ['Cellular'],
     powerDrainBonus: 1,
     translations: {
@@ -21,7 +23,7 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
       },
       CyberDisconnect: {
         title: '中央能源網格崩潰',
-        desc: '都市能源矩陣熄滅，【公眾光纖終端 Cellular】離線，設備能耗加倍。',
+        desc: '都市能源矩陣熄滅，【公眾光纖終端 Cellular】離線，所有需電設備能耗 +1⚡。',
         flavor: '巨型摩天大樓群失去光彩，霓虹都市淪為鋼鐵墓地。',
         icon: 'BatteryLow',
       },
@@ -29,7 +31,6 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
   },
   {
     id: 'evt_super_typhoon',
-    duration: 1,
     targetedMedia: ['Satellite'],
     rangePenalty: true,
     translations: {
@@ -54,25 +55,25 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
     },
   },
   {
-    id: 'evt_emp_strike',
-    duration: 1,
-    targetedMedia: ['Cellular', 'Radio'],
+    id: EMP_EVENT_ID,
+    // 未加固的電子設備（含衛星終端）都會被燒毀；具抗 EMP 加固或法拉第袋保護者豁免（見 rules.ts）
+    targetedMedia: ['Cellular', 'Radio', 'Satellite'],
     translations: {
       CivilDefense: {
         title: '高空電磁脈衝爆震 (強電磁襲擊)',
-        desc: '強烈電磁脈衝襲擊！所有沒做防護的【手機基地台】與【無線電】晶片燒毀！唯有實體有線、光學與人力手段能正常使用！',
+        desc: '強烈電磁脈衝襲擊！所有沒做防護的【手機基地台】、【無線電】與【衛星通訊】晶片燒毀！唯有實體有線、光學、人力與抗 EMP 加固設備能正常使用！',
         flavor: '天空閃過一陣刺眼白光，所有通電的手機與電台同時冒煙跳電。',
         icon: 'ZapOff',
       },
       IslandResilience: {
         title: '高空電磁脈衝 (EMP) 攻擊',
-        desc: '廣域強電磁衝擊！【基地台 Cellular】與【無線電 Radio】全線癱瘓，強制依賴有線與物理防線。',
+        desc: '廣域強電磁衝擊！【基地台 Cellular】、【無線電 Radio】與【衛星終端 Satellite】全線癱瘓，強制依賴有線、物理防線與抗 EMP 加固設備。',
         flavor: '強大電流感應燒毀了所有露天天線的射頻放大器。',
         icon: 'ZapOff',
       },
       CyberDisconnect: {
         title: '軌道高能電磁爆震',
-        desc: '超高功率微波覆蓋，【網格與無線頻段】全面燒毀，僅存機械與光學通道。',
+        desc: '超高功率微波覆蓋，【網格、無線頻段與軌道終端】全面燒毀，僅存機械、光學通道與加固設備。',
         flavor: '電弧在每根導線上跳躍，所有數位晶片化作一團廢鐵。',
         icon: 'ZapOff',
       },
@@ -80,7 +81,6 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
   },
   {
     id: 'evt_earthquake_landslide',
-    duration: 1,
     targetedMedia: ['Wired'],
     translations: {
       CivilDefense: {
@@ -105,7 +105,6 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
   },
   {
     id: 'evt_broadband_jamming',
-    duration: 1,
     targetedMedia: ['Radio'],
     translations: {
       CivilDefense: {
@@ -130,8 +129,8 @@ export const V2_DISASTER_EVENTS: DisasterEvent[] = [
   },
   {
     id: 'evt_optimal_calm',
-    duration: 1,
     targetedMedia: [],
+    creditBonus: 1,
     translations: {
       CivilDefense: {
         title: '天候晴朗風平浪靜 (通訊黃金期)',

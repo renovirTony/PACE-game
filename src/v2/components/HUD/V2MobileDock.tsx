@@ -1,4 +1,3 @@
-import React from 'react';
 import { Shield, Radio, ShoppingBag, Layers } from 'lucide-react';
 
 export type MobileTab = 'defense' | 'missions' | 'market' | 'tactics';

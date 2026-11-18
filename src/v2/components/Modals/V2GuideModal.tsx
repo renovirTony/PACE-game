@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { 
   BookOpen, 
   Shield, 
@@ -304,6 +304,8 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
                     <li><b>從備用倉庫拿裝備裝上</b>（花費 1 AP）：把剛才收在倉庫裡的裝備重新裝回防線上。</li>
                     <li><b>緊急野戰充電</b>（花費 1 AP）：為指揮部補充 <b>⚡ 2 格電量</b>。</li>
                     <li><b>發起通訊檢定</b>（花費 1 AP）：點擊場上的救災任務卡，發動通訊防線嘗試連通救人！</li>
+                    <li><b>後勤調撥</b>（花費 1 AP）：向應變中心申請 <b>💰 2 物資</b>。錢不夠買裝備時用它解套。</li>
+                    <li><b>重抽任務</b>（花費 1 AP）：場上三題任務你的防線都做不到時，一次換掉全部任務。</li>
                   </ol>
                 </div>
 
@@ -312,6 +314,7 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
                   <ol className="list-decimal pl-4 space-y-1 text-[11px] text-slate-300">
                     <li><b>打出手牌戰術卡</b>：<b>不消耗任何 AP</b>！隨時想用就用，能瞬間帶來免 AP 行動、直接補電補錢、或者短暫抵擋天災等強力效果。</li>
                     <li><b>將防線裝備卸下存入倉庫</b>：隨時可以把暫時用不到的裝備卸下收到備用倉庫騰出空位，<b>不花費 AP</b>。</li>
+                    <li><b>拆解倉庫裝備</b>：把倉庫裡用不到的裝備拆掉，回收<b>買價一半</b>的物資（無條件進位；開局附贈的裝備買價為 0，拆了不會拿到物資）。</li>
                   </ol>
                 </div>
               </div>
@@ -331,7 +334,7 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
               <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-[11px] flex flex-col gap-1.5">
                 <b className="text-slate-200">🔍 檢查這 4 個條件：</b>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5 text-slate-400">
-                  <div>🔋 <b>電量夠不夠？</b>（開這台設備的電量是否充足？）</div>
+                  <div>🔋 <b>電量夠不夠？</b>（開這台設備的電量是否充足？0⚡ 免電裝備不受停電影響）</div>
                   <div>🌪️ <b>有沒有被天災打斷？</b>（傳輸方式是否正好遭天災中斷？）</div>
                   <div>📊 <b>傳輸量夠不夠？</b>（若需傳影片，低階文字工具無法支援）</div>
                   <div>📡 <b>通訊距離夠不夠遠？</b>（能否穿透高山、地底或長距離？）</div>
@@ -355,7 +358,7 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
 
               <p className="text-[11px] text-slate-400 mt-1">
                 ❌ <b>若四道防線全都不合格</b>：通訊全數中斷，失去這 1 AP，系統會彈出【專家檢討報告】告訴你哪裡出了問題。<br />
-                💡 <i>每張設備與戰術卡的詳細數值，可以隨時點擊遊戲內的【卡片全圖鑑】查看！</i>
+                💡 <i>每張設備與戰術卡的詳細數值，可以隨時點擊遊戲內的【卡牌圖鑑】查看！</i>
               </p>
             </div>
           )}

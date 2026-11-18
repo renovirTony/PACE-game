@@ -1,78 +1,63 @@
-import React, { useEffect, useState } from 'react';
-import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, WorldviewType } from '../../types/game';
-import { canPlaceCardInSlot, getEffectivePowerCost } from '../../engine/rules';
-import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
-import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, RANGE_META, getCommsCardMediumInfo } from '../../data/terminology';
+import { useEffect, useState } from 'react';
+import { CommsCard, DisasterEvent, PACESlot, Player, WorldviewType } from '../../types/game';
+import { canPlaceCardInSlot, getEffectivePowerCost, getRecycleRefund, getSlotRevenueRate, isCardBlockedByEvent } from '../../engine/rules';
+import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, P_SLOT_RULE_LABEL, RANGE_META, getCommsCardMediumInfo } from '../../data/terminology';
 import { EquipCardSpecs } from '../Cards/EquipCardSpecs';
-import { 
-  Radio, 
-  Smartphone, 
-  Satellite, 
-  Cable, 
-  Bike, 
-  Sun, 
-  Volume2, 
-  Truck, 
-  Cpu, 
-  Zap, 
-  ShieldAlert, 
-  AlertTriangle, 
-  CheckCircle,
-  ArrowLeftRight,
-  Archive,
-  Plus,
-  Trash2,
-  ZapOff,
-  CloudRain,
-  XCircle,
-  Lock
-} from 'lucide-react';
+import { Radio, AlertTriangle, ArrowLeftRight, Archive } from 'lucide-react';
 
 interface CustomPaceBoardProps {
   player: Player;
   activeEvent: DisasterEvent | null;
   isCurrentPlayer: boolean;
   worldview: WorldviewType;
-  onSwapSlots: (slotA: PACESlot, slotB: PACESlot) => void | boolean;
+  onSwapSlots: (slotA: PACESlot, slotB: PACESlot) => boolean;
   onStoreCard: (slot: PACESlot) => void;
-  onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void | boolean;
-  onDiscardFromInventory?: (cardId: string) => void;
+  onEquipFromInventory: (card: CommsCard, targetSlot: PACESlot) => boolean;
   onRecycleInventoryCard?: (cardId: string) => boolean;
   isMobile?: boolean;
   isVertical?: boolean;
   onGoToMarket?: () => void;
 }
 
-const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string; revenueLabel: string }> = {
+const slotMeta: Record<PACESlot, { title: string; subtitle: string; roleDesc: string; defaultColor: string }> = {
   P: {
     title: '[P] 主要防線 (Primary)',
-    subtitle: '平時主力 · 🔒 限中/高頻寬',
+    subtitle: `平時主力 · ${P_SLOT_RULE_LABEL}`,
     roleDesc: '平時優先使用 · 能傳送大量資料與影片 · 成功獲收益 100% 滿額分',
     defaultColor: 'border-cyan-500/40 bg-cyan-950/20 text-cyan-300',
-    revenueLabel: '收益 100%',
   },
   A: {
     title: '[A] 備用防線 (Alternate)',
     subtitle: '第一後備通訊',
     roleDesc: '主力受阻時接手 · 建議使用不同傳輸方式 · 成功獲收益 100% 滿額分',
     defaultColor: 'border-blue-500/40 bg-blue-950/20 text-blue-300',
-    revenueLabel: '收益 100%',
   },
   C: {
     title: '[C] 應急防線 (Contingency)',
     subtitle: '第二後備應急通訊',
     roleDesc: '前兩道都失效時接手 · 具備抗災耐受力 · 成功獲收益 70% 止血分',
     defaultColor: 'border-amber-500/40 bg-amber-950/20 text-amber-300',
-    revenueLabel: '收益 70%',
   },
   E: {
     title: '[E] 緊急防線 (Emergency)',
     subtitle: '最後一道保命防線',
     roleDesc: '科技全滅時的免電手段 (吹哨/光碼/信差) · 成功獲收益 50% 保命分',
     defaultColor: 'border-red-500/40 bg-red-950/20 text-red-300',
-    revenueLabel: '收益 50%',
   },
 };
+
+/** 槽位收益徽章：由引擎的 getSlotRevenueRate 算出，會反映「志願者中繼台」讓 C/E 變 100% */
+function getRevenueBadge(slot: PACESlot, player: Player): { label: string; title: string; isDegraded: boolean } {
+  const pct = Math.round(getSlotRevenueRate(slot, player) * 100);
+  const boostedByRelay = (slot === 'C' || slot === 'E') && pct === 100;
+  return {
+    label: `收益 ${pct}%${boostedByRelay ? ' ↑' : ''}`,
+    title: boostedByRelay
+      ? '志願者中繼台生效中：本回合由此防線接手也能拿到 100% 滿額得分'
+      : `任務由此防線接手時，得分折算為滿額的 ${pct}%`,
+    isDegraded: pct < 100,
+  };
+}
 
 /** 槽位簡稱（雙端共用，避免文案分歧） */
 const SLOT_SHORT_LABEL: Record<PACESlot, string> = {
@@ -81,9 +66,6 @@ const SLOT_SHORT_LABEL: Record<PACESlot, string> = {
   C: '應急',
   E: '緊急',
 };
-
-/** 倉庫拆解回收值：依買價動態折半（與引擎 recycleInventoryCard 同公式） */
-const getRecycleRefund = (cost: number): number => Math.max(1, Math.ceil(cost / 2));
 
 /** 槽位徽章配色（雙端共用，[E] 統一為紅色系） */
 const SLOT_BADGE_CLASS: Record<PACESlot, string> = {
@@ -101,7 +83,6 @@ export function CustomPaceBoard({
   onSwapSlots,
   onStoreCard,
   onEquipFromInventory,
-  onDiscardFromInventory,
   onRecycleInventoryCard,
   isMobile = false,
   isVertical = false,
@@ -147,7 +128,6 @@ export function CustomPaceBoard({
     }
   };
 
-  const hasAP = player.actionPoints > 0;
 
   // =========================================================================
   // 1. VERTICAL LAYOUT (Mobile or Desktop Left Column Command Center)
@@ -223,11 +203,8 @@ export function CustomPaceBoard({
             const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
             const canActionAP = player.actionPoints > 0 || isAgile;
 
-            // Disaster check
-            const isEmpImmune = Boolean(card?.resilience.empShield || player.activeBuffs?.faradayEmpArmor);
-            const isDisasterTargeted = Boolean(
-              card && activeEvent && activeEvent.targetedMedia.includes(card.medium) && !(activeEvent.id === 'evt_emp_strike' && isEmpImmune)
-            );
+            // Disaster check（與引擎共用同一判斷，含法拉第袋豁免）
+            const isDisasterTargeted = Boolean(card && isCardBlockedByEvent(card, activeEvent, player));
 
             // Power check
             const effectivePowerCost = card ? getEffectivePowerCost(card, activeEvent) : 0;
@@ -257,7 +234,7 @@ export function CustomPaceBoard({
 
             const cardName = card ? (card.translations[worldview]?.name || card.id) : null;
             const cardContent = card ? card.translations[worldview] : null;
-            const rangeInfo = card ? (RANGE_META[card.range] || { label: card.range, fullLabel: card.range, desc: '' }) : null;
+            const revenue = getRevenueBadge(slot, player);
 
             const slotBorder = isSwapSource
               ? 'border-cyan-400 bg-cyan-950/60 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400'
@@ -282,17 +259,17 @@ export function CustomPaceBoard({
                     </span>
                     <span
                       className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 whitespace-nowrap ${
-                        slot === 'C' || slot === 'E'
+                        revenue.isDegraded
                           ? 'bg-amber-950/60 text-amber-300 border border-amber-500/30'
                           : 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/30'
                       }`}
-                      title={`任務由此防線接手時，得分折算為滿額的 ${meta.revenueLabel.replace('收益 ', '')}`}
+                      title={revenue.title}
                     >
-                      {meta.revenueLabel}
+                      {revenue.label}
                     </span>
                     {slot === 'P' && (
                       <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0 whitespace-nowrap" title="[P] 主要防線必須具備日常通訊能力，僅允許 Medium 語音級以上頻寬設備">
-                        🔒 限中/高頻寬
+                        {P_SLOT_RULE_LABEL}
                       </span>
                     )}
                     {mediumInfo && (
@@ -481,7 +458,7 @@ export function CustomPaceBoard({
                         {card.translations[worldview]?.name || card.id}
                       </span>
                       <span className="text-[10px] text-slate-400">
-                        {mediumInfo?.label} · {rangeLabel} · {card.bandwidth} · {card.powerCost === 0 ? '0⚡免電' : `${card.powerCost}⚡`}
+                        {mediumInfo?.label} · {rangeLabel} · {BANDWIDTH_META[card.bandwidth].compactLabel} · {card.powerCost === 0 ? '0⚡ 免電' : `${card.powerCost}⚡`}
                       </span>
                     </div>
 
@@ -568,7 +545,7 @@ export function CustomPaceBoard({
           <AlertTriangle className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <div>
             <span className="font-bold">⚠️ 同類設備同時失靈警示：</span>
-            [P] 與 [A] 槽皆為【{PHYSICAL_MEDIUM_META[pMedium!].label}】，一旦遭天災破壞前兩道防線將同時癱瘓！建議點擊「調換防線順序」錯開傳輸方式。
+            [P] 與 [A] 槽皆為【{PHYSICAL_MEDIUM_META[pMedium!].label}】，一旦遭天災破壞前兩道防線將同時癱瘓！建議點擊「調換順序」錯開傳輸方式。
           </div>
         </div>
       )}
@@ -613,16 +590,14 @@ export function CustomPaceBoard({
           const isAgile = Boolean(player.activeBuffs?.agileProtocolActive);
           const canActionAP = player.actionPoints > 0 || isAgile;
 
-          // Disaster check
-          const isEmpImmune = Boolean(card?.resilience.empShield || player.activeBuffs?.faradayEmpArmor);
-          const isDisasterTargeted = Boolean(
-            card && activeEvent && activeEvent.targetedMedia.includes(card.medium) && !(activeEvent.id === 'evt_emp_strike' && isEmpImmune)
-          );
+          // Disaster check（與引擎共用同一判斷，含法拉第袋豁免）
+          const isDisasterTargeted = Boolean(card && isCardBlockedByEvent(card, activeEvent, player));
 
           // Power check
           const effectivePowerCost = card ? getEffectivePowerCost(card, activeEvent) : 0;
           const isOutOfPower = Boolean(card && player.energy < effectivePowerCost);
           const isCardDisabled = isDisasterTargeted || isOutOfPower;
+          const revenue = getRevenueBadge(slot, player);
 
           // Swap validation (與手機版同步：不合法的目標槽位不可點擊並說明原因)
           let isSwapValidWithSource = true;
@@ -674,17 +649,17 @@ export function CustomPaceBoard({
                   </span>
                   <span
                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold shrink-0 whitespace-nowrap ${
-                      slot === 'C' || slot === 'E'
+                      revenue.isDegraded
                         ? 'bg-amber-950/60 text-amber-300 border border-amber-500/30'
                         : 'bg-emerald-950/60 text-emerald-300 border border-emerald-500/30'
                     }`}
-                    title={`任務由此防線接手時，得分折算為滿額的 ${meta.revenueLabel.replace('收益 ', '')}`}
+                    title={revenue.title}
                   >
-                    {meta.revenueLabel}
+                    {revenue.label}
                   </span>
                   {slot === 'P' && (
                     <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-800 text-slate-400 border border-slate-700 shrink-0 whitespace-nowrap" title="[P] 主要防線必須具備日常通訊能力，僅允許 Medium 語音級以上頻寬設備">
-                      🔒 限中/高頻寬
+                      {P_SLOT_RULE_LABEL}
                     </span>
                   )}
                   {mediumInfo && (
@@ -801,11 +776,11 @@ export function CustomPaceBoard({
                             ? 'bg-slate-900/40 text-slate-600 border-slate-800 cursor-not-allowed opacity-50'
                             : 'bg-slate-800 hover:bg-slate-700 text-cyan-300 border-slate-700'
                         }`}
-                        title={canActionAP ? (isAgile ? '調換防線順序 (0 AP)' : '調換防線順序 (1 AP)') : '行動點數 (AP) 不足'}
+                        title={canActionAP ? (isAgile ? '調換防線順序（0 AP）' : '調換防線順序（1 AP）') : '行動點數 (AP) 不足'}
                       >
                         <ArrowLeftRight className="w-3.5 h-3.5 shrink-0" />
                         <span className="whitespace-nowrap">
-                          {isSwapSource ? '取消調換' : isAgile ? '調換防線順序 (0 AP)' : '調換防線順序 (1 AP)'}
+                          {isSwapSource ? '取消調換' : isAgile ? '調換順序 (0 AP)' : '調換順序 (1 AP)'}
                         </span>
                       </button>
 

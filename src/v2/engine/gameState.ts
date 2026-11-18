@@ -17,10 +17,11 @@ import { V2_EQUIPMENT_CARDS, V2_STARTER_CARDS } from '../data/equipmentCards';
 import { V2_DISASTER_EVENTS } from '../data/disasterEvents';
 import { V2_CRISIS_MISSIONS } from '../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../data/tacticCards';
-import { evaluateV2PACETransmission, canPlaceCardInSlot, getEffectivePowerCost } from './rules';
+import { evaluateV2PACETransmission, canPlaceCardInSlot, getEffectivePowerCost, rankPlayers, getCoWinners, getRecycleRefund } from './rules';
 import { computeV2AIDecision } from './ai';
-import { P2PMultiplayerManager } from './multiplayer';
+import { P2PMultiplayerManager, MultiplayerManagerCallbacks } from './multiplayer';
 import { audioManager } from '../../engine/audio';
+import { safeStorage } from '../utils/safeStorage';
 
 function shuffleArray<T>(array: T[]): T[] {
   const arr = [...array];
@@ -61,6 +62,55 @@ export function refillMarket<T extends { id: string }>(
   if (reshuffled.length === 0) return { market, deck: [] };
   return { market: [...market, reshuffled[0]], deck: reshuffled.slice(1) };
 }
+
+/** PACE 起始配置：P 為日常手機公眾網 (Cellular / High)，A 為第一備援無線電 (Radio / Medium) */
+function getStarterBoard(): Player['paceBoard'] {
+  const cellStarter = V2_STARTER_CARDS.find(c => c.id === 'start_cellular_phone') || V2_STARTER_CARDS[0];
+  const radioStarter = V2_STARTER_CARDS.find(c => c.id === 'start_frs_walkie') || V2_STARTER_CARDS[1];
+  return { P: cellStarter, A: radioStarter, C: null, E: null };
+}
+
+type PlayerProfile = Pick<Player, 'id' | 'name' | 'isAI' | 'avatar' | 'color'> & Partial<Player>;
+
+/** 建立一位新玩家（起始資源、起始防線、空白統計），profile 中的欄位可覆蓋預設值 */
+function createPlayer(profile: PlayerProfile): Player {
+  return {
+    score: 0,
+    credits: 3,
+    actionPoints: 3,
+    maxActionPoints: 3,
+    energy: 3,
+    maxEnergy: 6,
+    paceBoard: getStarterBoard(),
+    inventory: [],
+    handTactics: [],
+    completedMissions: [],
+    stats: {
+      transmissions: 0,
+      pSuccesses: 0,
+      aSuccesses: 0,
+      cSuccesses: 0,
+      eSuccesses: 0,
+      degradedTransmissions: 0,
+    },
+    ...profile,
+  };
+}
+
+const HUMAN_PLAYER_PROFILE: PlayerProfile = { id: 'p1', name: '你 (指揮官)', isAI: false, avatar: '📡', color: '#06b6d4' };
+
+/** 尚未開局（players 為空）時給 UI 用的佔位玩家 */
+const FALLBACK_PLAYER: Player = createPlayer({
+  ...HUMAN_PLAYER_PROFILE,
+  name: '你',
+  paceBoard: { P: null, A: null, C: null, E: null },
+});
+
+const AI_BOT_PROFILES:Omit<PlayerProfile, 'id' | 'isAI'>[] = [
+  { name: '應變組長 雅婷', avatar: '🤖', color: '#a855f7', aiPersonality: 'Pragmatic' },
+  { name: '火腿老手 志強', avatar: '📻', color: '#f59e0b', aiPersonality: 'Survivalist' },
+  { name: '特戰通訊官 豪哥', avatar: '⚡', color: '#10b981', aiPersonality: 'HighTech' },
+];
 
 export interface UseV2GameStateReturn {
   round: number;
@@ -105,11 +155,9 @@ export interface UseV2GameStateReturn {
   // Actions
   startGame: (mode: GameMode, botCount?: number) => void;
   buyEquipment: (card: CommsCard, targetSlot: PACESlot) => boolean;
-  assignSlot: (slot: PACESlot, card: CommsCard | null) => void;
-  swapSlots: (slotA: PACESlot, slotB: PACESlot) => void;
+  swapSlots: (slotA: PACESlot, slotB: PACESlot) => boolean;
   storeCard: (slot: PACESlot) => void;
-  equipFromInventory: (card: CommsCard, targetSlot: PACESlot) => void;
-  discardFromInventory: (cardId: string) => void;
+  equipFromInventory: (card: CommsCard, targetSlot: PACESlot) => boolean;
   buyTactic: (card: TacticCard) => boolean;
   playTactic: (card: TacticCard) => boolean;
   rechargeEnergy: () => boolean;
@@ -137,7 +185,7 @@ export function useV2GameState(): UseV2GameStateReturn {
 
   // Worldview state with persistence
   const [worldview, setWorldviewState] = useState<WorldviewType>(() => {
-    const saved = localStorage.getItem('pace_v2_worldview');
+    const saved = safeStorage.get('pace_v2_worldview');
     return (saved === 'CivilDefense' || saved === 'IslandResilience' || saved === 'CyberDisconnect') 
       ? (saved as WorldviewType) 
       : 'CivilDefense';
@@ -145,7 +193,7 @@ export function useV2GameState(): UseV2GameStateReturn {
 
   const setWorldview = useCallback((wv: WorldviewType) => {
     setWorldviewState(wv);
-    localStorage.setItem('pace_v2_worldview', wv);
+    safeStorage.set('pace_v2_worldview', wv);
   }, []);
 
   const [players, setPlayers] = useState<Player[]>([]);
@@ -177,10 +225,11 @@ export function useV2GameState(): UseV2GameStateReturn {
   const multiplayerRef = useRef<P2PMultiplayerManager | null>(null);
   const aiTimerRef = useRef<NodeJS.Timeout | null>(null);
 
-  const addLog = useCallback((type: GameLog['type'], message: string, playerId?: string, playerName?: string, details?: string) => {
+  /** roundOverride：在 setRound 的同一個 callback 內記錄新回合事件時使用（此時 closure 裡的 round 仍是舊值） */
+  const addLog = useCallback((type: GameLog['type'], message: string, playerId?: string, playerName?: string, details?: string, roundOverride?: number) => {
     const newLog: GameLog = {
       id: Math.random().toString(36).substring(2, 9),
-      round,
+      round: roundOverride ?? round,
       timestamp: new Date().toLocaleTimeString('zh-TW', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
       type,
       playerId,
@@ -234,117 +283,16 @@ export function useV2GameState(): UseV2GameStateReturn {
     const initialEvent = shuffledEvents[0];
     const restEvents = shuffledEvents.slice(1);
 
-    // PACE 起始配置：P 固定為日常手機公眾網 (Cellular / High)，A 固定為第一備援無線電 (Radio / Medium)
-    const cellStarter = V2_STARTER_CARDS.find(c => c.id === 'start_cellular_phone') || V2_STARTER_CARDS[0];
-    const radioStarter = V2_STARTER_CARDS.find(c => c.id === 'start_frs_walkie') || V2_STARTER_CARDS[1];
-
     // 玩家配置
-    const newPlayers: Player[] = [];
-
-    // 主玩家
-    newPlayers.push({
-      id: 'p1',
-      name: '你 (指揮官)',
-      isAI: false,
-      avatar: '📡',
-      color: '#06b6d4',
-      score: 0,
-      credits: 3,
-      actionPoints: 3,
-      maxActionPoints: 3,
-      energy: 3,
-      maxEnergy: 6,
-      paceBoard: {
-        P: cellStarter,
-        A: radioStarter,
-        C: null,
-        E: null,
-      },
-      inventory: [],
-      handTactics: [],
-      completedMissions: [],
-      stats: {
-        transmissions: 0,
-        pSuccesses: 0,
-        aSuccesses: 0,
-        cSuccesses: 0,
-        eSuccesses: 0,
-        degradedTransmissions: 0,
-      },
-    });
+    const newPlayers: Player[] = [createPlayer(HUMAN_PLAYER_PROFILE)];
 
     if (mode === 'SinglePlayer') {
-      const botConfigs = [
-        { name: '應變組長 雅婷', avatar: '🤖', color: '#a855f7', aiPersonality: 'Pragmatic' as const },
-        { name: '火腿老手 志強', avatar: '📻', color: '#f59e0b', aiPersonality: 'Survivalist' as const },
-        { name: '特戰通訊官 豪哥', avatar: '⚡', color: '#10b981', aiPersonality: 'HighTech' as const },
-      ];
-
       for (let i = 0; i < bots; i++) {
-        const cfg = botConfigs[i % botConfigs.length];
-        newPlayers.push({
-          id: `ai_${i + 1}`,
-          name: cfg.name,
-          isAI: true,
-          aiPersonality: cfg.aiPersonality,
-          avatar: cfg.avatar,
-          color: cfg.color,
-          score: 0,
-          credits: 3,
-          actionPoints: 3,
-          maxActionPoints: 3,
-          energy: 3,
-          maxEnergy: 6,
-          paceBoard: {
-            P: cellStarter,
-            A: radioStarter,
-            C: null,
-            E: null,
-          },
-          inventory: [],
-          handTactics: [],
-          completedMissions: [],
-          stats: {
-            transmissions: 0,
-            pSuccesses: 0,
-            aSuccesses: 0,
-            cSuccesses: 0,
-            eSuccesses: 0,
-            degradedTransmissions: 0,
-          },
-        });
+        const cfg = AI_BOT_PROFILES[i % AI_BOT_PROFILES.length];
+        newPlayers.push(createPlayer({ ...cfg, id: `ai_${i + 1}`, isAI: true }));
       }
     } else if (mode === 'PassAndPlay') {
-      newPlayers.push({
-        id: 'p2',
-        name: '二號指揮官',
-        isAI: false,
-        avatar: '🛡️',
-        color: '#f97316',
-        score: 0,
-        credits: 3,
-        actionPoints: 3,
-        maxActionPoints: 3,
-        energy: 3,
-        maxEnergy: 6,
-        paceBoard: {
-          P: cellStarter,
-          A: radioStarter,
-          C: null,
-          E: null,
-        },
-        inventory: [],
-        handTactics: [],
-        completedMissions: [],
-        stats: {
-          transmissions: 0,
-          pSuccesses: 0,
-          aSuccesses: 0,
-          cSuccesses: 0,
-          eSuccesses: 0,
-          degradedTransmissions: 0,
-        },
-      });
+      newPlayers.push(createPlayer({ id: 'p2', name: '二號指揮官', isAI: false, avatar: '🛡️', color: '#f97316' }));
     }
 
     setPlayers(newPlayers);
@@ -361,77 +309,16 @@ export function useV2GameState(): UseV2GameStateReturn {
     setWinner(null);
     setPhase('PLAYER_ACTION');
 
-    addLog('info', `📢 災難演習開始！首波環境事件【${initialEvent.translations[worldview]?.title}】已生效！`);
+    addLog('info', `📢 災難演習開始！首波環境事件【${initialEvent.translations[worldview]?.title}】已生效！`, undefined, undefined, undefined, 1);
   }, [worldview, addLog]);
 
   // 新手教學引導啟動 (100% 確定性精選教學牌組與任務)
   const startTutorial = useCallback(() => {
-    const cellStarter = V2_STARTER_CARDS.find(c => c.id === 'start_cellular_phone') || V2_STARTER_CARDS[0];
-    const radioStarter = V2_STARTER_CARDS.find(c => c.id === 'start_frs_walkie') || V2_STARTER_CARDS[1];
     const agileTactic = V2_TACTIC_CARDS.find(t => t.id === 'tac_agile_protocol') || V2_TACTIC_CARDS[0];
 
     const tutPlayers: Player[] = [
-      {
-        id: 'p1',
-        name: '你 (指揮官)',
-        isAI: false,
-        avatar: '📡',
-        color: '#06b6d4',
-        score: 0,
-        credits: 3,
-        actionPoints: 3,
-        maxActionPoints: 3,
-        energy: 4,
-        maxEnergy: 6,
-        paceBoard: {
-          P: cellStarter,
-          A: radioStarter,
-          C: null,
-          E: null,
-        },
-        inventory: [],
-        handTactics: [agileTactic],
-        completedMissions: [],
-        stats: {
-          transmissions: 0,
-          pSuccesses: 0,
-          aSuccesses: 0,
-          cSuccesses: 0,
-          eSuccesses: 0,
-          degradedTransmissions: 0,
-        },
-      },
-      {
-        id: 'ai_1',
-        name: '應變組長 雅婷',
-        isAI: true,
-        aiPersonality: 'Pragmatic',
-        avatar: '🤖',
-        color: '#a855f7',
-        score: 0,
-        credits: 3,
-        actionPoints: 3,
-        maxActionPoints: 3,
-        energy: 3,
-        maxEnergy: 6,
-        paceBoard: {
-          P: cellStarter,
-          A: radioStarter,
-          C: null,
-          E: null,
-        },
-        inventory: [],
-        handTactics: [],
-        completedMissions: [],
-        stats: {
-          transmissions: 0,
-          pSuccesses: 0,
-          aSuccesses: 0,
-          cSuccesses: 0,
-          eSuccesses: 0,
-          degradedTransmissions: 0,
-        },
-      },
+      createPlayer({ ...HUMAN_PLAYER_PROFILE, energy: 4, handTactics: [agileTactic] }),
+      createPlayer({ ...AI_BOT_PROFILES[0], id: 'ai_1', isAI: true }),
     ];
 
     // 精選市場裝備卡 (衛星電話、強光手電筒、通訊車、地下光纖)
@@ -471,7 +358,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     setPhase('PLAYER_ACTION');
     setIsTutorialMode(true);
     setTutorialStep(1);
-    addLog('info', '🎓 進入實戰新手教學：跟隨引導逐步掌握自組 PACE 防線與媒介獨立性！');
+    addLog('info', '🎓 進入實戰新手教學：跟隨引導逐步掌握自組 PACE 防線與媒介獨立性！', undefined, undefined, undefined, 1);
   }, [addLog]);
 
   const nextTutorialStep = useCallback(() => {
@@ -491,7 +378,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       addLog('info', '🏠 已結束新手教學，返回指揮部主選單。');
     } else {
       startGame('SinglePlayer', 1);
-      addLog('success', '🎉 結訓認證完成！已展開全新正式實戰演習！');
+      addLog('success', '🎉 結訓認證完成！已展開全新正式實戰演習！', undefined, undefined, undefined, 1);
     }
   }, [leaveRoom, startGame, addLog]);
 
@@ -547,24 +434,6 @@ export function useV2GameState(): UseV2GameStateReturn {
     addLog('action', `【${curPlayer.name}】${isFreeBuy ? '【後勤通道 0 AP】' : '消耗 1 AP '}採購裝備【${cardName}】並配置至 [${targetSlot}] 槽位。${displacedText}`, curPlayer.id, curPlayer.name);
     return true;
   }, [players, activePlayerIndex, market, equipmentDeck, worldview, addLog]);
-
-  // 自由調動/指派槽位
-  const assignSlot = useCallback((slot: PACESlot, card: CommsCard | null) => {
-    if (card) {
-      const slotCheck = canPlaceCardInSlot(card, slot);
-      if (!slotCheck.valid) return;
-    }
-    setPlayers(prev => prev.map((p, idx) => {
-      if (idx !== activePlayerIndex) return p;
-      return {
-        ...p,
-        paceBoard: {
-          ...p.paceBoard,
-          [slot]: card,
-        },
-      };
-    }));
-  }, [activePlayerIndex]);
 
   // 對調任意兩道防線 (消耗 1 AP 戰術調度點數，若有敏捷協議則 0 AP)
   const swapSlots = useCallback((slotA: PACESlot, slotB: PACESlot): boolean => {
@@ -677,18 +546,6 @@ export function useV2GameState(): UseV2GameStateReturn {
     addLog('action', `【${curPlayer.name}】${isAgile ? '【敏捷協議 0 AP】' : '消耗 1 AP '}從備用倉庫將【${cardName}】配置至 [${targetSlot}] 槽位。`, curPlayer.id, curPlayer.name);
     return true;
   }, [players, activePlayerIndex, worldview, addLog]);
-
-  // 徹底丟棄倉庫中的裝備
-  const discardFromInventory = useCallback((cardId: string) => {
-    setPlayers(prev => prev.map((p, idx) => {
-      if (idx !== activePlayerIndex) return p;
-      const target = p.inventory.find(c => c.id === cardId);
-      return {
-        ...p,
-        inventory: target ? removeOne(p.inventory, target) : p.inventory,
-      };
-    }));
-  }, [activePlayerIndex]);
 
   // 購買戰術卡 (若有綠色後勤通道則 0 AP)
   const buyTactic = useCallback((card: TacticCard): boolean => {
@@ -827,7 +684,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       return false;
     }
 
-    const refund = Math.max(1, Math.ceil(targetCard.cost / 2));
+    const refund = getRecycleRefund(targetCard.cost);
 
     audioManager.playClick();
 
@@ -997,7 +854,7 @@ export function useV2GameState(): UseV2GameStateReturn {
       setRound(nextRound);
       const blackoutEvt = V2_DISASTER_EVENTS.find(e => e.id === 'evt_grid_blackout') || V2_DISASTER_EVENTS[0];
       setActiveEvent(blackoutEvt);
-      addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${blackoutEvt.translations[worldview]?.title}】！`);
+      addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${blackoutEvt.translations[worldview]?.title}】！`, undefined, undefined, undefined, nextRound);
 
       // 重置玩家 AP 並固定由指揮官行動
       setPlayers(prev => prev.map(p => ({
@@ -1014,31 +871,30 @@ export function useV2GameState(): UseV2GameStateReturn {
     if (nextIndex === 0) {
       const nextRound = round + 1;
 
-      // 檢查勝利條件 (達標 20 分或達 6 回合)
-      const topPlayer = [...players].sort((a, b) => b.score - a.score)[0];
+      // 檢查勝利條件 (達標 20 分或達 6 回合)；同分依任務數、媒介多樣性、降級次數決勝
+      const topPlayer = rankPlayers(players)[0];
       if (nextRound > maxRounds || topPlayer.score >= targetScore) {
+        const coWinners = getCoWinners(players);
         setWinner(topPlayer);
         setPhase('GAME_OVER');
         audioManager.playVictoryFanfare();
-        addLog('success', `🎉 演習結束！指揮官【${topPlayer.name}】以 🏆${topPlayer.score} 分榮獲最卓越韌性先鋒！`);
+        addLog(
+          'success',
+          coWinners.length > 1
+            ? `🎉 演習結束！${coWinners.map(p => `【${p.name}】`).join('、')}以 🏆${topPlayer.score} 分並列最卓越韌性先鋒！`
+            : `🎉 演習結束！指揮官【${topPlayer.name}】以 🏆${topPlayer.score} 分榮獲最卓越韌性先鋒！`
+        );
         return;
       }
 
       setRound(nextRound);
 
       // 翻開下一個災難事件 (若事件庫空了也重洗)
-      if (eventDeck.length > 0) {
-        const nextEvt = eventDeck[0];
-        setActiveEvent(nextEvt);
-        setEventDeck(d => d.slice(1));
-        addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${nextEvt.translations[worldview]?.title}】！`);
-      } else {
-        const reshuffledEvents = shuffleArray(V2_DISASTER_EVENTS);
-        const nextEvt = reshuffledEvents[0];
-        setActiveEvent(nextEvt);
-        setEventDeck(reshuffledEvents.slice(1));
-        addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${nextEvt.translations[worldview]?.title}】！`);
-      }
+      const eventPool = eventDeck.length > 0 ? eventDeck : shuffleArray(V2_DISASTER_EVENTS);
+      const nextEvt = eventPool[0];
+      setActiveEvent(nextEvt);
+      setEventDeck(eventPool.slice(1));
+      addLog('event', `🌪️ 第 ${nextRound} 週期極端災害爆發：【${nextEvt.translations[worldview]?.title}】！`, undefined, undefined, undefined, nextRound);
 
       // 重置所有玩家 AP
       setPlayers(prev => prev.map(p => ({
@@ -1066,19 +922,26 @@ export function useV2GameState(): UseV2GameStateReturn {
         activeEvent
       );
 
+      // 每個動作回傳是否成功；失敗時狀態不會改變、這個 effect 也不會重跑，
+      // 所以直接結束回合，避免 AI 卡在原地
+      let acted = false;
       if (decision.actionType === 'BUY_EQUIPMENT' && decision.targetCard && decision.targetSlot) {
-        buyEquipment(decision.targetCard, decision.targetSlot);
+        acted = buyEquipment(decision.targetCard, decision.targetSlot);
       } else if (decision.actionType === 'BUY_TACTIC' && decision.targetTactic) {
-        buyTactic(decision.targetTactic);
+        acted = buyTactic(decision.targetTactic);
       } else if (decision.actionType === 'PLAY_TACTIC' && decision.targetTactic) {
-        playTactic(decision.targetTactic);
+        acted = playTactic(decision.targetTactic);
       } else if (decision.actionType === 'RECHARGE') {
-        rechargeEnergy();
+        acted = rechargeEnergy();
+      } else if (decision.actionType === 'REFRESH_MISSIONS') {
+        acted = refreshMissions();
+      } else if (decision.actionType === 'REQUISITION') {
+        acted = requestEmergencyRequisition();
       } else if (decision.actionType === 'TRANSMIT' && decision.targetMission) {
         transmitMission(decision.targetMission);
-      } else {
-        endTurn();
+        acted = true;
       }
+      if (!acted) endTurn();
     }, 1200);
 
     return () => {
@@ -1096,40 +959,52 @@ export function useV2GameState(): UseV2GameStateReturn {
     buyTactic,
     playTactic,
     rechargeEnergy,
+    refreshMissions,
+    requestEmergencyRequisition,
     transmitMission,
-    endTurn
+    endTurn,
+    isTutorialMode,
   ]);
 
-  // WebRTC P2P 連線方法
-  const createRoom = useCallback(async (name: string): Promise<string> => {
-    if (!multiplayerRef.current) {
-      multiplayerRef.current = new P2PMultiplayerManager({
-        onPeerJoined: (peer) => {
-          setPeers(prev => [...prev.filter(p => p.peerId !== peer.peerId), peer]);
-          addLog('info', `🌐 玩家【${peer.name}】已連線加入房間！`);
-        },
-        onPeerLeft: (peerId) => {
-          setPeers(prev => prev.filter(p => p.peerId !== peerId));
-          addLog('alert', `📡 連線玩家已離線。`);
-        },
-        onGameStateReceived: (syncedState) => {
-          if (syncedState.players) setPlayers(syncedState.players);
-          if (syncedState.round) setRound(syncedState.round);
-          if (syncedState.activePlayerIndex !== undefined) setActivePlayerIndex(syncedState.activePlayerIndex);
-          if (syncedState.market) setMarket(syncedState.market);
-          if (syncedState.activeMissions) setActiveMissions(syncedState.activeMissions);
-          if (syncedState.activeEvent) setActiveEvent(syncedState.activeEvent);
-          if (syncedState.phase) setPhase(syncedState.phase);
-        },
-        onActionReceived: () => {},
-        onConnectionStatus: (status, msg) => {
-          setConnectionStatus(status);
-          if (msg) setConnectionMsg(msg);
-        },
-      });
-    }
+  // WebRTC P2P 連線方法（目前入口已隱藏，見 AppV2 的 ONLINE_MULTIPLAYER_ENABLED；同步機制尚未接上）
+  const applySyncedState = useCallback((syncedState: any) => {
+    if (syncedState.players) setPlayers(syncedState.players);
+    if (syncedState.round) setRound(syncedState.round);
+    if (syncedState.activePlayerIndex !== undefined) setActivePlayerIndex(syncedState.activePlayerIndex);
+    if (syncedState.market) setMarket(syncedState.market);
+    if (syncedState.activeMissions) setActiveMissions(syncedState.activeMissions);
+    if (syncedState.activeEvent) setActiveEvent(syncedState.activeEvent);
+    if (syncedState.phase) setPhase(syncedState.phase);
+  }, []);
 
-    const code = await multiplayerRef.current.createRoom({
+  const handleConnectionStatus = useCallback((status: 'disconnected' | 'connecting' | 'connected' | 'error', msg?: string) => {
+    setConnectionStatus(status);
+    if (msg) setConnectionMsg(msg);
+  }, []);
+
+  /** 每次建立/加入房間都換一個新的連線管理器，避免沿用上一次（例如客端）的 callbacks */
+  const resetMultiplayerManager = useCallback((callbacks: MultiplayerManagerCallbacks) => {
+    multiplayerRef.current?.disconnect();
+    multiplayerRef.current = new P2PMultiplayerManager(callbacks);
+    return multiplayerRef.current;
+  }, []);
+
+  const createRoom = useCallback(async (name: string): Promise<string> => {
+    const manager = resetMultiplayerManager({
+      onPeerJoined: (peer) => {
+        setPeers(prev => [...prev.filter(p => p.peerId !== peer.peerId), peer]);
+        addLog('info', `🌐 玩家【${peer.name}】已連線加入房間！`);
+      },
+      onPeerLeft: (peerId) => {
+        setPeers(prev => prev.filter(p => p.peerId !== peerId));
+        addLog('alert', `📡 連線玩家已離線。`);
+      },
+      onGameStateReceived: applySyncedState,
+      onActionReceived: () => {},
+      onConnectionStatus: handleConnectionStatus,
+    });
+
+    const code = await manager.createRoom({
       name,
       avatar: '📡',
       color: '#06b6d4',
@@ -1137,38 +1012,25 @@ export function useV2GameState(): UseV2GameStateReturn {
     setRoomCode(code);
     setIsHost(true);
     return code;
-  }, [addLog]);
+  }, [addLog, applySyncedState, handleConnectionStatus, resetMultiplayerManager]);
 
   const joinRoom = useCallback(async (code: string, name: string): Promise<void> => {
-    if (!multiplayerRef.current) {
-      multiplayerRef.current = new P2PMultiplayerManager({
-        onPeerJoined: () => {},
-        onPeerLeft: () => {},
-        onGameStateReceived: (syncedState) => {
-          if (syncedState.players) setPlayers(syncedState.players);
-          if (syncedState.round) setRound(syncedState.round);
-          if (syncedState.activePlayerIndex !== undefined) setActivePlayerIndex(syncedState.activePlayerIndex);
-          if (syncedState.market) setMarket(syncedState.market);
-          if (syncedState.activeMissions) setActiveMissions(syncedState.activeMissions);
-          if (syncedState.activeEvent) setActiveEvent(syncedState.activeEvent);
-          if (syncedState.phase) setPhase(syncedState.phase);
-        },
-        onActionReceived: () => {},
-        onConnectionStatus: (status, msg) => {
-          setConnectionStatus(status);
-          if (msg) setConnectionMsg(msg);
-        },
-      });
-    }
+    const manager = resetMultiplayerManager({
+      onPeerJoined: () => {},
+      onPeerLeft: () => {},
+      onGameStateReceived: applySyncedState,
+      onActionReceived: () => {},
+      onConnectionStatus: handleConnectionStatus,
+    });
 
-    await multiplayerRef.current.joinRoom(code, {
+    await manager.joinRoom(code, {
       name,
       avatar: '🛡️',
       color: '#f97316',
     });
     setRoomCode(code);
     setIsHost(false);
-  }, []);
+  }, [applySyncedState, handleConnectionStatus, resetMultiplayerManager]);
 
   const clearLastTransmission = useCallback(() => {
     setLastTransmission(null);
@@ -1178,24 +1040,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     startGame(gameMode, botCount);
   }, [startGame, gameMode, botCount]);
 
-  const activePlayer = players[activePlayerIndex] || players[0] || {
-    id: 'p1',
-    name: '你',
-    isAI: false,
-    avatar: '📡',
-    color: '#06b6d4',
-    score: 0,
-    credits: 3,
-    actionPoints: 3,
-    maxActionPoints: 3,
-    energy: 3,
-    maxEnergy: 6,
-    paceBoard: { P: null, A: null, C: null, E: null },
-    inventory: [],
-    handTactics: [],
-    completedMissions: [],
-    stats: { transmissions: 0, pSuccesses: 0, aSuccesses: 0, cSuccesses: 0, eSuccesses: 0, degradedTransmissions: 0 },
-  };
+  const activePlayer = players[activePlayerIndex] || players[0] || FALLBACK_PLAYER;
 
   return {
     round,
@@ -1237,11 +1082,9 @@ export function useV2GameState(): UseV2GameStateReturn {
 
     startGame,
     buyEquipment,
-    assignSlot,
     swapSlots,
     storeCard,
     equipFromInventory,
-    discardFromInventory,
     buyTactic,
     playTactic,
     rechargeEnergy,

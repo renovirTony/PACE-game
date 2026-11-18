@@ -81,15 +81,14 @@ export interface CrisisMission {
     icon: string;
     expertTip?: string; // 專家提示 / 模組 B 失敗解說
   }>;
-  claimedBy: string[];
 }
 
 export interface DisasterEvent {
   id: string;
-  duration: number;
   targetedMedia: PhysicalMedium[]; // 遭到直接破壞中斷的物理媒介
-  powerDrainBonus?: number;       // 全場設備額外耗電 (如電網大斷電)
+  powerDrainBonus?: number;       // 需電設備額外耗電 (如電網大斷電；0⚡ 免電裝備不受影響)
   rangePenalty?: boolean;         // 視線距離受阻 (如濃霧暴雨)
+  creditBonus?: number;           // 成功通訊額外獲得的物資 (如通訊黃金期)
   translations: Record<WorldviewType, {
     title: string;
     desc: string;
@@ -173,13 +172,7 @@ export interface GameLog {
   details?: string;
 }
 
-export type GamePhase = 
-  | 'SETUP' 
-  | 'DISASTER_PHASE' 
-  | 'PLAYER_ACTION' 
-  | 'TRANSMISSION_PHASE' 
-  | 'ROUND_END' 
-  | 'GAME_OVER';
+export type GamePhase = 'SETUP' | 'PLAYER_ACTION' | 'GAME_OVER';
 
 export type GameMode = 'SinglePlayer' | 'PassAndPlay' | 'OnlineMultiplayer';
 

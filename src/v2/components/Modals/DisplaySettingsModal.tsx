@@ -1,4 +1,3 @@
-import React from 'react';
 import { X, Sliders, Type, Palette, Check, Eye, Globe } from 'lucide-react';
 import { WorldviewType } from '../../types/game';
 

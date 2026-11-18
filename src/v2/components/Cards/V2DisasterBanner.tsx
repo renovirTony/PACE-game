@@ -1,6 +1,6 @@
-import React from 'react';
 import { DisasterEvent, WorldviewType } from '../../types/game';
-import { PHYSICAL_MEDIUM_META } from '../../data/terminology';
+import { PHYSICAL_MEDIUM_META, describeDisasterEffects } from '../../data/terminology';
+import { EMP_EVENT_ID } from '../../data/disasterEvents';
 import { CloudRain, BatteryLow, ZapOff, Layers, ShieldAlert, Sparkles, AlertTriangle } from 'lucide-react';
 
 interface V2DisasterBannerProps {
@@ -19,7 +19,7 @@ export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
         return <BatteryLow className="w-6 h-6 text-red-400 animate-pulse" />;
       case 'evt_super_typhoon':
         return <CloudRain className="w-6 h-6 text-blue-400 animate-bounce" />;
-      case 'evt_emp_strike':
+      case EMP_EVENT_ID:
         return <ZapOff className="w-6 h-6 text-amber-400 animate-pulse" />;
       case 'evt_earthquake_landslide':
         return <Layers className="w-6 h-6 text-emerald-400" />;
@@ -30,7 +30,10 @@ export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
     }
   };
 
-  const isHazard = event.targetedMedia.length > 0;
+  const effects = describeDisasterEffects(event);
+  const isHazard = effects.isHazard;
+  // 媒介阻斷以紅色徽章另外列出；這裡只放其他機制效果（耗電、距離、加成）
+  const extraChips = effects.chips.filter(c => c.kind !== 'media');
 
   return (
     <div className={`v2-disaster-banner rounded-2xl border p-4 shadow-xl backdrop-blur-md font-mono flex flex-col md:flex-row items-start md:items-center justify-between gap-4 transition-all relative ${
@@ -63,11 +66,28 @@ export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
           <p className="text-[11px] text-slate-400 italic">
             "{content?.flavor}"
           </p>
+
+          {extraChips.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap mt-1">
+              {extraChips.map((chip) => (
+                <span
+                  key={chip.text}
+                  className={`px-2 py-0.5 rounded-lg border text-xs font-bold ${
+                    chip.tone === 'bonus'
+                      ? 'bg-emerald-950/70 border-emerald-500/50 text-emerald-200'
+                      : 'bg-amber-950/70 border-amber-500/50 text-amber-200'
+                  }`}
+                >
+                  {chip.icon} {chip.text}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </div>
 
       {/* Right: Targeted Media Badges */}
-      {isHazard ? (
+      {event.targetedMedia.length > 0 ? (
         <div className="flex flex-col items-start md:items-end gap-1.5 shrink-0">
           <span className="disaster-target-label text-[10px] uppercase font-bold text-red-300 flex items-center gap-1">
             <AlertTriangle className="w-3.5 h-3.5 text-red-400" /> 中斷物理媒介：
@@ -83,11 +103,11 @@ export function V2DisasterBanner({ event, worldview }: V2DisasterBannerProps) {
             ))}
           </div>
         </div>
-      ) : (
+      ) : !isHazard ? (
         <div className="px-3 py-1.5 rounded-xl bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 text-xs font-bold shrink-0">
           ✨ 頻譜環境優良
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

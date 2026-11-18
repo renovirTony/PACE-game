@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { CommsCard, CrisisMission, DisasterEvent, PhysicalMedium, TacticCard, WorldviewType } from '../../types/game';
+import { useState } from 'react';
+import { PhysicalMedium, WorldviewType } from '../../types/game';
 import { V2_EQUIPMENT_CARDS, V2_STARTER_CARDS } from '../../data/equipmentCards';
 import { V2_DISASTER_EVENTS } from '../../data/disasterEvents';
 import { V2_CRISIS_MISSIONS } from '../../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../../data/tacticCards';
 import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
 import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, RANGE_META } from '../../data/terminology';
-import { Layers, Shield, Radio, Sparkles, CloudRain, Package, X, Globe, Sun, ZapOff, Cable } from 'lucide-react';
+import { Layers, Radio, Sparkles, CloudRain, Package, X } from 'lucide-react';
 
 interface V2CardCompendiumModalProps {
   isOpen: boolean;

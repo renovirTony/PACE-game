@@ -32,7 +32,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '點雲重構需要千兆位元通道，低頻信差只能傳送坐標文字，無法同步三維模型。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_emergency_telehealth',
@@ -64,7 +63,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '神經流傳輸不容任何掉包，必須依賴高頻寬超導或直連光纖。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_power_grid_telemetry',
@@ -96,7 +94,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '核聚變控制流不容延遲，需要高速穩定的骨幹支撐。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_press_conference_broadcast',
@@ -128,7 +125,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '全息廣播需要高密度數據流，一旦頻寬不足將退化為純文字廣播。',
       },
     },
-    claimedBy: [],
   },
 
   // ==================== 2. 前線語音協調 / 物資調度任務 (需 Medium 頻寬，對講機/無線電可勝任) ====================
@@ -162,7 +158,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '類比短波在末日環境下最為實用，足夠傳遞關鍵存貨數據。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_mountain_search_team',
@@ -195,7 +190,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '酸雨環境對電子天線腐蝕極大，只有加固耐天候的短波設備能穿透風暴。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_bridge_evacuation_routing',
@@ -227,7 +221,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '封閉峽谷中短波與超短波對講機可利用岩壁反射維持隊形通聯。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_water_reservoir_control',
@@ -259,7 +252,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '深山水利設施往往處於通訊死角，短波仰射天線 (NVIS) 是最佳跨山手段。',
       },
     },
-    claimedBy: [],
   },
 
   // ==================== 3. 極限救援與求救任務 (僅需 Low 頻寬，C 與 E 保命工具立大功) ====================
@@ -293,7 +285,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '當所有光纖與衛星燒毀，唯有最古老的手搖銅線與光學信使能守住最後的生命火種。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_subterranean_bunker_collapse',
@@ -326,7 +317,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '岩層是天然的電磁屏蔽層，聲學與地質振動是唯一能突破物理封鎖的媒介。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_emp_hardened_order',
@@ -359,7 +349,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '科技越原始，抗電磁干擾能力往往越強，這正是應急防線的精髓所在。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_night_optical_morse',
@@ -392,7 +381,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '光學信號不受任何射頻干擾，是無線電盲區內的精準點對點手段。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_coastal_courier_dispatch',
@@ -424,7 +412,6 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '物理載體的頻寬與安全性在惡劣環境下無可取代。',
       },
     },
-    claimedBy: [],
   },
   {
     id: 'mis_tunnel_fire_evacuation',
@@ -457,6 +444,5 @@ export const V2_CRISIS_MISSIONS: CrisisMission[] = [
         expertTip: '地下管軌環境金屬反射嚴重，低頻聲學信號比高頻電波更具穿透力。',
       },
     },
-    claimedBy: [],
   },
 ];

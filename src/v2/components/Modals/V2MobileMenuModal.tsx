@@ -105,7 +105,7 @@ export function V2MobileMenuModal({
           >
             <div className="flex items-center gap-3">
               <Layers className="w-5 h-5 text-purple-400 shrink-0" />
-              <span className="text-sm">卡牌全圖鑑</span>
+              <span className="text-sm">卡牌圖鑑</span>
             </div>
             <span className="text-slate-500 text-sm">➔</span>
           </button>

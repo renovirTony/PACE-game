@@ -7,7 +7,8 @@ import {
   TransmissionResult,
   WorldviewType
 } from '../types/game';
-import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, getRangeLabel } from '../data/terminology';
+import { BANDWIDTH_META, PHYSICAL_MEDIUM_META, getRangeLabel, isOpticalSignalCard } from '../data/terminology';
+import { EMP_EVENT_ID } from '../data/disasterEvents';
 
 const PACE_ORDER: PACESlot[] = ['P', 'A', 'C', 'E'];
 
@@ -18,6 +19,38 @@ const PACE_ORDER: PACESlot[] = ['P', 'A', 'C', 'E'];
 export function getEffectivePowerCost(card: CommsCard, event: DisasterEvent | null): number {
   if (card.powerCost <= 0) return 0;
   return card.powerCost + (event?.powerDrainBonus || 0);
+}
+
+/**
+ * 槽位收益率：P/A 100%、C 70%、E 50%。
+ * 本回合啟動【志願者中繼台】時，C 與 E 也享 100% 滿額收益。防線面板的收益標籤也用這個值。
+ */
+export function getSlotRevenueRate(slot: PACESlot, player: Player): number {
+  if (slot === 'C' || slot === 'E') {
+    if (player.activeBuffs?.communityRelayActive) return 1.0;
+    return slot === 'C' ? 0.7 : 0.5;
+  }
+  return 1.0;
+}
+
+/** 拆解倉庫裝備的回收值：買價折半（無條件進位）；0 元的起始裝備回收 0，避免白拿物資 */
+export function getRecycleRefund(cost: number): number {
+  return cost <= 0 ? 0 : Math.ceil(cost / 2);
+}
+
+/** 裝備是否具備有效的 EMP 抗性（本身加固，或本回合開了法拉第防護袋） */
+export function hasEffectiveEmpShield(card: CommsCard, player: Player): boolean {
+  return Boolean(card.resilience.empShield || player.activeBuffs?.faradayEmpArmor);
+}
+
+/**
+ * 裝備是否被當前天災打斷（媒介遭破壞；EMP 事件下具抗 EMP 者豁免）。
+ * 引擎、防線面板與市場的紅燈標示共用這一個判斷，避免各處算法不一致。
+ */
+export function isCardBlockedByEvent(card: CommsCard, event: DisasterEvent | null, player: Player): boolean {
+  if (!event || !event.targetedMedia.includes(card.medium)) return false;
+  if (event.id === EMP_EVENT_ID && hasEffectiveEmpShield(card, player)) return false;
+  return true;
 }
 
 /**
@@ -57,7 +90,6 @@ export function canPlaceCardInSlot(
  */
 export function checkCardEligibilityV2(
   card: CommsCard,
-  slot: PACESlot,
   mission: CrisisMission,
   event: DisasterEvent | null,
   player: Player,
@@ -76,24 +108,16 @@ export function checkCardEligibilityV2(
     };
   }
 
-  // 計算有效 EMP 抗性 (含法拉第防護袋 Buff)
-  const hasEmpShield = Boolean(
-    card.resilience.empShield || player.activeBuffs?.faradayEmpArmor
-  );
+  const hasEmpShield = hasEffectiveEmpShield(card, player);
 
   // 2. 檢查物理媒介受災中斷 (Physical Medium Targeted by Disaster)
-  if (event && event.targetedMedia.includes(card.medium)) {
-    // 若為 EMP 事件且設備有防護 (或開了法拉第袋)，可豁免
-    if (event.id === 'evt_emp_strike' && hasEmpShield) {
-      // 免疫 EMP
-    } else {
-      return {
-        eligible: false,
-        blockCode: 'disaster',
-        blockedReason: `🌪️ 【${PHYSICAL_MEDIUM_META[card.medium].label}】媒介中斷！`,
-        expertDetail: `受災事件直接摧毀了【${cardName}】所依賴的物理通道（如基地台停電、暴風雨散射衛星微波、或電磁波過載）。`,
-      };
-    }
+  if (isCardBlockedByEvent(card, event, player)) {
+    return {
+      eligible: false,
+      blockCode: 'disaster',
+      blockedReason: `🌪️ 【${PHYSICAL_MEDIUM_META[card.medium].label}】媒介中斷！`,
+      expertDetail: `受災事件直接摧毀了【${cardName}】所依賴的物理通道（如基地台停電、暴風雨散射衛星微波、或電磁波過載）。`,
+    };
   }
 
   // 3. 檢查任務的特殊抗性 / 媒介要求 (耐天候 / 地底穿透 / 抗 EMP / 光學 / 有線)
@@ -125,7 +149,7 @@ export function checkCardEligibilityV2(
     };
   }
 
-  if (mission.requiresOptical && (card.medium !== 'PhysicalOptical' || (card.id !== 'eq_aldis_light_mirror' && !card.tags?.includes('光學信號')))) {
+  if (mission.requiresOptical && !isOpticalSignalCard(card)) {
     return {
       eligible: false,
       blockCode: 'requirement',
@@ -199,6 +223,39 @@ export function checkCardEligibilityV2(
   return { eligible: true };
 }
 
+/** 防線上用了幾種不同的物理媒介（0–4） */
+export function countUniqueMedia(player: Player): number {
+  return new Set(
+    Object.values(player.paceBoard)
+      .filter((c): c is CommsCard => c !== null)
+      .map(c => c.medium)
+  ).size;
+}
+
+/**
+ * 玩家排名比較：分數 → 完成任務數 → 防線媒介多樣性 → 降級通訊次數較少者。
+ * 同分時不再由陣列順序決定（原本人類玩家永遠勝出）。
+ */
+function comparePlayers(a: Player, b: Player): number {
+  return (
+    b.score - a.score ||
+    b.completedMissions.length - a.completedMissions.length ||
+    countUniqueMedia(b) - countUniqueMedia(a) ||
+    a.stats.degradedTransmissions - b.stats.degradedTransmissions
+  );
+}
+
+export function rankPlayers(players: Player[]): Player[] {
+  return [...players].sort(comparePlayers);
+}
+
+/** 所有比較條件都相同的並列冠軍名單（只有一人時代表沒有並列） */
+export function getCoWinners(players: Player[]): Player[] {
+  const ranked = rankPlayers(players);
+  if (ranked.length === 0) return [];
+  return ranked.filter(p => comparePlayers(p, ranked[0]) === 0);
+}
+
 /**
  * 從各槽位的檢定結果中，挑出最值得告訴玩家的單一受阻原因（供任務卡顯示）。
  * 取「檢定走得最遠」的那個槽位：它離成功最近，它卡住的原因就是玩家最該補的那一塊。
@@ -255,7 +312,6 @@ export function evaluateV2PACETransmission(
 
     const { eligible, blockedReason, blockCode, expertDetail } = checkCardEligibilityV2(
       card,
-      slot,
       mission,
       event,
       player,
@@ -273,17 +329,11 @@ export function evaluateV2PACETransmission(
 
     if (eligible) {
       // 計算降級回報率 (若啟動志願者中繼台，C 與 E 槽位均視同 A 槽享有 100% 滿額收益！)
-      let degradationRate = 1.0;
-      if (player.activeBuffs?.communityRelayActive) {
-        degradationRate = 1.0;
-      } else if (slot === 'C') {
-        degradationRate = 0.7;
-      } else if (slot === 'E') {
-        degradationRate = 0.5;
-      }
+      const degradationRate = getSlotRevenueRate(slot, player);
 
       const earnedVP = Math.max(1, Math.round(mission.vpReward * degradationRate));
-      const earnedCredits = Math.max(1, Math.round(mission.creditReward * degradationRate));
+      // 天候加成（如通訊黃金期 +1 物資）在降級計算後另外加上
+      const earnedCredits = Math.max(1, Math.round(mission.creditReward * degradationRate)) + (event?.creditBonus || 0);
 
       const cardName = card.translations[worldview]?.name || card.id;
       let reasonText = '';

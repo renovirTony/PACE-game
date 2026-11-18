@@ -1,12 +1,12 @@
-import React, { useEffect } from 'react';
-import { Player, WorldviewType } from '../../types/game';
+import { useEffect } from 'react';
+import { Player } from '../../types/game';
 import confetti from 'canvas-confetti';
-import { Award, Trophy, RotateCcw, Home, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Trophy, RotateCcw, Home } from 'lucide-react';
+import { countUniqueMedia, getCoWinners, rankPlayers } from '../../engine/rules';
 
 interface V2GameOverModalProps {
   winner: Player | null;
   players: Player[];
-  worldview: WorldviewType;
   onRestart: () => void;
   onReturnToMenu: () => void;
 }
@@ -14,7 +14,6 @@ interface V2GameOverModalProps {
 export function V2GameOverModal({
   winner,
   players,
-  worldview,
   onRestart,
   onReturnToMenu,
 }: V2GameOverModalProps) {
@@ -30,7 +29,10 @@ export function V2GameOverModal({
 
   if (!winner) return null;
 
-  const sortedPlayers = [...players].sort((a, b) => b.score - a.score);
+  // 與引擎相同的排名規則（分數 → 任務數 → 媒介多樣性 → 降級次數）
+  const sortedPlayers = rankPlayers(players);
+  const coWinners = getCoWinners(players);
+  const isSharedVictory = coWinners.length > 1;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md font-mono animate-fadeIn">
@@ -46,8 +48,13 @@ export function V2GameOverModal({
             演習圓滿結束 · 最終決算
           </span>
           <h2 className="text-2xl sm:text-3xl font-black text-slate-100 mt-1">
-            恭喜指揮官【{winner.name}】榮獲最高榮譽！
+            {isSharedVictory
+              ? `恭喜 ${coWinners.map(p => `【${p.name}】`).join('、')} 並列最高榮譽！`
+              : `恭喜指揮官【${winner.name}】榮獲最高榮譽！`}
           </h2>
+          {!isSharedVictory && sortedPlayers[1] && sortedPlayers[1].score === winner.score && (
+            <p className="text-xs text-amber-300 mt-1">同分決勝：依完成任務數、防線媒介多樣性、降級通訊次數依序比較。</p>
+          )}
           <p className="text-xs text-slate-400 mt-1">
             在極端天災與電磁衝擊中，以卓越的 PACE 備援規劃守住了通訊生命線。
           </p>
@@ -61,11 +68,7 @@ export function V2GameOverModal({
 
           <div className="flex flex-col gap-1.5">
             {sortedPlayers.map((player, idx) => {
-              // 媒介獨立性計算
-              const usedMedia = Object.values(player.paceBoard)
-                .filter(Boolean)
-                .map((c) => c!.medium);
-              const uniqueMedia = new Set(usedMedia).size;
+              const uniqueMedia = countUniqueMedia(player);
 
               return (
                 <div

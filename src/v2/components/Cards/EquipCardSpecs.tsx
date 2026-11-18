@@ -1,4 +1,3 @@
-import React from 'react';
 import { CommsCard } from '../../types/game';
 import { BANDWIDTH_META, RANGE_META } from '../../data/terminology';
 

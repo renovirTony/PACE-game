@@ -1,5 +1,5 @@
 import Peer, { DataConnection } from 'peerjs';
-import { CommsCard, CrisisMission, PACESlot, Player, RoomPeer, TacticCard } from '../types/game';
+import { RoomPeer } from '../types/game';
 
 export type MultiplayerActionType =
   | 'SYNC_GAME_STATE'
@@ -38,22 +38,11 @@ export class P2PMultiplayerManager {
     this.callbacks = callbacks;
   }
 
-  public getPeerId(): string {
-    return this.myPeerId;
-  }
-
-  public getRoomCode(): string {
-    return this.roomCode;
-  }
-
-  public getIsHost(): boolean {
-    return this.isHost;
-  }
-
   /**
    * 建立連線房間 (Host)
+   * TODO(多人同步)：房主自己也應加入 peers 名單並建立對應 Player，目前 _hostPlayer 尚未使用。
    */
-  public createRoom(hostPlayer: { name: string; avatar: string; color: string }): Promise<string> {
+  public createRoom(_hostPlayer: { name: string; avatar: string; color: string }): Promise<string> {
     return new Promise((resolve, reject) => {
       this.disconnect();
       this.isHost = true;

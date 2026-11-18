@@ -385,7 +385,7 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Sun',
       },
     },
-    tags: ['光與聲音', '完全免電', '求救信號', '視距可見'],
+    tags: ['光學信號', '光與聲音', '完全免電', '求救信號', '視距可見'],
   },
   {
     id: 'eq_acoustic_thumper',
@@ -419,6 +419,6 @@ export const V2_EQUIPMENT_CARDS: CommsCard[] = [
         icon: 'Volume2',
       },
     },
-    tags: ['敲擊聲音', '穿透瓦礫堆', '地底求救', '完全免電'],
+    tags: ['聲學震波', '敲擊聲音', '穿透瓦礫堆', '地底求救', '完全免電'],
   },
 ];

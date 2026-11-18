@@ -1,6 +1,93 @@
-import React from 'react';
 import { Player, TacticCard, WorldviewType } from '../../types/game';
 import { Zap, Play, ArrowRight, Shield } from 'lucide-react';
+
+type GoToTab = (tab: 'defense' | 'missions' | 'market' | 'tactics') => void;
+
+/** 單一 buff 徽章；有 onGo 時附上「前往 ➔」捷徑（手機版用來切分頁） */
+function BuffChip({
+  label,
+  colorClass,
+  pulse,
+  goLabel,
+  goTitle,
+  onGo,
+}: {
+  label: string;
+  colorClass: string;
+  pulse?: boolean;
+  goLabel?: string;
+  goTitle?: string;
+  onGo?: () => void;
+}) {
+  return (
+    <div className="flex items-center gap-1 shrink-0">
+      <span className={`px-2 py-0.5 rounded-full border font-black ${colorClass} ${pulse ? 'animate-pulse' : ''}`}>{label}</span>
+      {onGo && goLabel && (
+        <button
+          onClick={onGo}
+          className="px-2 py-0.5 rounded-full bg-slate-900/80 hover:bg-slate-800 text-slate-200 text-[10px] font-bold border border-slate-600/60 transition-all active:scale-95 shadow-sm"
+          title={goTitle}
+        >
+          {goLabel}
+        </button>
+      )}
+    </div>
+  );
+}
+
+/**
+ * 本回合生效中的戰術增益（手機戰術頁與桌面指揮官行動區共用）。
+ * 沒有任何 buff 時不渲染。
+ */
+export function ActiveBuffsBanner({ player, onGoToTab }: { player: Player; onGoToTab?: GoToTab }) {
+  const buffs = player.activeBuffs;
+  if (!buffs || !Object.values(buffs).some(Boolean)) return null;
+
+  return (
+    <div className="p-2.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center gap-2 flex-wrap text-[11px]">
+      <span className="text-cyan-400 font-bold shrink-0">⚡ 本回合戰術增益：</span>
+      {buffs.agileProtocolActive && (
+        <BuffChip
+          label="🔄 敏捷防線 (調換 0 AP)"
+          colorClass="bg-purple-950 text-purple-300 border-purple-500/40"
+          pulse
+          goLabel="前往防線 ➔"
+          goTitle="前往防線面板執行對調"
+          onGo={onGoToTab && (() => onGoToTab('defense'))}
+        />
+      )}
+      {buffs.freeMarketPurchaseActive && (
+        <BuffChip
+          label="🛒 綠色後勤 (採購 0 AP)"
+          colorClass="bg-emerald-950 text-emerald-300 border-emerald-500/40"
+          pulse
+          goLabel="前往市場 ➔"
+          goTitle="前往市場執行免 AP 採購"
+          onGo={onGoToTab && (() => onGoToTab('market'))}
+        />
+      )}
+      {buffs.freeTransmissionActive && (
+        <BuffChip
+          label="📡 突發通訊令 (通訊 0 AP)"
+          colorClass="bg-amber-950 text-amber-300 border-amber-500/40"
+          pulse
+          goLabel="前往任務 ➔"
+          goTitle="前往危機任務發起通訊檢定 (免 AP)"
+          onGo={onGoToTab && (() => onGoToTab('missions'))}
+        />
+      )}
+      {buffs.communityRelayActive && (
+        <BuffChip label="👥 志願者中繼 (C/E 滿額 100%)" colorClass="bg-cyan-950 text-cyan-300 border-cyan-500/40" />
+      )}
+      {buffs.faradayEmpArmor && (
+        <BuffChip label="🛡️ 法拉第屏蔽 (免疫 EMP)" colorClass="bg-blue-950 text-blue-300 border-blue-500/40" />
+      )}
+      {buffs.antennaBoostRange && (
+        <BuffChip label="📡 八木增益 (無線電距離 +1)" colorClass="bg-blue-950 text-blue-300 border-blue-500/40" />
+      )}
+    </div>
+  );
+}
 
 interface V2ActionControlPanelProps {
   player: Player;
@@ -11,7 +98,7 @@ interface V2ActionControlPanelProps {
   onRecharge: () => boolean;
   onRequisition: () => boolean;
   onEndTurn: () => void;
-  onGoToTab?: (tab: 'defense' | 'missions' | 'market' | 'tactics') => void;
+  onGoToTab?: GoToTab;
 }
 
 export function V2ActionControlPanel({
@@ -42,75 +129,7 @@ export function V2ActionControlPanel({
         </span>
       </div>
 
-      {/* Active Buffs Status Banner (MAPS Applicable Principle) */}
-      {player.activeBuffs && Object.values(player.activeBuffs).some(Boolean) && (
-        <div className="p-2.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 flex items-center gap-2 flex-wrap text-[11px]">
-          <span className="text-cyan-400 font-bold shrink-0">⚡ 本回合戰術增益：</span>
-          {player.activeBuffs.agileProtocolActive && (
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="px-2 py-0.5 rounded-full bg-purple-950 text-purple-300 border border-purple-500/40 font-black animate-pulse">
-                🔄 敏捷防線 (調換 0 AP)
-              </span>
-              {onGoToTab && (
-                <button
-                  onClick={() => onGoToTab('defense')}
-                  className="px-2 py-0.5 rounded-full bg-purple-900/80 hover:bg-purple-800 text-purple-200 text-[10px] font-bold border border-purple-400/40 transition-all active:scale-95 shadow-sm"
-                  title="前往防線面板執行對調"
-                >
-                  前往防線 ➔
-                </button>
-              )}
-            </div>
-          )}
-          {player.activeBuffs.freeMarketPurchaseActive && (
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-500/40 font-black animate-pulse">
-                🛒 綠色後勤 (採購 0 AP)
-              </span>
-              {onGoToTab && (
-                <button
-                  onClick={() => onGoToTab('market')}
-                  className="px-2 py-0.5 rounded-full bg-emerald-900/80 hover:bg-emerald-800 text-emerald-200 text-[10px] font-bold border border-emerald-400/40 transition-all active:scale-95 shadow-sm"
-                  title="前往市場執行免 AP 採購"
-                >
-                  前往市場 ➔
-                </button>
-              )}
-            </div>
-          )}
-          {player.activeBuffs.freeTransmissionActive && (
-            <div className="flex items-center gap-1 shrink-0">
-              <span className="px-2 py-0.5 rounded-full bg-amber-950 text-amber-300 border border-amber-500/40 font-black animate-pulse">
-                📡 突發通訊令 (通訊 0 AP)
-              </span>
-              {onGoToTab && (
-                <button
-                  onClick={() => onGoToTab('missions')}
-                  className="px-2 py-0.5 rounded-full bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] font-bold border border-amber-400/40 transition-all active:scale-95 shadow-sm"
-                  title="前往危機任務發起通訊檢定 (免 AP)"
-                >
-                  前往任務 ➔
-                </button>
-              )}
-            </div>
-          )}
-          {player.activeBuffs.communityRelayActive && (
-            <span className="px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-black">
-              👥 志願者中繼 (C/E 滿額 100%)
-            </span>
-          )}
-          {player.activeBuffs.faradayEmpArmor && (
-            <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-500/40 font-black">
-              🛡️ 法拉第屏蔽 (免疫 EMP)
-            </span>
-          )}
-          {player.activeBuffs.antennaBoostRange && (
-            <span className="px-2 py-0.5 rounded-full bg-blue-950 text-blue-300 border border-blue-500/40 font-black">
-              📡 八木增益 (距離 +1)
-            </span>
-          )}
-        </div>
-      )}
+      <ActiveBuffsBanner player={player} onGoToTab={onGoToTab} />
 
       {/* Quick Field Actions：整補雙雄同列 */}
       <div className="flex flex-col gap-3">

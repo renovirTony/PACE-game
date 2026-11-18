@@ -1,28 +1,21 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Player, WorldviewType, DisasterEvent } from '../../types/game';
-import { FontSizeMode, ThemeMode } from '../Modals/DisplaySettingsModal';
-import { PHYSICAL_MEDIUM_META } from '../../data/terminology';
+import { PHYSICAL_MEDIUM_META, describeDisasterEffects } from '../../data/terminology';
 import { ConfirmDialog, ConfirmDialogState, DESTRUCTIVE_CONFIRM_COPY } from '../Modals/ConfirmDialog';
-import { Radio, Zap, Coins, Award, Layers, BookOpen, GraduationCap, AlertTriangle, Sliders, Smartphone, ChevronDown } from 'lucide-react';
+import { Radio, Zap, Coins, Layers, BookOpen, GraduationCap, Sliders, Smartphone, ChevronDown } from 'lucide-react';
 
 interface V2TurnHeaderProps {
   round: number;
   maxRounds: number;
   targetScore: number;
   activePlayer: Player;
-  isAI: boolean;
   worldview: WorldviewType;
-  onChangeWorldview: (wv: WorldviewType) => void;
-  fontSize: FontSizeMode;
-  onChangeFontSize: (size: FontSizeMode) => void;
-  theme: ThemeMode;
   onOpenDisplaySettings: () => void;
   onSwitchToV1?: () => void;
   onReturnToMenu: () => void;
   onOpenCompendium: () => void;
   onOpenGuide: () => void;
   onStartTutorial: () => void;
-  roomCode?: string;
   onToggleMobileView?: () => void;
   isMobileViewForced?: boolean;
   players?: Player[];
@@ -36,19 +29,13 @@ export function V2TurnHeader({
   maxRounds,
   targetScore,
   activePlayer,
-  isAI,
   worldview,
-  onChangeWorldview,
-  fontSize,
-  onChangeFontSize,
-  theme,
   onOpenDisplaySettings,
   onSwitchToV1,
   onReturnToMenu,
   onOpenCompendium,
   onOpenGuide,
   onStartTutorial,
-  roomCode,
   onToggleMobileView,
   isMobileViewForced,
   players,
@@ -122,7 +109,8 @@ export function V2TurnHeader({
         {/* 2. Center: Prominent Disaster Status Strip (Fully Clickable to Open Briefing) */}
         {(() => {
           if (!activeEvent) return null;
-          const isSunny = activeEvent.id === 'evt_optimal_calm' || (activeEvent.targetedMedia.length === 0 && !activeEvent.powerDrainBonus);
+          const effects = describeDisasterEffects(activeEvent);
+          const isSunny = !effects.isHazard;
 
           if (isSunny) {
             return (
@@ -133,7 +121,9 @@ export function V2TurnHeader({
               >
                 <span className="font-bold flex items-center gap-1.5 truncate">
                   <span>☀️</span>
-                  <span className="truncate">氣候良好 · 通訊媒介全部暢通</span>
+                  <span className="truncate">
+                    氣候良好 · 通訊媒介全部暢通{activeEvent.creditBonus ? ` · 成功通訊 +${activeEvent.creditBonus}💰` : ''}
+                  </span>
                 </span>
                 <span className="text-xs text-emerald-400 hover:text-emerald-200 font-bold underline underline-offset-2 shrink-0 ml-2">
                   情資 ➔
@@ -168,8 +158,13 @@ export function V2TurnHeader({
               </div>
               <div className="flex items-center gap-2 shrink-0 ml-1">
                 {activeEvent.powerDrainBonus ? (
-                  <span className="text-xs font-black text-red-300 bg-red-900/60 px-1.5 py-0.5 rounded whitespace-nowrap">
+                  <span className="text-xs font-black text-red-300 bg-red-900/60 px-1.5 py-0.5 rounded whitespace-nowrap" title="需電設備耗電增加（0⚡ 免電裝備不受影響）">
                     ⚡ 耗電+{activeEvent.powerDrainBonus}
+                  </span>
+                ) : null}
+                {activeEvent.rangePenalty ? (
+                  <span className="text-xs font-black text-amber-300 bg-amber-900/50 px-1.5 py-0.5 rounded whitespace-nowrap" title="光學通訊的視距通聯降為短距">
+                    🌫️ 光學距離↓
                   </span>
                 ) : null}
                 <span className="text-xs text-red-300 hover:text-red-100 font-bold underline underline-offset-2 shrink-0 whitespace-nowrap">
@@ -205,7 +200,7 @@ export function V2TurnHeader({
                 return (
                   <span
                     key={p.id}
-                    title={`${isMe ? '您' : p.name}：救援積分 ${p.score}/${targetScore}`}
+                    title={`${p.name}${isMe ? '（行動中）' : ''}：救援積分 ${p.score}/${targetScore}`}
                     className={`px-1 min-[1800px]:px-1.5 py-0.5 rounded text-xs font-bold whitespace-nowrap ${
                       isMe
                         ? 'bg-cyan-950 text-cyan-300 border border-cyan-500/40 font-black'
@@ -300,7 +295,7 @@ export function V2TurnHeader({
                   className="w-full px-3 py-2 rounded-xl text-left hover:bg-purple-950/60 text-slate-200 hover:text-purple-300 font-bold flex items-center gap-2 transition-all"
                 >
                   <Layers className="w-3.5 h-3.5 text-purple-400" />
-                  <span>卡片全圖鑑</span>
+                  <span>卡牌圖鑑</span>
                 </button>
 
                 <button

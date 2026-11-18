@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react';
-import { CommsCard, DisasterEvent, PACESlot, PhysicalMedium, Player, TacticCard, WorldviewType } from '../../types/game';
-import { canPlaceCardInSlot } from '../../engine/rules';
-import { UnifiedCommsCardContent } from '../Cards/UnifiedCommsCardView';
-import { RANGE_META, getCommsCardMediumInfo } from '../../data/terminology';
+import { useEffect, useState } from 'react';
+import { CommsCard, DisasterEvent, PACESlot, Player, TacticCard, WorldviewType } from '../../types/game';
+import { canPlaceCardInSlot, isCardBlockedByEvent } from '../../engine/rules';
+import { P_SLOT_RULE_LABEL, getCommsCardMediumInfo } from '../../data/terminology';
 import { EquipCardSpecs } from '../Cards/EquipCardSpecs';
-import { ShoppingBag, Zap, Coins, Plus, Check, AlertTriangle, XCircle, Lock, Radio, Shield } from 'lucide-react';
+import { ShoppingBag, Plus, AlertTriangle, Radio, Shield } from 'lucide-react';
 
 interface V2MarketAreaProps {
   player: Player;
@@ -18,6 +17,114 @@ interface V2MarketAreaProps {
   isMobile?: boolean;
   /** 桌面版：數值變動時強制切回「通訊裝備」分頁（供防線空槽的「去市場選購」引導使用） */
   focusEquipNonce?: number;
+}
+
+/** 槽位徽章配色（與防線面板一致，[E] 為紅色系） */
+const SLOT_PICKER_COLOR: Record<PACESlot, string> = {
+  P: 'text-cyan-300 border-cyan-500/40 bg-cyan-950/40',
+  A: 'text-blue-300 border-blue-500/40 bg-blue-950/40',
+  C: 'text-amber-300 border-amber-500/40 bg-amber-950/40',
+  E: 'text-red-300 border-red-500/40 bg-red-950/40',
+};
+
+const SLOT_SHORT_LABEL: Record<PACESlot, string> = { P: '主要', A: '備用', C: '應急', E: '緊急' };
+
+/**
+ * 採購時「放進哪一道防線」的選擇清單（手機與桌面共用同一份，避免兩端分歧）。
+ * 原槽位有裝備時會自動收進倉庫，按鈕寫明「替換入庫」。
+ */
+function MarketSlotPicker({
+  card,
+  player,
+  worldview,
+  onSelectSlot,
+  onCancel,
+  className = '',
+}: {
+  card: CommsCard;
+  player: Player;
+  worldview: WorldviewType;
+  onSelectSlot: (slot: PACESlot) => void;
+  onCancel: () => void;
+  className?: string;
+}) {
+  return (
+    <div className={`flex flex-col gap-1.5 pt-2 border-t border-cyan-500/30 animate-fadeIn ${className}`}>
+      <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/5">
+        <span className="text-xs text-cyan-300 font-bold">請選擇欲配置的防線槽位：</span>
+        <button onClick={onCancel} className="text-xs text-slate-400 hover:text-slate-200 underline shrink-0">
+          取消
+        </button>
+      </div>
+
+      <div className="flex flex-col gap-1.5">
+        {(['P', 'A', 'C', 'E'] as PACESlot[]).map((slot) => {
+          const currentSlotCard = player.paceBoard[slot];
+          const slotValidation = canPlaceCardInSlot(card, slot);
+          const isSlotAllowed = slotValidation.valid;
+          const currentCardName = currentSlotCard
+            ? (currentSlotCard.translations[worldview]?.name || currentSlotCard.id)
+            : null;
+          const currentMediumInfo = currentSlotCard ? getCommsCardMediumInfo(currentSlotCard) : null;
+
+          return (
+            <button
+              key={slot}
+              disabled={!isSlotAllowed}
+              onClick={() => onSelectSlot(slot)}
+              className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-2 active:scale-98 ${
+                !isSlotAllowed
+                  ? 'bg-slate-900/40 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
+                  : currentSlotCard
+                  ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 hover:border-cyan-400'
+                  : 'bg-cyan-950/20 hover:bg-cyan-950/40 border-cyan-500/30 text-cyan-200'
+              }`}
+            >
+              <div className="flex items-start gap-2 min-w-0 flex-1">
+                <span className={`px-2 py-0.5 rounded-lg text-xs font-black border shrink-0 mt-0.5 whitespace-nowrap ${SLOT_PICKER_COLOR[slot]}`}>
+                  [{slot}] {SLOT_SHORT_LABEL[slot]}
+                </span>
+                <div className="flex flex-col min-w-0 flex-1">
+                  {slot === 'P' && (
+                    <span className="text-[10px] text-slate-400 font-bold mb-0.5">{P_SLOT_RULE_LABEL}設備</span>
+                  )}
+                  <div className="text-xs font-bold leading-tight break-words text-slate-200">
+                    {currentSlotCard ? (
+                      <>
+                        現有: <span className="text-white">{currentCardName}</span>{' '}
+                        {currentMediumInfo && <span className="text-slate-400 text-xs font-normal">({currentMediumInfo.label})</span>}
+                      </>
+                    ) : (
+                      <span className="text-slate-400">目前為空槽</span>
+                    )}
+                  </div>
+                  {!isSlotAllowed && (
+                    <div className="text-xs text-red-400 font-bold leading-tight break-words mt-0.5">
+                      {slotValidation.reason || '限制條件不符'}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <span className={`px-2.5 py-1 rounded-lg text-xs font-black shrink-0 whitespace-nowrap ml-1 ${
+                !isSlotAllowed
+                  ? 'bg-slate-800 text-slate-600'
+                  : currentSlotCard
+                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
+                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
+              }`}>
+                {!isSlotAllowed ? '不可放置' : currentSlotCard ? '替換入庫 ➔' : '立即裝備 ➔'}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      <span className="text-[11px] text-slate-400 text-center pt-0.5">
+        💡 原裝備將自動安全存入備用倉庫（不刪除）
+      </span>
+    </div>
+  );
 }
 
 export function V2MarketArea({
@@ -86,10 +193,8 @@ export function V2MarketArea({
               const canAfford = player.credits >= card.cost && (player.actionPoints >= 1 || isFreeBuy);
               const isSelected = selectedCardForSlot?.id === card.id;
 
-              // Disaster targeted check
-              const isDisasterTargeted = Boolean(
-                activeEvent && activeEvent.targetedMedia.includes(card.medium) && !(activeEvent.id === 'evt_emp_strike' && card.resilience.empShield)
-              );
+              // 與引擎共用同一判斷（含法拉第袋豁免），避免防線顯示免疫、市場卻警告中斷
+              const isDisasterTargeted = isCardBlockedByEvent(card, activeEvent, player);
 
               return (
                 <div
@@ -146,91 +251,13 @@ export function V2MarketArea({
 
                   {/* Slot Choice Action if Selected (Option B: In-place Vertical List) */}
                   {isSelected ? (
-                    <div className="flex flex-col gap-1.5 pt-2 border-t border-cyan-500/30 animate-fadeIn">
-                      <div className="flex items-center justify-between pb-1 border-b border-white/5">
-                        <span className="text-xs text-cyan-300 font-bold">
-                          請選擇欲配置的防線槽位：
-                        </span>
-                        <button
-                          onClick={() => setSelectedCardForSlot(null)}
-                          className="text-xs text-slate-400 hover:text-slate-200 underline"
-                        >
-                          取消
-                        </button>
-                      </div>
-
-                      <div className="flex flex-col gap-1.5">
-                        {(['P', 'A', 'C', 'E'] as PACESlot[]).map((slot) => {
-                          const currentSlotCard = player.paceBoard[slot];
-                          const slotValidation = canPlaceCardInSlot(card, slot);
-                          const isSlotAllowed = slotValidation.valid;
-                          const currentCardName = currentSlotCard
-                            ? (currentSlotCard.translations[worldview]?.name || currentSlotCard.id)
-                            : null;
-                          const currentMediumInfo = currentSlotCard ? getCommsCardMediumInfo(currentSlotCard) : null;
-
-                          const slotColor = slot === 'P'
-                            ? 'text-cyan-300 border-cyan-500/40 bg-cyan-950/40'
-                            : slot === 'A'
-                            ? 'text-blue-300 border-blue-500/40 bg-blue-950/40'
-                            : slot === 'C'
-                            ? 'text-amber-300 border-amber-500/40 bg-amber-950/40'
-                            : 'text-red-300 border-red-500/40 bg-red-950/40';
-
-                          return (
-                            <button
-                              key={slot}
-                              disabled={!isSlotAllowed}
-                              onClick={() => handleSlotSelect(slot)}
-                              className={`w-full p-2.5 rounded-xl border text-left transition-all flex items-center justify-between gap-2 active:scale-98 ${
-                                !isSlotAllowed
-                                  ? 'bg-slate-900/40 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
-                                  : currentSlotCard
-                                  ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 hover:border-cyan-400'
-                                  : 'bg-cyan-950/20 hover:bg-cyan-950/40 border-cyan-500/30 text-cyan-200'
-                              }`}
-                            >
-                              <div className="flex items-start gap-2 min-w-0 flex-1">
-                                <span className={`px-2 py-0.5 rounded-lg text-xs font-black border shrink-0 mt-0.5 ${slotColor}`}>
-                                  [{slot}] {slot === 'P' ? '主要' : slot === 'A' ? '備用' : slot === 'C' ? '應急' : '緊急'}
-                                </span>
-                                <div className="flex flex-col min-w-0 flex-1">
-                                  {slot === 'P' && (
-                                    <span className="text-[10px] text-slate-400 font-bold mb-0.5">🔒 限中/高頻寬設備</span>
-                                  )}
-                                  <div className="text-xs font-bold leading-tight break-words text-slate-200">
-                                    {currentSlotCard ? (
-                                      <>現有: <span className="text-white">{currentCardName}</span> {currentMediumInfo && <span className="text-slate-400 text-xs font-normal">({currentMediumInfo.label})</span>}</>
-                                    ) : (
-                                      <span className="text-slate-400">目前為空槽</span>
-                                    )}
-                                  </div>
-                                  {!isSlotAllowed && (
-                                    <div className="text-xs text-red-400 font-bold leading-tight break-words mt-0.5">
-                                      {slotValidation.reason || '限制條件不符'}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-
-                              <span className={`px-2.5 py-1 rounded-lg text-xs font-black shrink-0 whitespace-nowrap ml-1 ${
-                                !isSlotAllowed
-                                  ? 'bg-slate-800 text-slate-600'
-                                  : currentSlotCard
-                                  ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                  : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                              }`}>
-                                {!isSlotAllowed ? '不可放置' : currentSlotCard ? '替換入庫 ➔' : '立即裝備 ➔'}
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      <span className="text-xs text-slate-400 text-center pt-0.5">
-                        💡 原裝備將自動安全存入備用倉庫（不刪除）
-                      </span>
-                    </div>
+                    <MarketSlotPicker
+                      card={card}
+                      player={player}
+                      worldview={worldview}
+                      onSelectSlot={handleSlotSelect}
+                      onCancel={() => setSelectedCardForSlot(null)}
+                    />
                   ) : (
                     /* Default Purchase Button Row */
                     (() => {
@@ -378,14 +405,11 @@ export function V2MarketArea({
             const canAfford = player.credits >= card.cost && (player.actionPoints >= 1 || isFreeBuy);
             const isSelected = selectedCardForSlot?.id === card.id;
 
-            // 檢查是否受當前天災阻斷
-            const isDisasterTargeted = Boolean(
-              activeEvent && activeEvent.targetedMedia.includes(card.medium) && !(activeEvent.id === 'evt_emp_strike' && card.resilience.empShield)
-            );
+            // 與引擎共用同一判斷（含法拉第袋豁免）
+            const isDisasterTargeted = isCardBlockedByEvent(card, activeEvent, player);
 
             const isCreditsShort = player.credits < card.cost;
             const isAPShort = !isCreditsShort && player.actionPoints === 0 && !isFreeBuy;
-            const rangeInfo = RANGE_META[card.range] || { label: card.range, fullLabel: card.range, desc: '' };
 
             const cardBorder = isSelected
               ? 'border-cyan-400 bg-cyan-950/40 shadow-lg shadow-cyan-500/20 ring-1 ring-cyan-400'
@@ -443,89 +467,14 @@ export function V2MarketArea({
 
                 {/* Slot Selection inside card (與手機版同一心智模型) */}
                 {isSelected ? (
-                  <div className="mt-auto flex flex-col gap-1.5 pt-2 border-t border-cyan-500/30 animate-fadeIn">
-                    <div className="flex items-center justify-between gap-2 pb-1 border-b border-white/5">
-                      <span className="text-xs text-cyan-300 font-bold">請選擇欲配置的防線槽位：</span>
-                      <button
-                        onClick={() => setSelectedCardForSlot(null)}
-                        className="text-xs text-slate-400 hover:text-slate-200 underline shrink-0"
-                      >
-                        取消
-                      </button>
-                    </div>
-
-                    <div className="flex flex-col gap-1.5">
-                      {(['P', 'A', 'C', 'E'] as PACESlot[]).map((slot) => {
-                        const currentSlotCard = player.paceBoard[slot];
-                        const slotValidation = canPlaceCardInSlot(card, slot);
-                        const isSlotAllowed = slotValidation.valid;
-                        const currentCardName = currentSlotCard
-                          ? (currentSlotCard.translations[worldview]?.name || currentSlotCard.id)
-                          : null;
-                        const currentMediumInfo = currentSlotCard ? getCommsCardMediumInfo(currentSlotCard) : null;
-
-                        const slotColor = slot === 'P'
-                          ? 'text-cyan-300 border-cyan-500/40 bg-cyan-950/40'
-                          : slot === 'A'
-                          ? 'text-blue-300 border-blue-500/40 bg-blue-950/40'
-                          : slot === 'C'
-                          ? 'text-amber-300 border-amber-500/40 bg-amber-950/40'
-                          : 'text-red-300 border-red-500/40 bg-red-950/40';
-
-                        return (
-                          <button
-                            key={slot}
-                            disabled={!isSlotAllowed}
-                            onClick={() => handleSlotSelect(slot)}
-                            className={`w-full p-2 rounded-xl border text-left transition-all flex items-center justify-between gap-2 active:scale-98 ${
-                              !isSlotAllowed
-                                ? 'bg-slate-900/40 border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
-                                : currentSlotCard
-                                ? 'bg-slate-900 hover:bg-slate-800 border-slate-700 text-slate-200 hover:border-cyan-400'
-                                : 'bg-cyan-950/20 hover:bg-cyan-950/40 border-cyan-500/30 text-cyan-200'
-                            }`}
-                          >
-                            <div className="flex items-start gap-2 min-w-0 flex-1">
-                              <span className={`px-2 py-0.5 rounded-lg text-xs font-black border shrink-0 mt-0.5 whitespace-nowrap ${slotColor}`}>
-                                [{slot}] {slot === 'P' ? '主要' : slot === 'A' ? '備用' : slot === 'C' ? '應急' : '緊急'}
-                              </span>
-                              <div className="flex flex-col min-w-0 flex-1">
-                                {slot === 'P' && (
-                                  <span className="text-[10px] text-slate-400 font-bold mb-0.5">🔒 限中/高頻寬設備</span>
-                                )}
-                                <div className="text-xs font-bold leading-tight break-words text-slate-200">
-                                  {currentSlotCard ? (
-                                    <>現有: <span className="text-white">{currentCardName}</span> {currentMediumInfo && <span className="text-slate-400 text-xs font-normal">({currentMediumInfo.label})</span>}</>
-                                  ) : (
-                                    <span className="text-slate-400">目前為空槽</span>
-                                  )}
-                                </div>
-                                {!isSlotAllowed && (
-                                  <div className="text-xs text-red-400 font-bold leading-tight break-words mt-0.5">
-                                    {slotValidation.reason || '限制條件不符'}
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-
-                            <span className={`px-2 py-1 rounded-lg text-xs font-black shrink-0 whitespace-nowrap ${
-                              !isSlotAllowed
-                                ? 'bg-slate-800 text-slate-600'
-                                : currentSlotCard
-                                ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
-                                : 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                            }`}>
-                              {!isSlotAllowed ? '不可放置' : currentSlotCard ? '替換入庫 ➔' : '立即裝備 ➔'}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    <span className="text-[11px] text-slate-400 text-center pt-0.5">
-                      💡 原裝備將自動安全存入備用倉庫（不刪除）
-                    </span>
-                  </div>
+                  <MarketSlotPicker
+                    card={card}
+                    player={player}
+                    worldview={worldview}
+                    onSelectSlot={handleSlotSelect}
+                    onCancel={() => setSelectedCardForSlot(null)}
+                    className="mt-auto"
+                  />
                 ) : (
                   <div className="mt-auto pt-2 border-t border-white/5">
                     <button

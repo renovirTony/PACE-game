@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { RoomPeer } from '../../types/game';
-import { Users, Globe, Copy, Check, X, Sparkles, LogIn, Plus } from 'lucide-react';
+import { Users, Globe, Copy, Check, X, LogIn, Plus } from 'lucide-react';
 
 interface MultiplayerLobbyModalProps {
   isOpen: boolean;
@@ -34,11 +34,17 @@ export function MultiplayerLobbyModal({
 
   if (!isOpen) return null;
 
-  const handleCopyLink = () => {
+  const handleCopyLink = async () => {
     const url = `${window.location.origin}${window.location.pathname}?v=2&room=${roomCode}`;
-    navigator.clipboard.writeText(url);
-    setIsCopied(true);
-    setTimeout(() => setIsCopied(false), 2000);
+    // 非 HTTPS（例如區網用手機測試）時 navigator.clipboard 不存在；寫入失敗也不能顯示「已複製」
+    try {
+      if (!navigator.clipboard) throw new Error('clipboard unavailable');
+      await navigator.clipboard.writeText(url);
+      setIsCopied(true);
+      setTimeout(() => setIsCopied(false), 2000);
+    } catch {
+      window.prompt('無法自動複製，請手動複製邀請連結：', url);
+    }
   };
 
   const handleCreate = async () => {

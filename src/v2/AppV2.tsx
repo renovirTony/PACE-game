@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useV2GameState } from './engine/gameState';
 import { V2TurnHeader } from './components/HUD/V2TurnHeader';
 import { V2DisasterBanner } from './components/Cards/V2DisasterBanner';
 import { CustomPaceBoard } from './components/Board/CustomPaceBoard';
 import { V2MissionCardView } from './components/Cards/V2MissionCardView';
 import { V2MarketArea } from './components/Market/V2MarketArea';
-import { V2ActionControlPanel } from './components/HUD/V2ActionControlPanel';
+import { V2ActionControlPanel, ActiveBuffsBanner } from './components/HUD/V2ActionControlPanel';
 import { V2TransmissionResultModal } from './components/Modals/V2TransmissionResultModal';
 import { MultiplayerLobbyModal } from './components/Modals/MultiplayerLobbyModal';
 import { V2GameOverModal } from './components/Modals/V2GameOverModal';
@@ -16,9 +16,11 @@ import { V2InteractiveTutorial } from './components/Tutorial/V2InteractiveTutori
 import { V2MobileDock, MobileTab } from './components/HUD/V2MobileDock';
 import { V2MobileMenuModal } from './components/Modals/V2MobileMenuModal';
 import { V2MobileScoreboardDrawer } from './components/Modals/V2MobileScoreboardDrawer';
-import { LogViewer } from '../components/HUD/LogViewer';
-import { V2ScoreBoard } from './components/HUD/V2ScoreBoard';
-import { Radio, Bot, Users, Globe, Shield, Sparkles, Layers, BookOpen, GraduationCap, Sliders, Smartphone, Monitor, Menu, X } from 'lucide-react';
+import { V2LogViewer } from './components/HUD/V2LogViewer';
+import { Radio, Bot, Users, Globe, Sparkles, Layers, BookOpen, GraduationCap, Sliders, Smartphone, Monitor, Menu, X } from 'lucide-react';
+import { safeStorage } from './utils/safeStorage';
+import { CommsCard, PACESlot } from './types/game';
+import { describeDisasterEffects } from './data/terminology';
 
 /**
  * 線上多人（WebRTC P2P）開關。
@@ -68,6 +70,28 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
     }, 600);
   };
 
+  // 防線操作（雙端共用）：教學第 4 步只在操作「成功」時才前進，失敗時留在原步驟讓玩家重試
+  const advanceTutorialIf = (ok: boolean, step: number) => {
+    if (ok && gameState.isTutorialMode && gameState.tutorialStep === step) {
+      gameState.nextTutorialStep();
+    }
+  };
+  const handleSwapSlots = (slotA: PACESlot, slotB: PACESlot) => {
+    const ok = gameState.swapSlots(slotA, slotB);
+    advanceTutorialIf(ok, 4);
+    return ok;
+  };
+  const handleStoreCard = (slot: PACESlot) => {
+    const hadCard = Boolean(gameState.activePlayer.paceBoard[slot]);
+    gameState.storeCard(slot);
+    advanceTutorialIf(hadCard, 4);
+  };
+  const handleEquipFromInventory = (card: CommsCard, slot: PACESlot) => {
+    const ok = gameState.equipFromInventory(card, slot);
+    advanceTutorialIf(ok, 4);
+    return ok;
+  };
+
   // Detect Mobile View: via ?mobile=1 query parameter OR screen width < 1024px OR manual toggle
   const [isSmallScreen, setIsSmallScreen] = useState(() => {
     if (typeof window !== 'undefined') {
@@ -79,7 +103,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
   const [forceMobileView, setForceMobileView] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
-      return params.get('mobile') === '1' || localStorage.getItem('pace_force_mobile') === 'true';
+      return params.get('mobile') === '1' || safeStorage.get('pace_force_mobile') === 'true';
     }
     return false;
   });
@@ -96,7 +120,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
   const toggleMobileMode = useCallback(() => {
     setForceMobileView((prev) => {
       const next = !prev;
-      localStorage.setItem('pace_force_mobile', String(next));
+      safeStorage.set('pace_force_mobile', String(next));
       return next;
     });
   }, []);
@@ -123,13 +147,13 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
 
   // Font Size state with localStorage persistence (Default to 'large' for enhanced desktop readability)
   const [fontSize, setFontSize] = useState<FontSizeMode>(() => {
-    const saved = localStorage.getItem('pace_font_size');
+    const saved = safeStorage.get('pace_font_size');
     return (saved === 'normal' || saved === 'large' || saved === 'xlarge') ? saved : 'large';
   });
 
   // Color Theme state with localStorage persistence (3 curated modes: tactical-dark, soft-muted, daylight)
   const [theme, setTheme] = useState<ThemeMode>(() => {
-    const saved = localStorage.getItem('pace_theme');
+    const saved = safeStorage.get('pace_theme');
     return (saved === 'tactical-dark' || saved === 'soft-muted' || saved === 'daylight')
       ? (saved as ThemeMode)
       : 'tactical-dark';
@@ -140,14 +164,14 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
     const root = document.documentElement;
     root.classList.remove('font-scale-normal', 'font-scale-large', 'font-scale-xlarge');
     root.classList.add(`font-scale-${fontSize}`);
-    localStorage.setItem('pace_font_size', fontSize);
+    safeStorage.set('pace_font_size', fontSize);
   }, [fontSize]);
 
   // Apply color theme data-attribute to document root
   useEffect(() => {
     const root = document.documentElement;
     root.setAttribute('data-theme', theme);
-    localStorage.setItem('pace_theme', theme);
+    safeStorage.set('pace_theme', theme);
   }, [theme]);
 
   // Auto-detect room parameter from URL (?v=2&room=CODE)
@@ -240,7 +264,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   }`}
                 >
                   <span className="text-xs block">⚡</span>
-                  <span className="font-bold block mt-0.5 text-[10px]">廢土斷網</span>
+                  <span className="font-bold block mt-0.5 text-[10px]">大斷網廢土</span>
                 </button>
               </div>
             </div>
@@ -317,7 +341,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 className="flex items-center gap-1 text-purple-400 hover:text-purple-300 font-bold px-2 py-1 rounded-lg hover:bg-purple-950/30"
               >
                 <Layers className="w-3.5 h-3.5" />
-                <span>卡片圖鑑</span>
+                <span>卡牌圖鑑</span>
               </button>
               <span className="text-slate-700">|</span>
               <button
@@ -540,7 +564,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   className="flex items-center gap-1.5 text-purple-400 hover:text-purple-300 font-bold transition-all px-2.5 py-1 rounded-lg hover:bg-purple-950/30"
                 >
                   <Layers className="w-4 h-4 text-purple-400" />
-                  <span>卡片全圖鑑</span>
+                  <span>卡牌圖鑑</span>
                 </button>
                 <span className="text-slate-700">|</span>
                 <button
@@ -657,10 +681,8 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 <span className="text-[11px] whitespace-nowrap">選單</span>
               </button>
 
+              {/* 遊戲中不顯示遊戲名稱（窄螢幕只會被截成「P…」），把空間留給回合數與天災狀態 */}
               <div className="flex items-center gap-1 min-w-0">
-                <span className="text-xs font-black text-slate-100 font-orbitron truncate">
-                  PACE <span className="text-cyan-400">先鋒</span>
-                </span>
                 <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold shrink-0 whitespace-nowrap">
                   第 {gameState.round}/{gameState.maxRounds} 輪
                 </span>
@@ -668,48 +690,24 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             </div>
 
             {/* Mini Disaster Pill with tap to view briefing */}
-            <div className="flex items-center gap-1 text-[10px] shrink-0">
+            {/* min-w-0 + truncate：空間不足時截斷膠囊文字，而不是把左側標題擠掉或溢出畫面 */}
+            <div className="flex items-center gap-1 text-[10px] min-w-0">
               {(() => {
-                const event = gameState.activeEvent;
-                let pillText = '☀️ 氣候良好';
-                let isHazard = false;
-
-                if (event && event.id !== 'evt_optimal_calm') {
-                  if (event.targetedMedia.length > 0) {
-                    isHazard = true;
-                    if (event.targetedMedia.includes('Cellular') && event.targetedMedia.includes('Radio')) {
-                      pillText = '基地台/無線電失效';
-                    } else if (event.targetedMedia.includes('Cellular')) {
-                      pillText = '公眾基地台失效';
-                    } else if (event.targetedMedia.includes('Satellite')) {
-                      pillText = '衛星通訊失效';
-                    } else if (event.targetedMedia.includes('Radio')) {
-                      pillText = '無線電波失效';
-                    } else if (event.targetedMedia.includes('Wired')) {
-                      pillText = '實體有線失效';
-                    } else if (event.targetedMedia.includes('PhysicalOptical')) {
-                      pillText = '光學通訊失效';
-                    } else {
-                      pillText = '通訊媒介受阻';
-                    }
-                  } else if (event.powerDrainBonus && event.powerDrainBonus > 0) {
-                    isHazard = true;
-                    pillText = `全場耗電+${event.powerDrainBonus}⚡`;
-                  }
-                }
+                // 與桌面 Header、天災詳情共用同一份效果描述，避免漏掉「耗電 +1」等效果
+                const { isHazard, shortSummary: pillText } = describeDisasterEffects(gameState.activeEvent);
 
                 return (
                   <button
                     onClick={() => setIsDisasterModalOpen(true)}
-                    className={`px-2 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 shrink-0 whitespace-nowrap transition-all shadow-sm active:scale-95 ${
+                    className={`max-w-full min-w-0 px-2 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 whitespace-nowrap transition-all shadow-sm active:scale-95 ${
                       isHazard
                         ? 'bg-red-950/90 hover:bg-red-900 text-red-300 border border-red-500/50 animate-pulse'
                         : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
                     }`}
                     title="點擊查看天災受災詳情"
                   >
-                    <span className="whitespace-nowrap">{pillText}</span>
-                    <span className="text-[9px] opacity-70">ℹ️</span>
+                    <span className="whitespace-nowrap truncate min-w-0">{pillText}</span>
+                    <span className="text-[9px] opacity-70 shrink-0">ℹ️</span>
                   </button>
                 );
               })()}
@@ -725,27 +723,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               activeEvent={gameState.activeEvent}
               isCurrentPlayer={!gameState.activePlayer.isAI}
               worldview={gameState.worldview}
-              onSwapSlots={(slotA, slotB) => {
-                const res = gameState.swapSlots(slotA, slotB);
-                if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                  gameState.nextTutorialStep();
-                }
-                return res;
-              }}
-              onStoreCard={(slot) => {
-                gameState.storeCard(slot);
-                if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                  gameState.nextTutorialStep();
-                }
-              }}
-              onEquipFromInventory={(card, slot) => {
-                const res = gameState.equipFromInventory(card, slot);
-                if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                  gameState.nextTutorialStep();
-                }
-                return res;
-              }}
-              onDiscardFromInventory={gameState.discardFromInventory}
+              onSwapSlots={handleSwapSlots}
+              onStoreCard={handleStoreCard}
+              onEquipFromInventory={handleEquipFromInventory}
               onRecycleInventoryCard={gameState.recycleInventoryCard}
             />
           )}
@@ -852,7 +832,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 }}
               />
 
-              <LogViewer logs={gameState.logs} />
+              <V2LogViewer logs={gameState.logs} />
             </div>
           )}
 
@@ -903,12 +883,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             maxRounds={gameState.maxRounds}
             targetScore={gameState.targetScore}
             activePlayer={gameState.activePlayer}
-            isAI={gameState.activePlayer.isAI}
             worldview={gameState.worldview}
-            onChangeWorldview={gameState.setWorldview}
-            fontSize={fontSize}
-            onChangeFontSize={setFontSize}
-            theme={theme}
             onOpenDisplaySettings={() => setIsDisplaySettingsOpen(true)}
             onSwitchToV1={onSwitchToV1}
             onReturnToMenu={gameState.returnToMenu}
@@ -934,27 +909,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 activeEvent={gameState.activeEvent}
                 isCurrentPlayer={!gameState.activePlayer.isAI}
                 worldview={gameState.worldview}
-                onSwapSlots={(slotA, slotB) => {
-                  const res = gameState.swapSlots(slotA, slotB);
-                  if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                    gameState.nextTutorialStep();
-                  }
-                  return res;
-                }}
-                onStoreCard={(slot) => {
-                  gameState.storeCard(slot);
-                  if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                    gameState.nextTutorialStep();
-                  }
-                }}
-                onEquipFromInventory={(card, slot) => {
-                  const res = gameState.equipFromInventory(card, slot);
-                  if (gameState.isTutorialMode && gameState.tutorialStep === 4) {
-                    gameState.nextTutorialStep();
-                  }
-                  return res;
-                }}
-                onDiscardFromInventory={gameState.discardFromInventory}
+                onSwapSlots={handleSwapSlots}
+                onStoreCard={handleStoreCard}
+                onEquipFromInventory={handleEquipFromInventory}
                 onRecycleInventoryCard={gameState.recycleInventoryCard}
               />
             </div>
@@ -967,6 +924,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   ⚡ 戰術卡使用不消耗 AP
                 </span>
               </div>
+
+              {/* 本回合生效中的戰術增益（與手機戰術頁同一元件） */}
+              <ActiveBuffsBanner player={gameState.activePlayer} />
 
               {/* Hand Tactics Strip */}
               <div className="flex flex-col gap-1.5 shrink-0">
@@ -1005,7 +965,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                             disabled={gameState.activePlayer.isAI}
                             className="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] shrink-0 shadow-sm active:scale-95 transition-all disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:active:scale-100"
                           >
-                            發動 (0 AP)
+                            即時發動 (0 AP)
                           </button>
                         </div>
                       );
@@ -1252,7 +1212,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto">
-              <LogViewer logs={gameState.logs} />
+              <V2LogViewer logs={gameState.logs} />
             </div>
             <button
               onClick={() => setIsLogModalOpen(false)}
@@ -1280,7 +1240,6 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
       <V2GameOverModal
         winner={gameState.winner}
         players={gameState.players}
-        worldview={gameState.worldview}
         onRestart={gameState.restartGame}
         onReturnToMenu={gameState.returnToMenu}
       />

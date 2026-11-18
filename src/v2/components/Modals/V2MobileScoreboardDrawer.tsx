@@ -1,6 +1,5 @@
-import React from 'react';
 import { Player } from '../../types/game';
-import { Trophy, X, Shield, Radio, CheckCircle, Flame } from 'lucide-react';
+import { Trophy, X, Flame } from 'lucide-react';
 
 interface V2MobileScoreboardDrawerProps {
   isOpen: boolean;

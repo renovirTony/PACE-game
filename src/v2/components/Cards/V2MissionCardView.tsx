@@ -1,8 +1,7 @@
-import React from 'react';
-import { CrisisMission, DisasterEvent, PACESlot, Player, TransmissionResult, WorldviewType } from '../../types/game';
+import { CrisisMission, DisasterEvent, Player, TransmissionResult, WorldviewType } from '../../types/game';
 import { evaluateV2PACETransmission, pickPrimaryBlock } from '../../engine/rules';
 import { BANDWIDTH_META, RANGE_META } from '../../data/terminology';
-import { Radio, Image, HeartPulse, Package, Compass, Award, Layers, Zap, Coins, ArrowRight, ZapOff, Sun, Cable, Truck } from 'lucide-react';
+import { Radio, Image, HeartPulse, Package, Compass, Award, Layers, ZapOff, Sun, Truck } from 'lucide-react';
 
 interface V2MissionCardViewProps {
   mission: CrisisMission;
@@ -179,14 +178,7 @@ export function V2MissionCardView({
     if (ranges.length <= 1) {
       return ranges.map(r => RANGE_META[r]?.label || r).join('/');
     }
-    const shortMap: Record<string, string> = {
-      Local: '短距',
-      LineOfSight: '視距',
-      LongRange: '跨區',
-      Penetrating: '地底',
-      Global: '全球',
-    };
-    return ranges.map(r => shortMap[r] || RANGE_META[r]?.label || r).join(' / ');
+    return ranges.map(r => RANGE_META[r]?.shortLabel || r).join(' / ');
   };
 
   const rangeText = getMissionRangeLabel(mission.requiredRange);

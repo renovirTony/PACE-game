@@ -1,6 +1,5 @@
-import React from 'react';
-import { CrisisMission, PACESlot, TransmissionResult, WorldviewType } from '../../types/game';
-import { Radio, CheckCircle, XCircle, Award, Coins, BookOpen, X, AlertTriangle } from 'lucide-react';
+import { CrisisMission, TransmissionResult, WorldviewType } from '../../types/game';
+import { Radio, CheckCircle, XCircle, Award, Coins, BookOpen, X } from 'lucide-react';
 
 interface V2TransmissionResultModalProps {
   data: {

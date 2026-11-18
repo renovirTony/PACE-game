@@ -1,12 +1,54 @@
 import { CommsCard, CrisisMission, DisasterEvent, PACESlot, Player, TacticCard } from '../types/game';
-import { checkCardEligibilityV2 } from './rules';
+import { evaluateV2PACETransmission, isCardBlockedByEvent } from './rules';
+import { EMP_EVENT_ID } from '../data/disasterEvents';
 
 export interface AIDecision {
-  actionType: 'BUY_EQUIPMENT' | 'ASSIGN_SLOT' | 'BUY_TACTIC' | 'PLAY_TACTIC' | 'RECHARGE' | 'TRANSMIT' | 'END_TURN';
+  actionType:
+    | 'BUY_EQUIPMENT'
+    | 'BUY_TACTIC'
+    | 'PLAY_TACTIC'
+    | 'RECHARGE'
+    | 'TRANSMIT'
+    | 'REFRESH_MISSIONS'
+    | 'REQUISITION'
+    | 'END_TURN';
   targetCard?: CommsCard;
   targetSlot?: PACESlot;
   targetTactic?: TacticCard;
   targetMission?: CrisisMission;
+}
+
+type Personality = NonNullable<Player['aiPersonality']>;
+
+/**
+ * 依 AI 個性為市場裝備打分（分數越高越想買）。
+ * - Pragmatic（應變組長）：重視媒介多樣性與性價比
+ * - Survivalist（火腿老手）：偏好抗災、免電、能撐到最後的 C/E 工具
+ * - HighTech（特戰通訊官）：偏好高頻寬、長距離的高階裝備
+ * - Balanced：介於中間
+ */
+function scoreCardForPersonality(card: CommsCard, player: Player, personality: Personality): number {
+  const existingMedia = Object.values(player.paceBoard)
+    .filter((c): c is CommsCard => c !== null)
+    .map(c => c.medium);
+  const isNewMedium = !existingMedia.includes(card.medium);
+  const resilienceCount =
+    Number(card.resilience.empShield) + Number(card.resilience.weatherResistant) + Number(card.resilience.subterranean);
+  const bandwidthScore = card.bandwidth === 'High' ? 2 : card.bandwidth === 'Medium' ? 1 : 0;
+  const rangeScore = card.range === 'LongRange' ? 2 : card.range === 'LineOfSight' ? 1 : 0;
+  const isPowerFree = card.powerCost === 0;
+
+  switch (personality) {
+    case 'Survivalist':
+      return (isNewMedium ? 3 : 0) + resilienceCount * 2 + (isPowerFree ? 3 : 0) - card.cost * 0.3;
+    case 'HighTech':
+      return (isNewMedium ? 2 : 0) + bandwidthScore * 2.5 + rangeScore * 1.5 + card.cost * 0.3;
+    case 'Pragmatic':
+      return (isNewMedium ? 4 : 0) + resilienceCount + bandwidthScore - card.cost * 0.5;
+    case 'Balanced':
+    default:
+      return (isNewMedium ? 3 : 0) + resilienceCount + bandwidthScore + rangeScore * 0.5 - card.cost * 0.3;
+  }
 }
 
 /**
@@ -40,13 +82,17 @@ export function findBestSlotForCard(player: Player, card: CommsCard): PACESlot {
   if (!board.P && card.bandwidth !== 'Low') return 'P';
   if (!board.A) return 'A';
   if (!board.C) return 'C';
-  if (!board.E) return 'E';
 
   return card.bandwidth === 'Low' ? 'C' : 'A'; // 覆蓋適當備援槽位
 }
 
+/** 防線上是否還有空槽，或有被天災打斷的裝備（值得補強） */
+function boardNeedsUpgrade(player: Player, event: DisasterEvent | null): boolean {
+  return Object.values(player.paceBoard).some(c => c === null || isCardBlockedByEvent(c, event, player));
+}
+
 /**
- * V2 啟發式 AI 決策引擎
+ * V2 啟發式 AI 決策引擎（每次呼叫回傳一個動作；每個動作都會消耗 AP、改變狀態或結束回合，不會卡死）
  */
 export function computeV2AIDecision(
   aiPlayer: Player,
@@ -55,97 +101,91 @@ export function computeV2AIDecision(
   activeMissions: CrisisMission[],
   activeEvent: DisasterEvent | null
 ): AIDecision {
-  // 1. 若手牌有戰術卡且有電量或物資需求，優先即時打出 (0 AP)
-  if (aiPlayer.handTactics.length > 0) {
-    const rechargeTactic = aiPlayer.handTactics.find(t => t.effectType === 'RECHARGE_BATTERY');
-    if (rechargeTactic && aiPlayer.energy <= 2) {
-      return { actionType: 'PLAY_TACTIC', targetTactic: rechargeTactic };
-    }
-    const supplyTactic = aiPlayer.handTactics.find(t => t.effectType === 'AIRDROP_CREDITS');
-    if (supplyTactic && aiPlayer.credits <= 2) {
-      return { actionType: 'PLAY_TACTIC', targetTactic: supplyTactic };
-    }
-    const empShieldTactic = aiPlayer.handTactics.find(t => t.effectType === 'FARADAY_SHIELD');
-    if (empShieldTactic && activeEvent?.id === 'evt_emp_strike' && !aiPlayer.activeBuffs?.faradayEmpArmor) {
-      return { actionType: 'PLAY_TACTIC', targetTactic: empShieldTactic };
-    }
-    const communityRelayTactic = aiPlayer.handTactics.find(t => t.effectType === 'COMMUNITY_RELAY');
-    if (communityRelayTactic && !aiPlayer.activeBuffs?.communityRelayActive) {
-      return { actionType: 'PLAY_TACTIC', targetTactic: communityRelayTactic };
-    }
-    const agileTactic = aiPlayer.handTactics.find(t => t.effectType === 'AGILE_PROTOCOL');
-    if (agileTactic && !aiPlayer.activeBuffs?.agileProtocolActive && (aiPlayer.inventory.length > 0 || aiPlayer.actionPoints === 0)) {
-      return { actionType: 'PLAY_TACTIC', targetTactic: agileTactic };
-    }
-    const freeBuyTactic = aiPlayer.handTactics.find(t => t.effectType === 'FREE_MARKET_PURCHASE');
-    if (freeBuyTactic && !aiPlayer.activeBuffs?.freeMarketPurchaseActive && aiPlayer.credits >= 1) {
-      return { actionType: 'PLAY_TACTIC', targetTactic: freeBuyTactic };
-    }
-    const burstTactic = aiPlayer.handTactics.find(t => t.effectType === 'FREE_TRANSMISSION');
-    if (burstTactic && !aiPlayer.activeBuffs?.freeTransmissionActive) {
-      return { actionType: 'PLAY_TACTIC', targetTactic: burstTactic };
+  const personality: Personality = aiPlayer.aiPersonality || 'Balanced';
+  const buffs = aiPlayer.activeBuffs || {};
+  const hasAP = aiPlayer.actionPoints >= 1;
+
+  const transmittableMission = activeMissions.find(
+    m => evaluateV2PACETransmission(aiPlayer, m, activeEvent).canTransmit
+  );
+  const affordableCards = market.filter(c => c.cost <= aiPlayer.credits);
+
+  // 1. 戰術卡（0 AP）：只在真的用得到時才打出，避免白白浪費
+  const findTactic = (type: TacticCard['effectType']) => aiPlayer.handTactics.find(t => t.effectType === type);
+
+  const rechargeTactic = findTactic('RECHARGE_BATTERY');
+  if (rechargeTactic && aiPlayer.energy <= 2) {
+    return { actionType: 'PLAY_TACTIC', targetTactic: rechargeTactic };
+  }
+  const supplyTactic = findTactic('AIRDROP_CREDITS');
+  if (supplyTactic && aiPlayer.credits <= 2) {
+    return { actionType: 'PLAY_TACTIC', targetTactic: supplyTactic };
+  }
+  const empShieldTactic = findTactic('FARADAY_SHIELD');
+  if (empShieldTactic && activeEvent?.id === EMP_EVENT_ID && !buffs.faradayEmpArmor) {
+    return { actionType: 'PLAY_TACTIC', targetTactic: empShieldTactic };
+  }
+  // 中繼台只對 C/E 接手的任務有意義：有任務可通且會由 C/E 接手時才打
+  const relayTactic = findTactic('COMMUNITY_RELAY');
+  if (relayTactic && !buffs.communityRelayActive && transmittableMission) {
+    const result = evaluateV2PACETransmission(aiPlayer, transmittableMission, activeEvent);
+    if (result.successfulSlot === 'C' || result.successfulSlot === 'E') {
+      return { actionType: 'PLAY_TACTIC', targetTactic: relayTactic };
     }
   }
+  // 突發通訊令：沒 AP 但有任務可通時才打
+  const burstTactic = findTactic('FREE_TRANSMISSION');
+  if (burstTactic && !buffs.freeTransmissionActive && !hasAP && transmittableMission) {
+    return { actionType: 'PLAY_TACTIC', targetTactic: burstTactic };
+  }
+  // 後勤通道：沒 AP 但買得起需要的裝備時才打
+  const freeBuyTactic = findTactic('FREE_MARKET_PURCHASE');
+  if (freeBuyTactic && !buffs.freeMarketPurchaseActive && !hasAP && affordableCards.length > 0 && boardNeedsUpgrade(aiPlayer, activeEvent)) {
+    return { actionType: 'PLAY_TACTIC', targetTactic: freeBuyTactic };
+  }
+  // 敏捷協議（對調/倉庫 0 AP）：AI 不做對調與倉庫調配，保留不打
 
-  // 2. 檢驗當前看板上的任務，若有高成功率且回報佳的任務，立即發起通訊檢定
-  if (aiPlayer.actionPoints >= 1 || aiPlayer.activeBuffs?.freeTransmissionActive) {
-    for (const mission of activeMissions) {
-      // 依序檢查 P -> A -> C -> E 是否有能完成該任務的卡
-      const slots: PACESlot[] = ['P', 'A', 'C', 'E'];
-      for (const slot of slots) {
-        const card = aiPlayer.paceBoard[slot];
-        if (card) {
-          const { eligible } = checkCardEligibilityV2(card, slot, mission, activeEvent, aiPlayer);
-          if (eligible) {
-            return { actionType: 'TRANSMIT', targetMission: mission };
-          }
-        }
-      }
-    }
+  // 2. 有任務可通就發起通訊檢定
+  if (transmittableMission && (hasAP || buffs.freeTransmissionActive)) {
+    return { actionType: 'TRANSMIT', targetMission: transmittableMission };
   }
 
-  // 3. 電量過低時進行野戰充電
-  if (aiPlayer.energy <= 0 && aiPlayer.actionPoints >= 1) {
+  // 3. 電量歸零時野戰充電
+  if (aiPlayer.energy <= 0 && hasAP) {
     return { actionType: 'RECHARGE' };
   }
 
-  // 4. 若面板有空槽位，且市場有合適裝備，買入並配置
-  if (aiPlayer.actionPoints >= 1 && aiPlayer.credits >= 1) {
-    const affordableCards = market.filter(c => c.cost <= aiPlayer.credits);
-    if (affordableCards.length > 0) {
-      // 優先選能增加「媒介多樣性」的卡
-      const existingMedia = [
-        aiPlayer.paceBoard.P?.medium,
-        aiPlayer.paceBoard.A?.medium,
-        aiPlayer.paceBoard.C?.medium,
-        aiPlayer.paceBoard.E?.medium,
-      ].filter(Boolean);
-
-      const diverseCard = affordableCards.find(c => !existingMedia.includes(c.medium));
-      const targetCard = diverseCard || affordableCards[0];
-      const targetSlot = findBestSlotForCard(aiPlayer, targetCard);
-
-      return {
-        actionType: 'BUY_EQUIPMENT',
-        targetCard,
-        targetSlot,
-      };
-    }
+  // 4. 防線需要補強且買得起：依個性挑裝備（後勤通道生效時 0 AP 也能買）
+  if ((hasAP || buffs.freeMarketPurchaseActive) && affordableCards.length > 0 && boardNeedsUpgrade(aiPlayer, activeEvent)) {
+    const targetCard = [...affordableCards].sort(
+      (a, b) => scoreCardForPersonality(b, aiPlayer, personality) - scoreCardForPersonality(a, aiPlayer, personality)
+    )[0];
+    return { actionType: 'BUY_EQUIPMENT', targetCard, targetSlot: findBestSlotForCard(aiPlayer, targetCard) };
   }
 
-  // 5. 若物資充裕且市場有戰術卡，買入戰術卡
-  if (aiPlayer.actionPoints >= 1 && aiPlayer.credits >= 2 && tacticMarket.length > 0) {
+  // 5. 防線需要補強但買不起：申請緊急後勤調撥 (+2 物資)
+  if (hasAP && affordableCards.length === 0 && boardNeedsUpgrade(aiPlayer, activeEvent) && aiPlayer.actionPoints >= 2) {
+    return { actionType: 'REQUISITION' };
+  }
+
+  // 6. 場上任務全部無解且還有 AP：重新偵察災情（刷新任務）
+  if (!transmittableMission && aiPlayer.actionPoints >= 2 && activeMissions.length > 0) {
+    return { actionType: 'REFRESH_MISSIONS' };
+  }
+
+  // 7. 物資充裕時買戰術卡
+  if (hasAP && aiPlayer.credits >= 2) {
     const affordableTactics = tacticMarket.filter(t => t.cost <= aiPlayer.credits);
     if (affordableTactics.length > 0) {
       return { actionType: 'BUY_TACTIC', targetTactic: affordableTactics[0] };
     }
   }
 
-  // 6. 電量不滿時補充充能
-  if (aiPlayer.energy < aiPlayer.maxEnergy - 1 && aiPlayer.actionPoints >= 1) {
+  // 8. 電量不滿時補充
+  if (aiPlayer.energy < aiPlayer.maxEnergy - 1 && hasAP) {
     return { actionType: 'RECHARGE' };
   }
 
-  // 7. 無可執行行動，結束回合
+  // 9. 無可執行行動，結束回合
   return { actionType: 'END_TURN' };
 }
