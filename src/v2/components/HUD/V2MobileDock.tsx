@@ -44,7 +44,7 @@ export function V2MobileDock({
         {/* Left Side: Resource Vitals & Integrated Scoreboard Trigger (可壓縮，確保右側操作鈕永不被擠出畫面) */}
         <div className="flex items-center gap-1 min-w-0 flex-1">
           {/* Resource Vitals Micro-Pill */}
-          <div className="flex items-center gap-1 text-[10px] px-1.5 py-1 rounded-xl bg-black/60 border border-white/5 font-bold shadow-inner shrink-0">
+          <div className="flex items-center gap-1 text-[11px] px-2 min-h-[40px] rounded-xl bg-black/60 border border-white/5 font-bold shadow-inner shrink-0">
             <span className="text-cyan-400 font-black whitespace-nowrap" title="剩餘行動點數 AP">
               AP: {actionPoints}
             </span>
@@ -60,7 +60,8 @@ export function V2MobileDock({
           {onOpenScoreboard && typeof playerScore === 'number' && typeof targetScore === 'number' && (
             <button
               onClick={onOpenScoreboard}
-              className="flex items-center gap-0.5 text-[10px] px-1.5 py-1 rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-bold transition-all shadow-sm active:scale-95 min-w-0 overflow-hidden"
+              className="flex items-center gap-0.5 text-[10px] px-2 min-h-[40px] rounded-xl bg-purple-950/80 hover:bg-purple-900 border border-purple-500/40 text-purple-200 font-bold transition-all shadow-sm active:scale-95 min-w-0 overflow-hidden"
+              aria-label={`救援進度 ${playerScore}/${targetScore} 分，點擊查看排行榜`}
               title={
                 isCurrentPlayer
                   ? '點擊展開全員救援進度排行榜'
@@ -68,7 +69,7 @@ export function V2MobileDock({
               }
             >
               {/* 非本人回合時以該玩家頭像取代獎盃圖示（寬度不變，兼作回合指示） */}
-              <span className="shrink-0">
+              <span className="shrink-0" aria-hidden="true">
                 {!isCurrentPlayer && activePlayerAvatar ? activePlayerAvatar : '🏆'}
               </span>
               <span className="text-[11px] font-black text-purple-200 whitespace-nowrap">
@@ -86,7 +87,7 @@ export function V2MobileDock({
             data-tutorial="end-turn-btn"
             onClick={onEndTurn}
             disabled={disabled}
-            className="px-2 py-1 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-[10px] font-black border border-cyan-400/40 shadow-md shadow-cyan-500/20 active:scale-95 flex items-center gap-1 shrink-0 whitespace-nowrap"
+            className="px-4 min-h-[44px] rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:border-slate-700 disabled:shadow-none text-white text-xs font-black border border-cyan-400/40 shadow-md shadow-cyan-500/20 active:scale-95 flex items-center gap-1 shrink-0 whitespace-nowrap"
             title="結束本回合，換下一位指揮官行動"
           >
             <span className="whitespace-nowrap">結束回合</span>

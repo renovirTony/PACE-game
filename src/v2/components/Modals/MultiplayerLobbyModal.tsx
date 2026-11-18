@@ -63,7 +63,8 @@ export function MultiplayerLobbyModal({
         {/* Close Button */}
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all"
+          className="absolute top-4 right-4 p-2.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all"
+          aria-label="關閉連線大廳"
         >
           <X className="w-5 h-5" />
         </button>

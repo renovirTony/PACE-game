@@ -269,7 +269,7 @@ export function V2MarketArea({
                           <button
                             onClick={() => setSelectedCardForSlot(card)}
                             disabled={disabled || !canAfford}
-                            className={`w-full py-2 px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1 transition-all text-center ${
+                            className={`w-full min-h-[44px] px-3 rounded-xl font-black text-xs flex items-center justify-center gap-1 transition-all text-center ${
                               canAfford
                                 ? isFreeBuy
                                   ? 'bg-emerald-500 hover:bg-emerald-400 text-slate-950 shadow-md'
@@ -334,7 +334,7 @@ export function V2MarketArea({
                     <button
                       onClick={() => onBuyTactic(tactic)}
                       disabled={disabled || !canAfford}
-                      className={`w-full py-2 px-3 rounded-xl font-black text-xs transition-all text-center ${
+                      className={`w-full min-h-[44px] px-3 rounded-xl font-black text-xs transition-all text-center ${
                         canAfford
                           ? 'bg-purple-600 hover:bg-purple-500 text-white shadow-md'
                           : 'bg-slate-900 text-slate-500 border border-slate-800 opacity-60 cursor-not-allowed'

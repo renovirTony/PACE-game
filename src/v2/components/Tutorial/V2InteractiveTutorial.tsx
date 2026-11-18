@@ -309,8 +309,9 @@ export function V2InteractiveTutorial({
 
             <button
               onClick={() => onFinish('menu')}
-              className="p-1 sm:p-1.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all text-xs flex items-center gap-1 font-bold shrink-0"
+              className="p-2.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all text-xs flex items-center gap-1 font-bold shrink-0"
               title="退出教學回到主選單"
+              aria-label="退出教學"
             >
               <span className="hidden sm:inline">退出教學</span>
               <X className="w-4 h-4" />

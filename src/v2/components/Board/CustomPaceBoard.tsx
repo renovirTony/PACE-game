@@ -106,12 +106,14 @@ function CompactSpecLine({ card }: { card: CommsCard }) {
 }
 
 /** 「說明 ▾」展開鈕（收合時隱藏裝備說明與引言） */
-function DetailsToggle({ expanded, onToggle }: { expanded: boolean; onToggle: () => void }) {
+function DetailsToggle({ expanded, onToggle, touch = false }: { expanded: boolean; onToggle: () => void; touch?: boolean }) {
   return (
     <button
       onClick={onToggle}
       aria-expanded={expanded}
-      className="ml-auto px-2 py-0.5 rounded-lg text-[11px] font-bold text-slate-400 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 transition-all shrink-0 whitespace-nowrap"
+      className={`ml-auto px-2.5 rounded-lg text-[11px] font-bold text-slate-300 hover:text-slate-100 bg-slate-900/60 hover:bg-slate-800 border border-slate-700/60 transition-all shrink-0 whitespace-nowrap ${
+        touch ? 'min-h-[36px]' : 'py-0.5'
+      }`}
     >
       {expanded ? '收合 ▴' : '說明 ▾'}
     </button>
@@ -246,8 +248,8 @@ export function CustomPaceBoard({
           </div>
         )}
 
-        {/* 4 Compact Full-Width Slots Stacked Vertically */}
-        <div className="flex flex-col gap-2.5">
+        {/* 4 Compact Full-Width Slots Stacked Vertically（間距收緊，確保四道防線在底部操作列上方一屏看完） */}
+        <div className="flex flex-col gap-1.5">
           {slots.map((slot) => {
             const card = board[slot];
             const meta = slotMeta[slot];
@@ -302,7 +304,7 @@ export function CustomPaceBoard({
             return (
               <div
                 key={slot}
-                className={`pace-slot-card p-3 rounded-2xl border flex flex-col gap-2 transition-all shadow-sm ${slotBorder}`}
+                className={`pace-slot-card px-3 py-2.5 rounded-2xl border flex flex-col gap-1.5 transition-all shadow-sm ${slotBorder}`}
               >
                 {/* Row 1: Slot Badges + Medium */}
                 <div className="flex items-center justify-between gap-1.5 flex-wrap">
@@ -361,7 +363,7 @@ export function CustomPaceBoard({
                       </span>
                     )}
 
-                    <DetailsToggle expanded={expandedSlots.has(slot)} onToggle={() => toggleSlotDetails(slot)} />
+                    <DetailsToggle touch expanded={expandedSlots.has(slot)} onToggle={() => toggleSlotDetails(slot)} />
                   </div>
                 )}
 
@@ -388,7 +390,7 @@ export function CustomPaceBoard({
                     {isSwapValidWithSource ? (
                       <button
                         onClick={() => handleSwapTarget(slot)}
-                        className="w-full py-1.5 rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs transition-all shadow-md animate-pulse"
+                        className="w-full min-h-[40px] rounded-xl bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-black text-xs transition-all shadow-md animate-pulse"
                       >
                         🔄 對調至 [{slot}] {SLOT_SHORT_LABEL[slot]} 槽位 {isAgile ? '(0 AP)' : '(1 AP)'}
                       </button>
@@ -405,7 +407,7 @@ export function CustomPaceBoard({
                     {isEquipValidWithInventory ? (
                       <button
                         onClick={() => handleEquipFromInv(slot)}
-                        className="w-full py-1.5 rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-black text-xs transition-all shadow-md animate-pulse"
+                        className="w-full min-h-[40px] rounded-xl bg-purple-500 hover:bg-purple-400 text-slate-950 font-black text-xs transition-all shadow-md animate-pulse"
                       >
                         📥 裝備至 [{slot}] {SLOT_SHORT_LABEL[slot]} 槽位 {isAgile ? '(0 AP)' : '(1 AP)'}
                       </button>
@@ -432,7 +434,7 @@ export function CustomPaceBoard({
                               data-tutorial={slot === 'P' ? 'slot-p' : undefined}
                               onClick={() => setActiveSwapSlot(isSwapSource ? null : slot)}
                               disabled={!canActionAP && !isSwapSource}
-                              className={`px-2.5 py-1 rounded-lg font-bold border transition-all text-xs flex items-center gap-1 ${
+                              className={`px-2.5 min-h-[36px] rounded-lg font-bold border transition-all text-xs flex items-center gap-1 ${
                                 isSwapSource
                                   ? 'bg-cyan-500 text-slate-950 border-cyan-400'
                                   : !canActionAP
@@ -446,7 +448,7 @@ export function CustomPaceBoard({
 
                             <button
                               onClick={() => onStoreCard(slot)}
-                              className="px-2.5 py-1 rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-amber-300 border border-slate-700 transition-all text-xs flex items-center gap-1 shrink-0 whitespace-nowrap"
+                              className="px-2.5 min-h-[36px] rounded-lg font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-amber-300 border border-slate-700 transition-all text-xs flex items-center gap-1 shrink-0 whitespace-nowrap"
                             >
                               <Archive className="w-3.5 h-3.5 shrink-0" />
                               <span className="whitespace-nowrap">卸下入庫 (0 AP)</span>
@@ -462,7 +464,7 @@ export function CustomPaceBoard({
                         {onGoToMarket && (
                           <button
                             onClick={onGoToMarket}
-                            className="px-2.5 py-1 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-[10px] transition-all ml-auto"
+                            className="px-3 min-h-[36px] rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40 font-bold text-xs transition-all ml-auto"
                           >
                             去市場選購 ➔
                           </button>
@@ -527,7 +529,7 @@ export function CustomPaceBoard({
                       <button
                         onClick={() => setActiveInventoryCard(isSelected ? null : card)}
                         disabled={!canEquipAP && !isSelected}
-                        className={`px-3 py-1 rounded-xl text-xs font-bold transition-all ${
+                        className={`px-3 min-h-[36px] rounded-xl text-xs font-bold transition-all ${
                           isSelected
                             ? 'bg-purple-500 text-slate-950 font-black'
                             : !canEquipAP
@@ -545,7 +547,7 @@ export function CustomPaceBoard({
                             onRecycleInventoryCard(card.id);
                           }}
                           disabled={!isCurrentPlayer}
-                          className={`px-3 py-1 rounded-xl text-[10px] font-bold transition-all whitespace-nowrap ${
+                          className={`px-3 min-h-[36px] rounded-xl text-[11px] font-bold transition-all whitespace-nowrap ${
                             isCurrentPlayer
                               ? 'bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
                               : 'bg-slate-800 text-slate-600 opacity-50 cursor-not-allowed'

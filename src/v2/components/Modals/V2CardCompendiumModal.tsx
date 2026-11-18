@@ -53,7 +53,8 @@ export function V2CardCompendiumModal({
 
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all shrink-0"
+            className="p-2.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all shrink-0"
+            aria-label="關閉圖鑑"
           >
             <X className="w-5 h-5" />
           </button>

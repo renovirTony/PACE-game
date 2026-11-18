@@ -47,7 +47,7 @@ export function SetupModeActions({
                 role="radio"
                 aria-checked={botCount === count}
                 onClick={() => onChangeBotCount(count)}
-                className={`px-3 py-1 rounded-lg border text-xs font-bold transition-all ${
+                className={`px-3 min-h-[36px] min-w-[44px] rounded-lg border text-xs font-bold transition-all ${
                   botCount === count
                     ? 'bg-cyan-950 border-cyan-500 text-cyan-300 shadow-sm'
                     : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
@@ -100,7 +100,7 @@ export function SetupMoreTools({
       <button
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
-        className="self-center flex items-center gap-1 text-xs text-slate-400 hover:text-slate-200 font-bold px-2 py-1"
+        className="self-center flex items-center gap-1 text-xs text-slate-300 hover:text-slate-100 font-bold px-3 min-h-[40px] rounded-xl hover:bg-slate-900"
       >
         <span>更多：玩法手冊、卡牌圖鑑、設定</span>
         <ChevronDown className={`w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />

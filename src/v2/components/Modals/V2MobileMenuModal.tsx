@@ -57,7 +57,8 @@ export function V2MobileMenuModal({
           </h3>
           <button
             onClick={onClose}
-            className="p-1 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+            aria-label="關閉選單"
           >
             <X className="w-4 h-4" />
           </button>

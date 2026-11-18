@@ -113,8 +113,9 @@ export function DisplaySettingsModal({
 
           <button
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all"
+            className="p-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800/60 transition-all"
             title="關閉設定"
+            aria-label="關閉設定"
           >
             <X className="w-5 h-5" />
           </button>

@@ -53,7 +53,8 @@ export function V2MobileScoreboardDrawer({
 
           <button
             onClick={onClose}
-            className="p-1.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-colors"
+            className="p-2.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-colors"
+            aria-label="關閉排行榜"
           >
             <X className="w-4 h-4" />
           </button>

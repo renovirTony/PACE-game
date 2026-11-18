@@ -198,7 +198,7 @@ export function V2TransmissionResultModal({
           <div className="w-12 h-1.5 rounded-full bg-slate-700 mx-auto -mt-1" />
           <div className="flex items-center justify-between border-b border-slate-800 pb-2">
             {header}
-            <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900" aria-label="關閉">
+            <button onClick={onClose} className="p-2.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900" aria-label="關閉">
               <X className="w-4 h-4" />
             </button>
           </div>

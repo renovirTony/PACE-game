@@ -528,8 +528,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             <div className="flex items-center gap-1.5 shrink min-w-0">
               <button
                 onClick={() => setIsMobileMenuOpen(true)}
-                className="px-2 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 flex items-center gap-1 text-xs font-black shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
+                className="px-2.5 min-h-[36px] rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-400 flex items-center gap-1 text-xs font-black shadow-sm active:scale-95 shrink-0 whitespace-nowrap"
                 title="展開指揮官工具選單"
+                aria-haspopup="dialog"
               >
                 <Menu className="w-3.5 h-3.5 shrink-0" />
                 <span className="text-[11px] whitespace-nowrap">選單</span>
@@ -537,7 +538,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
 
               {/* 遊戲中不顯示遊戲名稱（窄螢幕只會被截成「P…」），把空間留給回合數與天災狀態 */}
               <div className="flex items-center gap-1 min-w-0">
-                <span className="text-[9.5px] px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 font-bold shrink-0 whitespace-nowrap">
+                <span className="text-[11px] px-2 py-1 rounded-lg bg-slate-800 text-slate-200 font-bold shrink-0 whitespace-nowrap">
                   第 {gameState.round}/{gameState.maxRounds} 輪
                 </span>
               </div>
@@ -553,15 +554,17 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 return (
                   <button
                     onClick={() => setIsDisasterModalOpen(true)}
-                    className={`max-w-full min-w-0 px-2 py-0.5 rounded-full font-bold text-[10px] flex items-center gap-1 whitespace-nowrap transition-all shadow-sm active:scale-95 ${
+                    className={`max-w-full min-w-0 px-3 min-h-[36px] rounded-full font-black text-[11px] flex items-center gap-1 whitespace-nowrap transition-all shadow-sm active:scale-95 ${
+                      // 不再閃爍（閃爍時文字會淡到看不清），改用實色底 + 亮色字確保對比
                       isHazard
-                        ? 'bg-red-950/90 hover:bg-red-900 text-red-300 border border-red-500/50 animate-pulse'
-                        : 'bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border border-emerald-500/40'
+                        ? 'bg-red-900 hover:bg-red-800 text-red-50 border border-red-400'
+                        : 'bg-emerald-900 hover:bg-emerald-800 text-emerald-50 border border-emerald-400'
                     }`}
                     title="點擊查看天災受災詳情"
+                    aria-label={`本輪天災：${pillText}，點擊查看詳情`}
                   >
                     <span className="whitespace-nowrap truncate min-w-0">{pillText}</span>
-                    <span className="text-[9px] opacity-70 shrink-0">ℹ️</span>
+                    <span className="text-[10px] shrink-0" aria-hidden="true">ℹ️</span>
                   </button>
                 );
               })()}
@@ -1004,7 +1007,8 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               </h3>
               <button
                 onClick={() => setIsDisasterModalOpen(false)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+                aria-label="關閉天災情報"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -1035,7 +1039,8 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               </h3>
               <button
                 onClick={() => setIsLogModalOpen(false)}
-                className="p-1 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+                className="p-2.5 rounded-xl text-slate-400 hover:text-slate-100 hover:bg-slate-800 text-xs transition-all"
+                aria-label="關閉日誌"
               >
                 <X className="w-4 h-4" />
               </button>

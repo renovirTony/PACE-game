@@ -46,8 +46,9 @@ export function V2GuideModal({ isOpen, onClose }: V2GuideModalProps) {
 
           <button
             onClick={onClose}
-            className="p-1.5 sm:p-2 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all"
+            className="p-2.5 text-slate-400 hover:text-slate-100 rounded-xl hover:bg-slate-900 transition-all"
             title="關閉手冊"
+            aria-label="關閉手冊"
           >
             <X className="w-5 h-5" />
           </button>
