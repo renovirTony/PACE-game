@@ -7,7 +7,8 @@ import { countUniqueMedia, getCoWinners, rankPlayers } from '../../engine/rules'
 interface V2GameOverModalProps {
   winner: Player | null;
   players: Player[];
-  onRestart: () => void;
+  /** 不提供時隱藏「重新開始」（線上客端只能等房主開新局） */
+  onRestart?: () => void;
   onReturnToMenu: () => void;
 }
 
@@ -100,14 +101,16 @@ export function V2GameOverModal({
         </div>
 
         {/* Action Buttons */}
-        <div className="grid grid-cols-2 gap-3 pt-2">
-          <button
-            onClick={onRestart}
-            className="py-3 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-black text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg active:scale-98"
-          >
-            <RotateCcw className="w-4 h-4" />
-            <span>重新開始演習</span>
-          </button>
+        <div className={`grid ${onRestart ? 'grid-cols-2' : 'grid-cols-1'} gap-3 pt-2`}>
+          {onRestart && (
+            <button
+              onClick={onRestart}
+              className="py-3 rounded-2xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-slate-950 font-black text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2 transition-all shadow-lg active:scale-98"
+            >
+              <RotateCcw className="w-4 h-4" />
+              <span>重新開始演習</span>
+            </button>
+          )}
 
           <button
             onClick={onReturnToMenu}

@@ -13,6 +13,8 @@ interface MultiplayerLobbyModalProps {
   onCreateRoom: (name: string) => Promise<string>;
   onJoinRoom: (code: string, name: string) => Promise<void>;
   onStartGame: () => void;
+  /** 從邀請連結進來時預填的房號 */
+  initialRoomCode?: string;
 }
 
 export function MultiplayerLobbyModal({
@@ -26,11 +28,13 @@ export function MultiplayerLobbyModal({
   onCreateRoom,
   onJoinRoom,
   onStartGame,
+  initialRoomCode = '',
 }: MultiplayerLobbyModalProps) {
   const [playerName, setPlayerName] = useState('指揮官');
-  const [inputRoomCode, setInputRoomCode] = useState('');
+  const [inputRoomCode, setInputRoomCode] = useState(initialRoomCode);
   const [isCopied, setIsCopied] = useState(false);
-  const [activeTab, setActiveTab] = useState<'create' | 'join'>('create');
+  const [activeTab, setActiveTab] = useState<'create' | 'join'>(initialRoomCode ? 'join' : 'create');
+  const hasGuests = peers.length > 0;
 
   if (!isOpen) return null;
 
@@ -47,14 +51,15 @@ export function MultiplayerLobbyModal({
     }
   };
 
+  // 失敗原因已由 connectionMsg 顯示在橫幅上，這裡只需吞掉 rejection，避免未處理的 Promise 錯誤
   const handleCreate = async () => {
     if (!playerName.trim()) return;
-    await onCreateRoom(playerName.trim());
+    await onCreateRoom(playerName.trim()).catch(() => {});
   };
 
   const handleJoin = async () => {
     if (!playerName.trim() || !inputRoomCode.trim()) return;
-    await onJoinRoom(inputRoomCode.trim(), playerName.trim());
+    await onJoinRoom(inputRoomCode.trim(), playerName.trim()).catch(() => {});
   };
 
   return (
@@ -206,21 +211,24 @@ export function MultiplayerLobbyModal({
                     key={peer.peerId}
                     className="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 flex items-center justify-between text-xs"
                   >
-                    <span className="font-bold text-slate-200">{peer.avatar} {peer.name}</span>
+                    <span className="font-bold text-slate-200">{peer.avatar} {peer.name}{peer.isHost ? '（房主）' : ''}</span>
                     <span className="text-[10px] text-emerald-400 font-bold">● 在線</span>
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* Start Game Action */}
-            {isHost && (
+            {/* Start Game Action：至少要有一位隊友才能開局 */}
+            {isHost ? (
               <button
                 onClick={onStartGame}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-slate-950 font-black text-sm tracking-wider transition-all shadow-lg active:scale-98"
+                disabled={!hasGuests}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-cyan-600 hover:from-emerald-500 hover:to-cyan-500 text-slate-950 font-black text-sm tracking-wider transition-all shadow-lg active:scale-98 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                🎮 全員就緒，開始連線作戰！
+                {hasGuests ? '🎮 全員就緒，開始連線作戰！' : '⏳ 等待隊友加入...'}
               </button>
+            ) : (
+              <p className="text-center text-xs font-bold text-slate-400">⏳ 等待房主開始遊戲...</p>
             )}
           </div>
         )}

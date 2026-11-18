@@ -18,19 +18,13 @@ import { V2MobileMenuModal } from './components/Modals/V2MobileMenuModal';
 import { V2MobileScoreboardDrawer } from './components/Modals/V2MobileScoreboardDrawer';
 import { V2LogViewer } from './components/HUD/V2LogViewer';
 import { AITransmissionToast } from './components/HUD/AITransmissionToast';
+import { OnlineConnectionBanner } from './components/HUD/OnlineConnectionBanner';
+import { useScreenWakeLock } from './hooks/useScreenWakeLock';
 import { Radio, Globe, Sparkles, Smartphone, Monitor, Menu, X } from 'lucide-react';
 import { safeStorage } from './utils/safeStorage';
 import { SetupModeActions, SetupMoreTools } from './components/Setup/SetupActions';
 import { CommsCard, PACESlot } from './types/game';
 import { describeDisasterEffects } from './data/terminology';
-
-/**
- * 線上多人（WebRTC P2P）開關。
- * 目前同步機制尚未接上（broadcastGameState / sendActionToHost 從未被呼叫，開局只會建立房主一人），
- * 故先隱藏大廳入口與 ?room= 自動開啟大廳，避免工作坊現場有人點到壞掉的功能。
- * 補完同步後改回 true 即可，大廳與連線程式碼皆保留。
- */
-const ONLINE_MULTIPLAYER_ENABLED = false;
 
 interface AppV2Props {
   onSwitchToV1?: () => void;
@@ -45,6 +39,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
   const [isDisasterModalOpen, setIsDisasterModalOpen] = useState(false);
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
   const [selectedBotCount, setSelectedBotCount] = useState(2);
+
+  // 待在線上房間（大廳或對局）時保持螢幕常亮，避免手機鎖屏造成斷線
+  useScreenWakeLock(Boolean(gameState.roomCode));
 
   // Mobile Layout & Navigation State
   const [mobileTab, setMobileTab] = useState<MobileTab>('defense');
@@ -176,14 +173,15 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
     safeStorage.set('pace_theme', theme);
   }, [theme]);
 
-  // Auto-detect room parameter from URL (?v=2&room=CODE)
+  // 邀請連結 ?v=2&room=CODE：開啟大廳並預填房號；只在剛載入時自動開一次，返回主選單後不再跳出
+  const [inviteRoomCode] = useState(() => new URLSearchParams(window.location.search).get('room')?.toUpperCase() ?? '');
   useEffect(() => {
-    if (!ONLINE_MULTIPLAYER_ENABLED) return;
-    const params = new URLSearchParams(window.location.search);
-    const roomParam = params.get('room');
-    if (roomParam && gameState.phase === 'SETUP') {
-      setIsMultiplayerModalOpen(true);
-    }
+    if (inviteRoomCode) setIsMultiplayerModalOpen(true);
+  }, [inviteRoomCode]);
+
+  // 客端由房主開局（快照把 phase 帶離 SETUP），大廳視窗要跟著關閉
+  useEffect(() => {
+    if (gameState.phase !== 'SETUP') setIsMultiplayerModalOpen(false);
   }, [gameState.phase]);
 
   // Setup / Welcome Screen
@@ -282,15 +280,13 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 onStartTutorial={gameState.startTutorial}
               />
 
-              {ONLINE_MULTIPLAYER_ENABLED && (
-                <button
-                  onClick={() => setIsMultiplayerModalOpen(true)}
-                  className="w-full p-3 rounded-2xl bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-500/40 text-cyan-200 font-bold text-xs flex items-center justify-center gap-2 active:scale-98"
-                >
-                  <Globe className="w-4 h-4 text-cyan-400" />
-                  <span>建立/加入 遠端連線 (WebRTC P2P)</span>
-                </button>
-              )}
+              <button
+                onClick={() => setIsMultiplayerModalOpen(true)}
+                className="w-full p-3 rounded-2xl bg-gradient-to-r from-cyan-950/80 to-slate-900 border border-cyan-500/40 text-cyan-200 font-bold text-xs flex items-center justify-center gap-2 active:scale-98"
+              >
+                <Globe className="w-4 h-4 text-cyan-400" />
+                <span>建立/加入 遠端連線 (WebRTC P2P)</span>
+              </button>
             </div>
 
             {/* 次要工具收進「更多」 */}
@@ -332,6 +328,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             connectionMsg={gameState.connectionMsg}
             onCreateRoom={gameState.createRoom}
             onJoinRoom={gameState.joinRoom}
+            initialRoomCode={inviteRoomCode}
             onStartGame={() => {
               setIsMultiplayerModalOpen(false);
               gameState.startGame('OnlineMultiplayer');
@@ -434,16 +431,14 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 onStartTutorial={gameState.startTutorial}
               />
 
-              {/* Online Multiplayer Lobby Button（同步機制完成前隱藏，見 ONLINE_MULTIPLAYER_ENABLED） */}
-              {ONLINE_MULTIPLAYER_ENABLED && (
-                <button
-                  onClick={() => setIsMultiplayerModalOpen(true)}
-                  className="multiplayer-launch-btn w-full p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 text-cyan-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-cyan-950/40"
-                >
-                  <Globe className="w-5 h-5 text-cyan-400 animate-spin-slow" />
-                  <span>🌐 建立/加入 遠端多人連線房間 (WebRTC P2P)</span>
-                </button>
-              )}
+              {/* Online Multiplayer Lobby Button */}
+              <button
+                onClick={() => setIsMultiplayerModalOpen(true)}
+                className="multiplayer-launch-btn w-full p-3.5 rounded-2xl bg-gradient-to-r from-cyan-950/80 via-slate-900 to-blue-950/80 hover:from-cyan-900 hover:to-blue-900 border border-cyan-500/50 text-cyan-200 font-bold text-xs sm:text-sm tracking-wider flex items-center justify-center gap-2.5 transition-all active:scale-[0.98] shadow-md shadow-cyan-950/40"
+              >
+                <Globe className="w-5 h-5 text-cyan-400 animate-spin-slow" />
+                <span>🌐 建立/加入 遠端多人連線房間 (WebRTC P2P)</span>
+              </button>
 
               {/* 次要工具收進「更多」（手機版模擬鈕移除：網址 ?mobile=1 與遊戲內設定選單仍可切換） */}
               <SetupMoreTools
@@ -467,6 +462,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
           connectionMsg={gameState.connectionMsg}
           onCreateRoom={gameState.createRoom}
           onJoinRoom={gameState.joinRoom}
+            initialRoomCode={inviteRoomCode}
           onStartGame={() => {
             setIsMultiplayerModalOpen(false);
             gameState.startGame('OnlineMultiplayer');
@@ -578,7 +574,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               onGoToMarket={() => setMobileTab('market')}
               player={gameState.activePlayer}
               activeEvent={gameState.activeEvent}
-              isCurrentPlayer={!gameState.activePlayer.isAI}
+              isCurrentPlayer={gameState.isLocalTurn}
               worldview={gameState.worldview}
               onSwapSlots={handleSwapSlots}
               onStoreCard={handleStoreCard}
@@ -604,9 +600,9 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               {/* 破局機制：重抽任務 */}
               <button
                 onClick={() => gameState.refreshMissions()}
-                disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                disabled={!gameState.isLocalTurn || gameState.activePlayer.actionPoints <= 0}
                 className={`w-full py-2.5 rounded-2xl text-xs font-black transition-all active:scale-95 shadow-sm flex items-center justify-center gap-2 ${
-                  !gameState.activePlayer.isAI && gameState.activePlayer.actionPoints > 0
+                  gameState.isLocalTurn && gameState.activePlayer.actionPoints > 0
                     ? 'bg-cyan-950/80 hover:bg-cyan-900 text-cyan-300 border border-cyan-500/40'
                     : 'bg-slate-900 border border-slate-800 text-slate-600 opacity-50 cursor-not-allowed'
                 }`}
@@ -624,7 +620,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                     activeEvent={gameState.activeEvent}
                     worldview={gameState.worldview}
                     disabled={
-                      gameState.activePlayer.isAI ||
+                      !gameState.isLocalTurn ||
                       (gameState.activePlayer.actionPoints <= 0 &&
                         !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
                     }
@@ -646,7 +642,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               market={gameState.market}
               tacticMarket={gameState.tacticMarket}
               worldview={gameState.worldview}
-              disabled={gameState.activePlayer.isAI}
+              disabled={!gameState.isLocalTurn}
               onBuyEquipment={(card, slot) => {
                 const res = gameState.buyEquipment(card, slot);
                 if (res && gameState.isTutorialMode && gameState.tutorialStep === 2) {
@@ -662,7 +658,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
             <div className="flex flex-col gap-3">
               <V2ActionControlPanel
                 player={gameState.activePlayer}
-                isCurrentPlayer={!gameState.activePlayer.isAI}
+                isCurrentPlayer={gameState.isLocalTurn}
                 isAI={gameState.activePlayer.isAI}
                 worldview={gameState.worldview}
                 onGoToTab={(tab) => setMobileTab(tab)}
@@ -708,12 +704,12 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
               }
             }}
             handTacticsCount={gameState.activePlayer.handTactics.length}
-            disabled={gameState.activePlayer.isAI}
+            disabled={!gameState.isLocalTurn}
             playerScore={gameState.activePlayer.score}
             targetScore={gameState.targetScore}
             activePlayerName={gameState.activePlayer.name}
             activePlayerAvatar={gameState.activePlayer.avatar}
-            isCurrentPlayer={!gameState.activePlayer.isAI}
+            isCurrentPlayer={gameState.isLocalTurn}
             onOpenScoreboard={() => setIsScoreboardDrawerOpen(true)}
           />
 
@@ -773,7 +769,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 {/* 破局機制：重抽任務 */}
                 <button
                   onClick={() => gameState.refreshMissions()}
-                  disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                  disabled={!gameState.isLocalTurn || gameState.activePlayer.actionPoints <= 0}
                   className="px-2.5 py-1 rounded-xl bg-cyan-950/80 hover:bg-cyan-900 disabled:opacity-50 disabled:cursor-not-allowed text-cyan-300 border border-cyan-500/40 text-[11px] font-black transition-all active:scale-95 shadow-sm whitespace-nowrap shrink-0"
                   title="三題都打不下來時，消耗 1 AP 汰換全場危機任務"
                 >
@@ -791,7 +787,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                     worldview={gameState.worldview}
                     variant="desktopRow"
                     disabled={
-                      gameState.activePlayer.isAI ||
+                      !gameState.isLocalTurn ||
                       (gameState.activePlayer.actionPoints <= 0 &&
                         !gameState.activePlayer.activeBuffs?.freeTransmissionActive)
                     }
@@ -811,7 +807,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 onGoToMarket={focusDesktopMarket}
                 player={gameState.activePlayer}
                 activeEvent={gameState.activeEvent}
-                isCurrentPlayer={!gameState.activePlayer.isAI}
+                isCurrentPlayer={gameState.isLocalTurn}
                 worldview={gameState.worldview}
                 onSwapSlots={handleSwapSlots}
                 onStoreCard={handleStoreCard}
@@ -862,7 +858,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                                 gameState.nextTutorialStep();
                               }
                             }}
-                            disabled={gameState.activePlayer.isAI}
+                            disabled={!gameState.isLocalTurn}
                             className="px-2 py-1 rounded-lg bg-purple-600 hover:bg-purple-500 text-white font-black text-[10px] shrink-0 shadow-sm active:scale-95 transition-all disabled:bg-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed disabled:active:scale-100"
                           >
                             即時發動 (0 AP)
@@ -885,7 +881,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                         gameState.nextTutorialStep();
                       }
                     }}
-                    disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0 || gameState.activePlayer.energy >= gameState.activePlayer.maxEnergy}
+                    disabled={!gameState.isLocalTurn || gameState.activePlayer.actionPoints <= 0 || gameState.activePlayer.energy >= gameState.activePlayer.maxEnergy}
                     className="py-2 rounded-xl bg-amber-950/60 hover:bg-amber-900/80 disabled:opacity-50 disabled:cursor-not-allowed text-amber-300 border border-amber-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
                     title="緊急野戰充電 (+2⚡ / 1 AP)"
                   >
@@ -894,7 +890,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                   <button
                     data-tutorial="requisition-btn"
                     onClick={() => gameState.requestEmergencyRequisition()}
-                    disabled={gameState.activePlayer.isAI || gameState.activePlayer.actionPoints <= 0}
+                    disabled={!gameState.isLocalTurn || gameState.activePlayer.actionPoints <= 0}
                     className="py-2 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 disabled:opacity-50 disabled:cursor-not-allowed text-emerald-300 border border-emerald-500/40 text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
                     title="向應變中心申請緊急後勤調撥 (+2💰 / 1 AP)"
                   >
@@ -908,7 +904,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                         gameState.nextTutorialStep();
                       }
                     }}
-                    disabled={gameState.activePlayer.isAI}
+                    disabled={!gameState.isLocalTurn}
                     className="py-2 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 disabled:from-slate-800 disabled:to-slate-800 disabled:text-slate-500 disabled:cursor-not-allowed text-white text-xs font-black transition-all flex items-center justify-center gap-1 active:scale-95 shadow-sm"
                     title="結束本回合"
                   >
@@ -957,7 +953,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
                 market={gameState.market}
                 tacticMarket={gameState.tacticMarket}
                 worldview={gameState.worldview}
-                disabled={gameState.activePlayer.isAI}
+                disabled={!gameState.isLocalTurn}
                 onBuyEquipment={(card, slot) => {
                   const res = gameState.buyEquipment(card, slot);
                   if (res && gameState.isTutorialMode && gameState.tutorialStep === 2) {
@@ -975,8 +971,16 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
       {/* ========================================================================= */}
       {/* C. SHARED OVERLAYS & MODALS                                               */}
       {/* ========================================================================= */}
+      {gameState.isOnlineClient && (
+        <OnlineConnectionBanner
+          status={gameState.connectionStatus}
+          message={gameState.connectionMsg}
+          onReturnToMenu={gameState.returnToMenu}
+        />
+      )}
+
       {/* Interactive Step-by-Step Tutorial Overlay (Hidden when Debrief Modal is open) */}
-      {gameState.isTutorialMode && !(gameState.lastTransmission && !gameState.lastTransmission.isAI) && (
+      {gameState.isTutorialMode && !(gameState.lastTransmission && !gameState.lastTransmission.isOtherPlayer) && (
         <V2InteractiveTutorial
           step={gameState.tutorialStep}
           onNext={gameState.nextTutorialStep}
@@ -1066,7 +1070,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
         onDismiss={gameState.clearLastTransmission}
       />
       <V2TransmissionResultModal
-        data={gameState.lastTransmission?.isAI ? null : gameState.lastTransmission}
+        data={gameState.lastTransmission?.isOtherPlayer ? null : gameState.lastTransmission}
         worldview={gameState.worldview}
         isMobile={isMobileActive}
         onClose={() => {
@@ -1080,7 +1084,7 @@ export function AppV2({ onSwitchToV1 }: AppV2Props) {
       <V2GameOverModal
         winner={gameState.winner}
         players={gameState.players}
-        onRestart={gameState.restartGame}
+        onRestart={gameState.isOnlineClient ? undefined : gameState.restartGame}
         onReturnToMenu={gameState.returnToMenu}
       />
 

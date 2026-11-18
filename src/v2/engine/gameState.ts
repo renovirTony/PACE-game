@@ -19,9 +19,24 @@ import { V2_CRISIS_MISSIONS } from '../data/crisisMissions';
 import { V2_TACTIC_CARDS } from '../data/tacticCards';
 import { evaluateV2PACETransmission, canPlaceCardInSlot, getEffectivePowerCost, rankPlayers, getCoWinners, getRecycleRefund } from './rules';
 import { computeV2AIDecision } from './ai';
-import { P2PMultiplayerManager, MultiplayerManagerCallbacks } from './multiplayer';
+import { P2PMultiplayerManager, MultiplayerManagerCallbacks, ConnectionStatus } from './multiplayer';
+import {
+  GameActions,
+  HOST_PLAYER_ID,
+  RemoteAction,
+  SyncedGameState,
+  TransmissionRecord,
+  createClientActions,
+  createHostMember,
+  dispatchRemoteAction,
+  pickFreeSeatStyle,
+} from './onlineProtocol';
 import { audioManager } from '../../engine/audio';
 import { safeStorage } from '../utils/safeStorage';
+import { getSeatToken } from '../utils/seatToken';
+
+/** 線上玩家斷線後保留座位等待自動重連的時間，逾時才交給 AI 代管 */
+const AI_TAKEOVER_GRACE_MS = 30000;
 
 function shuffleArray<T>(array: T[]): T[] {
   const arr = [...array];
@@ -112,15 +127,15 @@ const AI_BOT_PROFILES:Omit<PlayerProfile, 'id' | 'isAI'>[] = [
   { name: '特戰通訊官 豪哥', avatar: '⚡', color: '#10b981', aiPersonality: 'HighTech' },
 ];
 
-/** 最近一次通訊檢定（isAI：AI 的結果以提示條呈現，不跳出要手動關閉的視窗） */
-export interface LastTransmission {
-  result: TransmissionResult;
-  mission: CrisisMission;
-  playerName: string;
-  isAI: boolean;
+/**
+ * 最近一次通訊檢定。
+ * isOtherPlayer：不是「這台裝置的玩家」做的檢定（AI 或線上其他玩家），以提示條呈現，不跳出要手動關閉的視窗。
+ */
+export interface LastTransmission extends TransmissionRecord {
+  isOtherPlayer: boolean;
 }
 
-export interface UseV2GameStateReturn {
+export interface UseV2GameStateReturn extends GameActions {
   round: number;
   maxRounds: number;
   targetScore: number;
@@ -135,7 +150,10 @@ export interface UseV2GameStateReturn {
   logs: GameLog[];
   winner: Player | null;
   lastTransmission: LastTransmission | null;
-  isAITurn: boolean;
+  /** 這台裝置現在能不能操作（不是 AI 回合；線上模式還必須輪到自己且仍連線中） */
+  isLocalTurn: boolean;
+  /** 線上客端：不能自己重新開局，要等房主 */
+  isOnlineClient: boolean;
   gameMode: GameMode;
   botCount: number;
   worldview: WorldviewType;
@@ -153,27 +171,16 @@ export interface UseV2GameStateReturn {
   // Multiplayer State
   roomCode: string;
   isHost: boolean;
+  /** 房間內除了自己以外的成員 */
   peers: RoomPeer[];
-  connectionStatus: 'disconnected' | 'connecting' | 'connected' | 'error';
+  connectionStatus: ConnectionStatus;
   connectionMsg: string;
   createRoom: (name: string) => Promise<string>;
   joinRoom: (roomCode: string, name: string) => Promise<void>;
   leaveRoom: () => void;
 
-  // Actions
+  // Actions（遊戲操作見 GameActions）
   startGame: (mode: GameMode, botCount?: number) => void;
-  buyEquipment: (card: CommsCard, targetSlot: PACESlot) => boolean;
-  swapSlots: (slotA: PACESlot, slotB: PACESlot) => boolean;
-  storeCard: (slot: PACESlot) => void;
-  equipFromInventory: (card: CommsCard, targetSlot: PACESlot) => boolean;
-  buyTactic: (card: TacticCard) => boolean;
-  playTactic: (card: TacticCard) => boolean;
-  rechargeEnergy: () => boolean;
-  requestEmergencyRequisition: () => boolean;
-  recycleInventoryCard: (cardId: string) => boolean;
-  refreshMissions: () => boolean;
-  transmitMission: (mission: CrisisMission) => TransmissionResult;
-  endTurn: () => void;
   clearLastTransmission: () => void;
   restartGame: () => void;
   returnToMenu: () => void;
@@ -221,16 +228,33 @@ export function useV2GameState(): UseV2GameStateReturn {
 
   const [logs, setLogs] = useState<GameLog[]>([]);
   const [winner, setWinner] = useState<Player | null>(null);
-  const [lastTransmission, setLastTransmission] = useState<LastTransmission | null>(null);
+  const [lastTransmission, setLastTransmission] = useState<TransmissionRecord | null>(null);
 
   // Multiplayer Hook State
   const [roomCode, setRoomCode] = useState<string>('');
   const [isHost, setIsHost] = useState<boolean>(false);
+  /** 房主：已加入的客端；客端：房主廣播的全體成員（含自己，對外輸出時再排除） */
   const [peers, setPeers] = useState<RoomPeer[]>([]);
-  const [connectionStatus, setConnectionStatus] = useState<'disconnected' | 'connecting' | 'connected' | 'error'>('disconnected');
+  const [hostName, setHostName] = useState<string>('');
+  /** 這台裝置在線上對局中的玩家 id；非線上模式為 null */
+  const [localPlayerId, setLocalPlayerId] = useState<string | null>(null);
+  const [connectionStatus, setConnectionStatus] = useState<ConnectionStatus>('disconnected');
   const [connectionMsg, setConnectionMsg] = useState<string>('');
 
   const multiplayerRef = useRef<P2PMultiplayerManager | null>(null);
+  /** 客端已顯示過的檢定 id：每份快照都帶著最近一次檢定，避免關掉報告後又被下一份快照叫出來 */
+  const lastSeenTransmissionIdRef = useRef<string | null>(null);
+  /** 房主：斷線玩家「等待重連、逾時才交給 AI」的計時器，以玩家 id 為鍵 */
+  const aiTakeoverTimersRef = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const cancelAiTakeover = useCallback((playerId?: string) => {
+    const timers = aiTakeoverTimersRef.current;
+    const ids = playerId ? [playerId] : [...timers.keys()];
+    ids.forEach(id => {
+      clearTimeout(timers.get(id));
+      timers.delete(id);
+    });
+  }, []);
+  const isOnlineClient = Boolean(roomCode) && !isHost;
   const aiTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /** roundOverride：在 setRound 的同一個 callback 內記錄新回合事件時使用（此時 closure 裡的 round 仍是舊值） */
@@ -253,12 +277,20 @@ export function useV2GameState(): UseV2GameStateReturn {
       multiplayerRef.current.disconnect();
       multiplayerRef.current = null;
     }
+    cancelAiTakeover();
     setRoomCode('');
     setIsHost(false);
     setPeers([]);
+    setLocalPlayerId(null);
     setConnectionStatus('disconnected');
     setConnectionMsg('');
-  }, []);
+  }, [cancelAiTakeover]);
+
+  // 元件卸載（例如切回 v1）時一併關閉連線與計時器
+  useEffect(() => () => {
+    multiplayerRef.current?.disconnect();
+    cancelAiTakeover();
+  }, [cancelAiTakeover]);
 
   const returnToMenu = useCallback(() => {
     setPhase('SETUP');
@@ -291,8 +323,16 @@ export function useV2GameState(): UseV2GameStateReturn {
     const initialEvent = shuffledEvents[0];
     const restEvents = shuffledEvents.slice(1);
 
-    // 玩家配置
-    const newPlayers: Player[] = [createPlayer(HUMAN_PLAYER_PROFILE)];
+    // 玩家配置（線上模式：房主 + 每位已連線的客端，外觀沿用大廳分配的座位）
+    const newPlayers: Player[] = mode === 'OnlineMultiplayer'
+      ? [createHostMember(hostName), ...peers].map(member => createPlayer({
+          id: member.id,
+          name: member.name,
+          isAI: false,
+          avatar: member.avatar,
+          color: member.color,
+        }))
+      : [createPlayer(HUMAN_PLAYER_PROFILE)];
 
     if (mode === 'SinglePlayer') {
       for (let i = 0; i < bots; i++) {
@@ -318,7 +358,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     setPhase('PLAYER_ACTION');
 
     addLog('info', `📢 災難演習開始！首波環境事件【${initialEvent.translations[worldview]?.title}】已生效！`, undefined, undefined, undefined, 1);
-  }, [worldview, addLog]);
+  }, [worldview, addLog, hostName, peers]);
 
   // 新手教學引導啟動 (100% 確定性精選教學牌組與任務)
   const startTutorial = useCallback(() => {
@@ -838,7 +878,14 @@ export function useV2GameState(): UseV2GameStateReturn {
       );
     }
 
-    setLastTransmission({ result, mission, playerName: curPlayer.name, isAI: curPlayer.isAI });
+    setLastTransmission({
+      id: Math.random().toString(36).substring(2, 10),
+      result,
+      mission,
+      playerId: curPlayer.id,
+      playerName: curPlayer.name,
+      isAI: curPlayer.isAI,
+    });
     return result;
   }, [players, activePlayerIndex, activeEvent, worldview, activeMissions, missionDeck, addLog]);
 
@@ -914,10 +961,10 @@ export function useV2GameState(): UseV2GameStateReturn {
     setActivePlayerIndex(nextIndex);
   }, [players, activePlayerIndex, round, maxRounds, targetScore, eventDeck, isTutorialMode, worldview, addLog]);
 
-  // AI 自動決策執行循環 (教學模式中暫停 AI 搶先行動)
+  // AI 自動決策執行循環 (教學模式中暫停 AI 搶先行動；線上客端不跑 AI，由房主代管斷線玩家)
   useEffect(() => {
     const curPlayer = players[activePlayerIndex];
-    if (phase !== 'PLAYER_ACTION' || !curPlayer || !curPlayer.isAI || isTutorialMode) {
+    if (phase !== 'PLAYER_ACTION' || !curPlayer || !curPlayer.isAI || isTutorialMode || isOnlineClient) {
       return;
     }
 
@@ -972,20 +1019,127 @@ export function useV2GameState(): UseV2GameStateReturn {
     transmitMission,
     endTurn,
     isTutorialMode,
+    isOnlineClient,
   ]);
 
-  // WebRTC P2P 連線方法（目前入口已隱藏，見 AppV2 的 ONLINE_MULTIPLAYER_ENABLED；同步機制尚未接上）
-  const applySyncedState = useCallback((syncedState: any) => {
-    if (syncedState.players) setPlayers(syncedState.players);
-    if (syncedState.round) setRound(syncedState.round);
-    if (syncedState.activePlayerIndex !== undefined) setActivePlayerIndex(syncedState.activePlayerIndex);
-    if (syncedState.market) setMarket(syncedState.market);
-    if (syncedState.activeMissions) setActiveMissions(syncedState.activeMissions);
-    if (syncedState.activeEvent) setActiveEvent(syncedState.activeEvent);
-    if (syncedState.phase) setPhase(syncedState.phase);
+  // ===== WebRTC P2P 線上多人（房主權威：規則只在房主端執行，客端套用房主廣播的快照） =====
+
+  const activePlayer = players[activePlayerIndex] || players[0] || FALLBACK_PLAYER;
+  const isOnlineGame = gameMode === 'OnlineMultiplayer' && localPlayerId !== null;
+
+  const localActions: GameActions = {
+    buyEquipment,
+    swapSlots,
+    storeCard,
+    equipFromInventory,
+    buyTactic,
+    playTactic,
+    rechargeEnergy,
+    requestEmergencyRequisition,
+    recycleInventoryCard,
+    refreshMissions,
+    transmitMission,
+    endTurn,
+  };
+
+  // 連線 callback 只在建房/加入時建立一次；經由 ref 才能用到「最新一次 render」的狀態與 addLog（回合數才不會過期）
+  const liveOnlineHandlersRef = useRef({
+    onRemoteAction: (_playerId: string, _action: RemoteAction) => {},
+    onGuestJoined: (_guest: RoomPeer) => {},
+    onGuestLeft: (_playerId: string) => {},
+    onAiTakeover: (_playerId: string) => {},
+    onHostLost: () => {},
+  });
+  liveOnlineHandlersRef.current = {
+    onRemoteAction: (playerId, action) => {
+      // 只接受「輪到的那位玩家」送來的動作
+      if (phase !== 'PLAYER_ACTION' || activePlayer.id !== playerId) return;
+      dispatchRemoteAction(action, localActions, { activePlayer, market, tacticMarket, activeMissions });
+    },
+    onGuestJoined: (guest) => {
+      cancelAiTakeover(guest.id);
+      // 重新連線的人沿用對局中原本的頭像與顏色，新加入者才分配空座位
+      const seatedPlayer = players.find(p => p.id === guest.id);
+      setPeers(prev => {
+        const others = prev.filter(p => p.id !== guest.id);
+        const seatStyle = seatedPlayer ? { avatar: seatedPlayer.avatar, color: seatedPlayer.color } : pickFreeSeatStyle(others);
+        return [...others, { ...guest, ...seatStyle }];
+      });
+      if (phase === 'SETUP' || !seatedPlayer) return;
+      setPlayers(prev => prev.map(p => (
+        p.id === guest.id ? { ...p, isAI: false, aiPersonality: undefined, name: guest.name } : p
+      )));
+      addLog('success', seatedPlayer.isAI
+        ? `📡 【${guest.name}】重新連線，從 AI 手中收回指揮權！`
+        : `📡 【${guest.name}】已重新連線。`);
+    },
+    onGuestLeft: (playerId) => {
+      setPeers(prev => prev.filter(p => p.id !== playerId));
+      const leaver = players.find(p => p.id === playerId);
+      if (phase === 'SETUP' || !leaver || leaver.isAI) return;
+      // 先保留座位等他自動重連；短暫斷線（切 App、網路抖動）不會被 AI 搶走回合
+      addLog('alert', `📡 【${leaver.name}】連線中斷，等待重新連線中…（${AI_TAKEOVER_GRACE_MS / 1000} 秒內未回來將由 AI 代管）`);
+      cancelAiTakeover(playerId);
+      aiTakeoverTimersRef.current.set(playerId, setTimeout(() => {
+        aiTakeoverTimersRef.current.delete(playerId);
+        liveOnlineHandlersRef.current.onAiTakeover(playerId);
+      }, AI_TAKEOVER_GRACE_MS));
+    },
+    onAiTakeover: (playerId) => {
+      const leaver = players.find(p => p.id === playerId);
+      if (phase === 'SETUP' || !leaver || leaver.isAI) return;
+      setPlayers(prev => prev.map(p => (
+        p.id === playerId ? { ...p, isAI: true, aiPersonality: 'Pragmatic', name: `${p.name}（AI 代管）` } : p
+      )));
+      addLog('alert', `📡 【${leaver.name}】未能重新連線，改由 AI 代管其回合（重新連線即可收回）。`);
+    },
+    onHostLost: () => {
+      if (phase !== 'SETUP') addLog('alert', '📡 與房主的連線已中斷，對局無法繼續，請返回主選單。');
+    },
+  };
+
+  const applySyncedState = useCallback((state: SyncedGameState) => {
+    setGameMode('OnlineMultiplayer');
+    setIsTutorialMode(false);
+    setPhase(state.phase);
+    setRound(state.round);
+    setPlayers(state.players);
+    setActivePlayerIndex(state.activePlayerIndex);
+    setMarket(state.market);
+    setTacticMarket(state.tacticMarket);
+    setActiveMissions(state.activeMissions);
+    setActiveEvent(state.activeEvent);
+    setLogs(state.logs);
+    setWinner(state.winner);
+    setWorldviewState(state.worldview);
+    setPeers(state.members);
+    if (state.lastTransmission && state.lastTransmission.id !== lastSeenTransmissionIdRef.current) {
+      lastSeenTransmissionIdRef.current = state.lastTransmission.id;
+      setLastTransmission(state.lastTransmission);
+    }
   }, []);
 
-  const handleConnectionStatus = useCallback((status: 'disconnected' | 'connecting' | 'connected' | 'error', msg?: string) => {
+  // 房主：任何同步狀態變動就廣播完整快照（狀態量小，整包送比計算差異單純可靠）
+  useEffect(() => {
+    if (!isHost || !roomCode) return;
+    multiplayerRef.current?.broadcastGameState({
+      phase,
+      round,
+      players,
+      activePlayerIndex,
+      market,
+      tacticMarket,
+      activeMissions,
+      activeEvent,
+      logs,
+      winner,
+      lastTransmission,
+      worldview,
+      members: [createHostMember(hostName), ...peers],
+    });
+  }, [isHost, roomCode, phase, round, players, activePlayerIndex, market, tacticMarket, activeMissions, activeEvent, logs, winner, lastTransmission, worldview, hostName, peers]);
+
+  const handleConnectionStatus = useCallback((status: ConnectionStatus, msg?: string) => {
     setConnectionStatus(status);
     if (msg) setConnectionMsg(msg);
   }, []);
@@ -999,56 +1153,58 @@ export function useV2GameState(): UseV2GameStateReturn {
 
   const createRoom = useCallback(async (name: string): Promise<string> => {
     const manager = resetMultiplayerManager({
-      onPeerJoined: (peer) => {
-        setPeers(prev => [...prev.filter(p => p.peerId !== peer.peerId), peer]);
-        addLog('info', `🌐 玩家【${peer.name}】已連線加入房間！`);
-      },
-      onPeerLeft: (peerId) => {
-        setPeers(prev => prev.filter(p => p.peerId !== peerId));
-        addLog('alert', `📡 連線玩家已離線。`);
-      },
-      onGameStateReceived: applySyncedState,
-      onActionReceived: () => {},
+      onGuestJoined: (guest) => liveOnlineHandlersRef.current.onGuestJoined(guest),
+      onGuestLeft: (playerId) => liveOnlineHandlersRef.current.onGuestLeft(playerId),
+      onActionReceived: (playerId, action) => liveOnlineHandlersRef.current.onRemoteAction(playerId, action),
+      onGameStateReceived: () => {},
+      onHostLost: () => {},
       onConnectionStatus: handleConnectionStatus,
     });
 
-    const code = await manager.createRoom({
-      name,
-      avatar: '📡',
-      color: '#06b6d4',
-    });
+    const code = await manager.createRoom();
+    setHostName(name);
+    setPeers([]);
+    setLocalPlayerId(HOST_PLAYER_ID);
     setRoomCode(code);
     setIsHost(true);
     return code;
-  }, [addLog, applySyncedState, handleConnectionStatus, resetMultiplayerManager]);
+  }, [handleConnectionStatus, resetMultiplayerManager]);
 
   const joinRoom = useCallback(async (code: string, name: string): Promise<void> => {
     const manager = resetMultiplayerManager({
-      onPeerJoined: () => {},
-      onPeerLeft: () => {},
-      onGameStateReceived: applySyncedState,
+      onGuestJoined: () => {},
+      onGuestLeft: () => {},
       onActionReceived: () => {},
+      onGameStateReceived: applySyncedState,
+      onHostLost: () => liveOnlineHandlersRef.current.onHostLost(),
       onConnectionStatus: handleConnectionStatus,
     });
 
-    await manager.joinRoom(code, {
-      name,
-      avatar: '🛡️',
-      color: '#f97316',
-    });
-    setRoomCode(code);
+    lastSeenTransmissionIdRef.current = null;
+    const myPlayerId = await manager.joinRoom(code, name, getSeatToken(code));
+    setLocalPlayerId(myPlayerId);
+    setRoomCode(code.toUpperCase());
     setIsHost(false);
   }, [applySyncedState, handleConnectionStatus, resetMultiplayerManager]);
+
+  const clientActions = createClientActions(
+    (action) => multiplayerRef.current?.sendActionToHost(action),
+    (mission) => evaluateV2PACETransmission(activePlayer, mission, activeEvent, worldview)
+  );
+  const gameActions = isOnlineClient ? clientActions : localActions;
+
+  const isLocalTurn = phase === 'PLAYER_ACTION'
+    && !activePlayer.isAI
+    && (!isOnlineGame || (activePlayer.id === localPlayerId && (isHost || connectionStatus === 'connected')));
 
   const clearLastTransmission = useCallback(() => {
     setLastTransmission(null);
   }, []);
 
   const restartGame = useCallback(() => {
+    if (isOnlineClient) return; // 只有房主能重新開局，新局會透過快照同步給客端
     startGame(gameMode, botCount);
-  }, [startGame, gameMode, botCount]);
-
-  const activePlayer = players[activePlayerIndex] || players[0] || FALLBACK_PLAYER;
+  }, [startGame, gameMode, botCount, isOnlineClient]);
 
   return {
     round,
@@ -1064,8 +1220,12 @@ export function useV2GameState(): UseV2GameStateReturn {
     activeEvent,
     logs,
     winner,
-    lastTransmission,
-    isAITurn: Boolean(activePlayer.isAI),
+    lastTransmission: lastTransmission && {
+      ...lastTransmission,
+      isOtherPlayer: lastTransmission.isAI || (isOnlineGame && lastTransmission.playerId !== localPlayerId),
+    },
+    isLocalTurn,
+    isOnlineClient,
     gameMode,
     botCount,
     worldview,
@@ -1081,7 +1241,7 @@ export function useV2GameState(): UseV2GameStateReturn {
 
     roomCode,
     isHost,
-    peers,
+    peers: peers.filter(p => p.id !== localPlayerId),
     connectionStatus,
     connectionMsg,
     createRoom,
@@ -1089,18 +1249,7 @@ export function useV2GameState(): UseV2GameStateReturn {
     leaveRoom,
 
     startGame,
-    buyEquipment,
-    swapSlots,
-    storeCard,
-    equipFromInventory,
-    buyTactic,
-    playTactic,
-    rechargeEnergy,
-    requestEmergencyRequisition,
-    recycleInventoryCard,
-    refreshMissions,
-    transmitMission,
-    endTurn,
+    ...gameActions,
     clearLastTransmission,
     restartGame,
     returnToMenu,
