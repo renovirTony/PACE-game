@@ -8,7 +8,7 @@
 ## 🎮 線上直接遊玩 (Live Demo)
 
 - 🌟 **【全新重構版 v2.0 (預設推薦)】：[https://renovirtony.github.io/PACE-game/](https://renovirtony.github.io/PACE-game/)**  
-  *(自組防線、5 大實體物理媒介、三大世界觀一鍵切換、WebRTC P2P 遠端多人連線)*
+  *(自組防線、5 大實體物理媒介、三大世界觀一鍵切換、單人對戰 AI 與同機雙人輪流)*
 - 🏛️ **【經典原版 v1.0 (歷史對照)】：[https://renovirtony.github.io/PACE-game/?v=1](https://renovirtony.github.io/PACE-game/?v=1)**  
   *(軍規模擬、固定槽位經典版)*
 
@@ -45,8 +45,8 @@
     *   🏠 **【社區民防與自救組長】（預設）**：智慧型手機、對講機、手搖電話、機車巡守隊。
     *   🌊 **【海島韌性與極端天災】**：5G專網基地台、海纜登陸站、花東微波塔、低軌衛星、HAM 電台。
     *   ⚡ **【大斷網時代：通訊拓荒者】**：公眾神經光纖、軌道星鏈、類比短波、生化機車信使。
-6.  **🌐 WebRTC P2P 遠端多人連線 (GitHub Pages 靜態環境支援)**：
-    *   基於 PeerJS 打造純前端 WebRTC 點對點連線，生成 4 碼房號或專屬邀請連結，免伺服器負擔！
+6.  **多種對戰模式**：
+    *   單人對戰 1～3 位 AI 指揮官，或同一台裝置上雙人輪流作戰，適合工作坊分組使用。
 7.  **通訊專家復盤講評 (Module B 教育回饋)**：
     *   每次任務後生成「專家復盤報告」，從做中學剖析各槽位成敗原因。
 8.  **全卡牌圖鑑、PACE 作戰手冊與 8 步驟實戰新手教學**。
@@ -78,7 +78,6 @@ npm run build
 ## 🛠️ 技術棧 (Tech Stack)
 
 *   **前端框架**：React 18 + TypeScript + Vite
-*   **多人連線**：PeerJS (WebRTC P2P 點對點即時同步)
 *   **UI 樣式與動效**：TailwindCSS + Lucide Icons + Canvas-Confetti
 *   **音訊系統**：Web Audio API 原生音頻合成技術
 *   **核心引擎**：自研 PACE 狀態機、物理媒介檢定演算法與啟發式 AI
